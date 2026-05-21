@@ -1,0 +1,157 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* CARD LOGIN */
+
+.login-card {
+    width: 390px;
+    background: #f3f3f3;
+    padding: 40px 30px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.icon-circle {
+    width: 80px;
+    height: 80px;
+    background: #e8f0ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 25px;
+    font-size: 32px;
+    color: #2563eb;
+}
+
+.login-card h2 {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #0f172a;
+}
+
+.login-card p {
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+/* BOTÃO */
+
+.btn-primary {
+    width: 100%;
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+}
+
+/* LOGIN FORM */
+
+.login-container {
+    width: 450px;
+    background: #f3f3f3;
+    padding: 40px 30px;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.top-icon {
+    width: 70px;
+    height: 70px;
+    background: #2563eb;
+    color: white;
+    font-size: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 16px;
+    margin: 0 auto 25px;
+}
+
+.login-container h1 {
+    text-align: center;
+    font-size: 42px;
+    color: #0f172a;
+    margin-bottom: 15px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #475569;
+    margin-bottom: 35px;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #334155;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 1px solid #d4d4d4;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.input-group span {
+    margin-right: 10px;
+    color: #94a3b8;
+    font-size: 18px;
+}
+
+.input-group input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 16px;
+    background: transparent;
+}
+
+.forgot-password {
+    display: block;
+    text-align: right;
+    margin: 18px 0 30px;
+    text-decoration: none;
+    color: #2563eb;
+    font-size: 14px;
+}
+
+hr {
+    margin: 35px 0 20px;
+    border: none;
+    border-top: 1px solid #d4d4d4;
+}
+
+.test-credentials {
+    text-align: center;
+    color: #64748b;
+}
