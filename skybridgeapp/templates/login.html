@@ -1,7 +1,31 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login | Sky Bridge</title>
+
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+<a href="{% url 'auth_home' %}" class="back-link">
+    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    Voltar
+</a>
+
 <div class="login-container">
 
     <div class="top-icon">
-        ✈️
+        <i class="fa-solid fa-plane"></i>
     </div>
 
     <h1>Bem-vindo de volta</h1>
@@ -10,21 +34,22 @@
         Entre com suas credenciais para continuar
     </p>
 
-    <form>
+    <form method="post">
+        {% csrf_token %}
 
-        <label>Email</label>
+        <label for="email">Email</label>
         <div class="input-group">
-            <span>✉️</span>
-            <input type="email" placeholder="seu@email.com">
+            <span><i class="fa-solid fa-envelope"></i></span>
+            <input id="email" name="email" type="email" placeholder="seu@email.com" required>
         </div>
 
-        <label>Senha</label>
+        <label for="senha">Senha</label>
         <div class="input-group">
-            <span>🔒</span>
-            <input type="password" placeholder="••••••••">
+            <span><i class="fa-solid fa-lock"></i></span>
+            <input id="senha" name="senha" type="password" placeholder="********" required>
         </div>
 
-        <a href="#" class="forgot-password">
+        <a href="#" class="forgot-password" data-noop>
             Esqueceu a senha?
         </a>
 
@@ -37,3 +62,13 @@
     <hr>
 
 </div>
+
+<script>
+    document.querySelectorAll('[data-noop]').forEach((element) => {
+        element.addEventListener('click', (event) => {
+            event.preventDefault();
+        });
+    });
+</script>
+</body>
+</html>

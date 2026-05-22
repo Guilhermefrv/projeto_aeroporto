@@ -1,0 +1,151 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sky Bridge</title>
+
+    <link rel="stylesheet" href="{% static 'css/auth_home.css' %}">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+<header>
+
+    <a href="{% url 'home' %}" class="back-link">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        Voltar para ofertas
+    </a>
+
+    <div class="logo-container">
+
+        <div class="logo-icon">
+            <i class="fa-solid fa-plane"></i>
+        </div>
+
+        <div class="logo-text">
+            <h1>Sky Bridge</h1>
+            <p>Sistema de Gerenciamento Aeroportuário</p>
+        </div>
+
+    </div>
+
+</header>
+
+
+<main>
+
+    <h2>Bem-vindo ao Sky Bridge</h2>
+
+    <p class="subtitle">
+        Conectando você aos céus com eficiência e segurança
+    </p>
+
+
+    <section class="cards">
+
+        <!-- CARD LOGIN -->
+        <div class="card">
+
+            <div class="card-icon blue">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+
+            <h3>Já tem conta?</h3>
+
+            <p>
+                Acesse sua conta e gerencie suas reservas,
+                voos ou sistema administrativo
+            </p>
+
+            <a href="{% url 'login' %}" class="btn blue-btn">
+                Fazer Login →
+            </a>
+
+        </div>
+
+
+        <!-- CARD SIGNUP -->
+        <div class="card">
+
+            <div class="card-icon green">
+                <i class="fa-solid fa-user-group"></i>
+            </div>
+
+            <h3>Novo por aqui?</h3>
+
+            <p>
+                Crie sua conta gratuitamente e comece a reservar
+                seus voos hoje mesmo
+            </p>
+
+            <a href="#" class="btn green-btn" data-noop>
+                Criar Conta →
+            </a>
+
+        </div>
+
+    </section>
+
+
+    <!-- FEATURES -->
+    <section class="features">
+
+        <div class="feature">
+
+            <div class="feature-circle">
+                <i class="fa-solid fa-plane"></i>
+            </div>
+
+            <h4>Gestão de Voos</h4>
+
+            <span>Acompanhe voos em tempo real</span>
+
+        </div>
+
+
+        <div class="feature">
+
+            <div class="feature-circle">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <h4>Check-in Online</h4>
+
+            <span>Faça check-in de forma rápida</span>
+
+        </div>
+
+
+        <div class="feature">
+
+            <div class="feature-circle">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+
+            <h4>Segurança Total</h4>
+
+            <span>Sistema seguro e confiável</span>
+
+        </div>
+
+    </section>
+
+</main>
+
+<script>
+    document.querySelectorAll('[data-noop]').forEach((element) => {
+        element.addEventListener('click', (event) => {
+            event.preventDefault();
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,849 @@
+:root{
+    --ink:#101828;
+    --muted:#667085;
+    --line:#d9dee8;
+    --surface:#ffffff;
+    --soft:#f5f7fb;
+    --navy:#111a45;
+    --blue:#1b3b8f;
+    --red:#d7193f;
+    --wine:#661238;
+    --focus:#f2b705;
+    --shadow:0 18px 46px rgba(17,26,69,0.14);
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    min-height:100vh;
+    background:var(--soft);
+    color:var(--ink);
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+a{
+    color:inherit;
+}
+
+button,
+a{
+    -webkit-tap-highlight-color:transparent;
+}
+
+button{
+    font:inherit;
+}
+
+.skip-link{
+    position:absolute;
+    left:20px;
+    top:-80px;
+    z-index:20;
+    background:var(--navy);
+    color:white;
+    padding:12px 16px;
+    border-radius:6px;
+    text-decoration:none;
+}
+
+.skip-link:focus{
+    top:12px;
+}
+
+.site-header{
+    position:sticky;
+    top:0;
+    z-index:10;
+    background:rgba(255,255,255,0.96);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(12px);
+}
+
+.header-inner{
+    width:min(1180px, calc(100% - 32px));
+    min-height:72px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+}
+
+.brand{
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    text-decoration:none;
+    color:var(--navy);
+    flex:0 0 auto;
+}
+
+.brand-mark{
+    width:44px;
+    height:44px;
+    border-radius:8px;
+    display:grid;
+    place-items:center;
+    color:white;
+    background:linear-gradient(135deg,var(--navy),var(--blue) 52%,var(--red));
+}
+
+.brand-copy{
+    display:flex;
+    flex-direction:column;
+    line-height:1.1;
+}
+
+.brand-copy strong{
+    font-size:18px;
+}
+
+.brand-copy small{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:3px;
+}
+
+.main-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    flex:1;
+}
+
+.main-nav a{
+    border-radius:999px;
+    color:#344054;
+    font-size:14px;
+    font-weight:700;
+    padding:10px 12px;
+    text-decoration:none;
+    transition:background 0.2s ease,color 0.2s ease;
+}
+
+.main-nav a:hover,
+.main-nav a:focus-visible{
+    background:#eef2ff;
+    color:var(--blue);
+    outline:none;
+}
+
+.header-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:0 0 auto;
+}
+
+.login-link,
+.icon-button,
+.ghost-button,
+.primary-button,
+.secondary-button,
+.card-button,
+.filter-chip,
+.tab,
+.toggle-pill,
+.field-control{
+    cursor:pointer;
+    border:0;
+    transition:transform 0.2s ease,box-shadow 0.2s ease,background 0.2s ease,color 0.2s ease,border-color 0.2s ease;
+}
+
+.login-link{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:42px;
+    padding:0 16px;
+    border-radius:999px;
+    background:var(--navy);
+    color:white;
+    font-size:14px;
+    font-weight:800;
+    text-decoration:none;
+}
+
+.login-link:hover,
+.login-link:focus-visible,
+.primary-button:hover,
+.primary-button:focus-visible{
+    background:#0b1238;
+    box-shadow:0 12px 26px rgba(17,26,69,0.22);
+    outline:none;
+    transform:translateY(-1px);
+}
+
+.icon-button{
+    width:42px;
+    height:42px;
+    border-radius:999px;
+    background:#eef2ff;
+    color:var(--navy);
+    display:grid;
+    place-items:center;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible{
+    background:#dfe7ff;
+    outline:3px solid rgba(242,183,5,0.35);
+}
+
+.hero-section{
+    width:min(1180px, calc(100% - 32px));
+    margin:36px auto 0;
+    display:grid;
+    grid-template-columns:minmax(0,1.02fr) minmax(360px,0.98fr);
+    gap:32px;
+    align-items:stretch;
+}
+
+.hero-copy{
+    padding:50px 0 44px;
+}
+
+.eyebrow{
+    color:var(--red);
+    font-size:13px;
+    font-weight:800;
+    margin-bottom:12px;
+    text-transform:uppercase;
+}
+
+.hero-copy h1{
+    color:var(--navy);
+    font-size:56px;
+    line-height:1.04;
+    max-width:720px;
+    margin-bottom:18px;
+}
+
+.hero-copy p:not(.eyebrow){
+    color:#475467;
+    font-size:19px;
+    line-height:1.6;
+    max-width:640px;
+}
+
+.hero-media{
+    min-height:390px;
+    border-radius:8px;
+    background:
+        linear-gradient(180deg,rgba(17,26,69,0.08),rgba(17,26,69,0.58)),
+        url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80') center/cover;
+    position:relative;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+}
+
+.hero-badge{
+    position:absolute;
+    right:22px;
+    bottom:22px;
+    width:210px;
+    border-radius:8px;
+    background:rgba(255,255,255,0.94);
+    padding:18px;
+    box-shadow:0 16px 32px rgba(16,24,40,0.24);
+}
+
+.hero-badge span,
+.hero-badge small{
+    display:block;
+    color:var(--muted);
+    font-size:13px;
+    font-weight:700;
+}
+
+.hero-badge strong{
+    display:block;
+    color:var(--wine);
+    font-size:34px;
+    line-height:1.1;
+    margin:6px 0;
+}
+
+.search-shell{
+    width:min(1180px, calc(100% - 32px));
+    margin:-26px auto 54px;
+    position:relative;
+    z-index:2;
+}
+
+.search-panel{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:8px;
+    box-shadow:var(--shadow);
+    padding:24px;
+}
+
+.search-heading,
+.section-heading,
+.search-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+}
+
+.search-heading h2,
+.section-heading h2,
+.benefits-section h2,
+.miles-section h2{
+    color:var(--navy);
+    font-size:30px;
+    line-height:1.15;
+}
+
+.ghost-button{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:42px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:white;
+    color:var(--navy);
+    font-size:14px;
+    font-weight:800;
+    padding:0 16px;
+}
+
+.ghost-button:hover,
+.ghost-button:focus-visible{
+    border-color:var(--blue);
+    color:var(--blue);
+    outline:3px solid rgba(242,183,5,0.25);
+}
+
+.tabs{
+    display:flex;
+    gap:8px;
+    margin:22px 0;
+    overflow:auto;
+    padding-bottom:2px;
+}
+
+.tab,
+.toggle-pill,
+.filter-chip{
+    min-height:40px;
+    border-radius:999px;
+    background:#f2f4f7;
+    color:#344054;
+    font-size:14px;
+    font-weight:800;
+    padding:0 16px;
+    white-space:nowrap;
+}
+
+.tab.active,
+.toggle-pill.active,
+.filter-chip.active{
+    background:var(--navy);
+    color:white;
+}
+
+.tab:hover,
+.tab:focus-visible,
+.toggle-pill:hover,
+.toggle-pill:focus-visible,
+.filter-chip:hover,
+.filter-chip:focus-visible{
+    background:#e7ecf8;
+    color:var(--blue);
+    outline:none;
+}
+
+.tab.active:hover,
+.toggle-pill.active:hover,
+.filter-chip.active:hover{
+    background:#0b1238;
+    color:white;
+}
+
+.search-grid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+}
+
+.field-control{
+    min-height:82px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#fbfcff;
+    color:var(--ink);
+    padding:14px;
+    text-align:left;
+}
+
+.field-control span{
+    display:block;
+    color:var(--muted);
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:8px;
+}
+
+.field-control strong{
+    display:block;
+    color:var(--navy);
+    font-size:17px;
+    line-height:1.25;
+}
+
+.field-control:hover,
+.field-control:focus-visible{
+    border-color:var(--blue);
+    background:white;
+    box-shadow:0 10px 22px rgba(27,59,143,0.11);
+    outline:3px solid rgba(242,183,5,0.22);
+}
+
+.promo-control{
+    grid-column:span 2;
+}
+
+.search-footer{
+    margin-top:22px;
+}
+
+.toggle-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.primary-button,
+.secondary-button,
+.card-button{
+    min-height:48px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    font-weight:900;
+    padding:0 22px;
+}
+
+.primary-button{
+    min-width:170px;
+    background:var(--red);
+    color:white;
+}
+
+.primary-button:hover,
+.primary-button:focus-visible{
+    background:#b81435;
+}
+
+.offers-section,
+.benefits-section{
+    width:min(1180px, calc(100% - 32px));
+    margin:0 auto 70px;
+}
+
+.filter-row{
+    display:flex;
+    gap:10px;
+    margin:24px 0;
+    overflow:auto;
+    padding-bottom:4px;
+}
+
+.offer-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:18px;
+}
+
+.offer-card{
+    background:white;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 8px 24px rgba(16,24,40,0.08);
+    display:flex;
+    flex-direction:column;
+}
+
+.offer-rio{
+    --offer-image:url('https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-recife{
+    --offer-image:url('https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-salvador{
+    --offer-image:url('https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-buenos-aires{
+    --offer-image:url('https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-santiago{
+    --offer-image:url('https://images.unsplash.com/photo-1519923834699-ef0b7cde4712?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-lisboa{
+    --offer-image:url('https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-image{
+    height:168px;
+    background:
+        linear-gradient(180deg,rgba(17,26,69,0),rgba(17,26,69,0.18)),
+        var(--offer-image) center/cover,
+        #d9dee8;
+}
+
+.offer-body{
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    flex:1;
+}
+
+.route{
+    color:var(--blue);
+    font-size:13px;
+    font-weight:900;
+}
+
+.offer-body h3,
+.benefit-card h3{
+    color:var(--navy);
+    font-size:20px;
+    line-height:1.2;
+}
+
+.offer-body p,
+.benefit-card p,
+.miles-content p,
+.site-footer p{
+    color:var(--muted);
+    line-height:1.55;
+}
+
+.price-row{
+    margin-top:auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.price-row span{
+    color:var(--muted);
+    font-size:13px;
+    font-weight:700;
+}
+
+.price-row strong{
+    color:var(--wine);
+    font-size:28px;
+    line-height:1;
+}
+
+.card-button{
+    width:100%;
+    background:var(--navy);
+    color:white;
+}
+
+.card-button:hover,
+.card-button:focus-visible{
+    background:var(--blue);
+    outline:3px solid rgba(242,183,5,0.28);
+}
+
+.miles-section{
+    width:min(1180px, calc(100% - 32px));
+    margin:0 auto 70px;
+    border-radius:8px;
+    background:
+        linear-gradient(135deg,rgba(17,26,69,0.96),rgba(102,18,56,0.94)),
+        url('https://images.unsplash.com/photo-1529074963764-98f45c47344b?auto=format&fit=crop&w=1200&q=80') center/cover;
+    color:white;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 260px;
+    gap:24px;
+    align-items:center;
+    padding:38px;
+}
+
+.miles-section h2,
+.miles-section .eyebrow{
+    color:white;
+}
+
+.miles-content p{
+    color:#e6eaf4;
+    max-width:660px;
+    margin:14px 0 22px;
+}
+
+.secondary-button{
+    background:white;
+    color:var(--navy);
+}
+
+.secondary-button:hover,
+.secondary-button:focus-visible{
+    background:#f8e9ed;
+    outline:3px solid rgba(242,183,5,0.32);
+    transform:translateY(-1px);
+}
+
+.miles-stat{
+    border:1px solid rgba(255,255,255,0.32);
+    border-radius:8px;
+    background:rgba(255,255,255,0.12);
+    padding:22px;
+    text-align:center;
+}
+
+.miles-stat span,
+.miles-stat small{
+    display:block;
+    color:#e6eaf4;
+    font-weight:800;
+}
+
+.miles-stat strong{
+    display:block;
+    font-size:48px;
+    margin:8px 0;
+}
+
+.section-heading.compact{
+    display:block;
+    margin-bottom:24px;
+}
+
+.benefits-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:16px;
+}
+
+.benefit-card{
+    min-height:174px;
+    background:white;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:22px;
+}
+
+.benefit-card i{
+    width:42px;
+    height:42px;
+    border-radius:8px;
+    background:#eef2ff;
+    color:var(--blue);
+    display:grid;
+    place-items:center;
+    margin-bottom:18px;
+}
+
+.benefit-card h3{
+    margin-bottom:8px;
+}
+
+.site-footer{
+    background:#0b1238;
+    color:white;
+    padding:46px 0;
+}
+
+.footer-grid{
+    width:min(1180px, calc(100% - 32px));
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:1.3fr repeat(4,1fr);
+    gap:28px;
+}
+
+.site-footer h2,
+.site-footer h3{
+    margin-bottom:14px;
+}
+
+.site-footer h3{
+    font-size:16px;
+}
+
+.site-footer a{
+    display:block;
+    color:#d0d5dd;
+    font-size:14px;
+    line-height:1.45;
+    margin:10px 0;
+    text-decoration:none;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible{
+    color:white;
+    outline:none;
+    text-decoration:underline;
+}
+
+.social-row{
+    display:flex;
+    gap:10px;
+}
+
+.social-row a{
+    width:38px;
+    height:38px;
+    border-radius:999px;
+    display:grid;
+    place-items:center;
+    background:rgba(255,255,255,0.12);
+    margin:0;
+}
+
+@media(max-width:1050px){
+    .header-inner{
+        flex-wrap:wrap;
+        padding:12px 0;
+    }
+
+    .main-nav{
+        order:3;
+        width:100%;
+        justify-content:flex-start;
+        overflow:auto;
+    }
+
+    .hero-section{
+        grid-template-columns:1fr;
+    }
+
+    .hero-copy{
+        padding-bottom:0;
+    }
+
+    .search-shell{
+        margin-top:24px;
+    }
+
+    .search-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .offer-grid,
+    .benefits-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .footer-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:720px){
+    .header-inner,
+    .hero-section,
+    .search-shell,
+    .offers-section,
+    .miles-section,
+    .benefits-section,
+    .footer-grid{
+        width:min(100% - 24px, 1180px);
+    }
+
+    .brand-copy small{
+        display:none;
+    }
+
+    .main-nav{
+        display:none;
+    }
+
+    .login-link{
+        min-height:40px;
+        padding:0 12px;
+    }
+
+    .hero-section{
+        margin-top:22px;
+        gap:22px;
+    }
+
+    .hero-copy h1{
+        font-size:38px;
+    }
+
+    .hero-copy p:not(.eyebrow){
+        font-size:17px;
+    }
+
+    .hero-media{
+        min-height:300px;
+    }
+
+    .hero-badge{
+        left:16px;
+        right:16px;
+        bottom:16px;
+        width:auto;
+    }
+
+    .search-panel{
+        padding:18px;
+    }
+
+    .search-heading,
+    .section-heading,
+    .search-footer{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .search-heading h2,
+    .section-heading h2,
+    .benefits-section h2,
+    .miles-section h2{
+        font-size:26px;
+    }
+
+    .search-grid,
+    .offer-grid,
+    .benefits-grid,
+    .miles-section,
+    .footer-grid{
+        grid-template-columns:1fr;
+    }
+
+    .promo-control{
+        grid-column:auto;
+    }
+
+    .primary-button,
+    .secondary-button{
+        width:100%;
+    }
+
+    .miles-section{
+        padding:24px;
+    }
+}

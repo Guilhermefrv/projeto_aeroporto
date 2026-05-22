@@ -6,9 +6,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Sky Bridge</title>
+    <title>Sky Bridge | Ofertas e promoções</title>
 
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
 
     <!-- Font Awesome -->
     <link rel="stylesheet"
@@ -16,124 +16,213 @@
 </head>
 
 <body>
+<a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
 
-<header>
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="{% url 'home' %}" aria-label="Sky Bridge - página inicial">
+            <span class="brand-mark" aria-hidden="true">
+                <i class="fa-solid fa-plane"></i>
+            </span>
+            <span class="brand-copy">
+                <strong>Sky Bridge</strong>
+                <small>Viagens e ofertas</small>
+            </span>
+        </a>
 
-    <div class="logo-container">
+        <nav class="main-nav" aria-label="Navegação principal">
+            {% for item in nav_items %}
+                <a href="#" data-noop>{{ item }}</a>
+            {% endfor %}
+        </nav>
 
-        <div class="logo-icon">
-            <i class="fa-solid fa-plane"></i>
+        <div class="header-actions">
+            <a class="login-link" href="{% url 'auth_home' %}">
+                <i class="fa-regular fa-user" aria-hidden="true"></i>
+                Fazer login
+            </a>
+            <button class="icon-button" type="button" aria-label="Abrir menu">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
         </div>
-
-        <div class="logo-text">
-            <h1>Sky Bridge</h1>
-            <p>Sistema de Gerenciamento Aeroportuário</p>
-        </div>
-
     </div>
-
 </header>
 
-
-<main>
-
-    <h2>Bem-vindo ao Sky Bridge</h2>
-
-    <p class="subtitle">
-        Conectando você aos céus com eficiência e segurança
-    </p>
-
-
-    <section class="cards">
-
-        <!-- CARD LOGIN -->
-        <div class="card">
-
-            <div class="card-icon blue">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-
-            <h3>Já tem conta?</h3>
-
+<main id="conteudo">
+    <section class="hero-section" aria-labelledby="hero-title">
+        <div class="hero-copy">
+            <p class="eyebrow">Promoções por tempo limitado</p>
+            <h1 id="hero-title">Ofertas e promoções para sua próxima viagem</h1>
             <p>
-                Acesse sua conta e gerencie suas reservas,
-                voos ou sistema administrativo
+                Encontre passagens, pacotes e destinos selecionados com preços especiais,
+                opções flexíveis e benefícios para viajar melhor.
             </p>
-
-            <a href="/login" class="btn blue-btn">
-                Fazer Login →
-            </a>
-
         </div>
 
-
-        <!-- CARD SIGNUP -->
-        <div class="card">
-
-            <div class="card-icon green">
-                <i class="fa-solid fa-user-group"></i>
+        <div class="hero-media" aria-hidden="true">
+            <div class="hero-badge">
+                <span>A partir de</span>
+                <strong>R$ 189</strong>
+                <small>trechos selecionados</small>
             </div>
-
-            <h3>Novo por aqui?</h3>
-
-            <p>
-                Crie sua conta gratuitamente e comece a reservar
-                seus voos hoje mesmo
-            </p>
-
-            <a href="/signup" class="btn green-btn">
-                Criar Conta →
-            </a>
-
         </div>
-
     </section>
 
-
-    <!-- FEATURES -->
-    <section class="features">
-
-        <div class="feature">
-
-            <div class="feature-circle">
-                <i class="fa-solid fa-plane"></i>
+    <section class="search-shell" aria-labelledby="search-title">
+        <div class="search-panel">
+            <div class="search-heading">
+                <div>
+                    <p class="eyebrow">Planeje sua viagem</p>
+                    <h2 id="search-title">Busque ofertas de voos e serviços</h2>
+                </div>
+                <button class="ghost-button" type="button">
+                    <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                    Todos os aeroportos
+                </button>
             </div>
 
-            <h4>Gestão de Voos</h4>
-
-            <span>Acompanhe voos em tempo real</span>
-
-        </div>
-
-
-        <div class="feature">
-
-            <div class="feature-circle">
-                <i class="fa-solid fa-check"></i>
+            <div class="tabs" aria-label="Tipo de busca">
+                {% for tab in search_tabs %}
+                    <button class="tab{% if tab.active %} active{% endif %}" type="button">
+                        {{ tab.label }}
+                    </button>
+                {% endfor %}
             </div>
 
-            <h4>Check-in Online</h4>
-
-            <span>Faça check-in de forma rápida</span>
-
-        </div>
-
-
-        <div class="feature">
-
-            <div class="feature-circle">
-                <i class="fa-solid fa-lock"></i>
+            <div class="search-grid" aria-label="Campos de busca">
+                {% for field in search_fields %}
+                    <button class="field-control{% if field.wide %} promo-control{% endif %}"
+                            type="button"
+                            aria-label="{{ field.aria_label }}">
+                        <span>{{ field.label }}</span>
+                        <strong>{{ field.value }}</strong>
+                    </button>
+                {% endfor %}
             </div>
 
-            <h4>Segurança Total</h4>
+            <div class="search-footer">
+                <div class="toggle-group" aria-label="Opções de pagamento">
+                    {% for option in payment_options %}
+                        <button class="toggle-pill{% if option.active %} active{% endif %}" type="button">
+                            {{ option.label }}
+                        </button>
+                    {% endfor %}
+                </div>
 
-            <span>Sistema seguro e confiável</span>
-
+                <button class="primary-button" type="button">
+                    Buscar
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
-
     </section>
 
+    <section class="offers-section" aria-labelledby="offers-title">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Ofertas em destaque</p>
+                <h2 id="offers-title">Encontre ofertas para sua próxima viagem</h2>
+            </div>
+            <button class="ghost-button" type="button">Ver calendário de preços</button>
+        </div>
+
+        <div class="filter-row" aria-label="Filtros de ofertas">
+            {% for filter in offer_filters %}
+                <button class="filter-chip{% if filter.active %} active{% endif %}" type="button">
+                    {{ filter.label }}
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="offer-grid">
+            {% for offer in offers %}
+                <article class="offer-card {{ offer.image_class }}">
+                    <div class="offer-image" aria-hidden="true"></div>
+                    <div class="offer-body">
+                        <span class="route">{{ offer.route }}</span>
+                        <h3>{{ offer.title }}</h3>
+                        <p>{{ offer.description }}</p>
+                        <div class="price-row">
+                            <span>a partir de</span>
+                            <strong>{{ offer.price }}</strong>
+                        </div>
+                        <button class="card-button" type="button">Ver oferta</button>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="miles-section" aria-labelledby="miles-title">
+        <div class="miles-content">
+            <p class="eyebrow">Viaje com pontos</p>
+            <h2 id="miles-title">Transforme milhas em novas rotas</h2>
+            <p>
+                Use pontos acumulados para resgatar passagens, combinar milhas com dinheiro
+                e aproveitar ofertas exclusivas em destinos selecionados.
+            </p>
+            <button class="secondary-button" type="button">Ver ofertas em milhas</button>
+        </div>
+        <div class="miles-stat" aria-hidden="true">
+            <span>Ofertas desde</span>
+            <strong>8.500</strong>
+            <small>milhas por trecho</small>
+        </div>
+    </section>
+
+    <section class="benefits-section" aria-labelledby="benefits-title">
+        <div class="section-heading compact">
+            <p class="eyebrow">Benefícios</p>
+            <h2 id="benefits-title">Mais controle em cada etapa da viagem</h2>
+        </div>
+
+        <div class="benefits-grid">
+            {% for benefit in benefits %}
+                <article class="benefit-card">
+                    <i class="{{ benefit.icon }}" aria-hidden="true"></i>
+                    <h3>{{ benefit.title }}</h3>
+                    <p>{{ benefit.description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
 </main>
 
+<footer class="site-footer">
+    <div class="footer-grid">
+        <div>
+            <h2>Sky Bridge</h2>
+            <p>Uma experiência digital para explorar ofertas, viagens e serviços aeroportuários.</p>
+        </div>
+
+        {% for column in footer_columns %}
+            <nav aria-label="{{ column.title }}">
+                <h3>{{ column.title }}</h3>
+                {% for link in column.links %}
+                    <a href="#" data-noop>{{ link }}</a>
+                {% endfor %}
+            </nav>
+        {% endfor %}
+
+        <nav aria-label="Redes sociais">
+            <h3>Redes sociais</h3>
+            <div class="social-row">
+                {% for link in social_links %}
+                    <a href="#" data-noop aria-label="{{ link.label }}">
+                        <i class="{{ link.icon }}" aria-hidden="true"></i>
+                    </a>
+                {% endfor %}
+            </div>
+        </nav>
+    </div>
+</footer>
+
+<script>
+    document.querySelectorAll('[data-noop]').forEach((element) => {
+        element.addEventListener('click', (event) => {
+            event.preventDefault();
+        });
+    });
+</script>
 </body>
 </html>

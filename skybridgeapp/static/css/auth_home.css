@@ -12,10 +12,37 @@ body{
 }
 
 
-/* HEADER */
+/* AUTH HOME HEADER */
 
 header{
     padding:20px 30px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.back-link{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:42px;
+    padding:0 16px;
+    border:1px solid rgba(255,255,255,0.55);
+    border-radius:999px;
+    color:white;
+    font-size:14px;
+    font-weight:bold;
+    text-decoration:none;
+    transition:0.3s;
+}
+
+.back-link:hover,
+.back-link:focus-visible{
+    background:white;
+    color:#1652ff;
+    outline:none;
 }
 
 .logo-container{
@@ -212,6 +239,15 @@ main h2{
 /* RESPONSIVO */
 
 @media(max-width:900px){
+
+    header{
+        justify-content:center;
+    }
+
+    .back-link{
+        width:90%;
+        justify-content:center;
+    }
 
     main h2{
         font-size:38px;

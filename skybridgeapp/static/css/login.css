@@ -11,6 +11,35 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 24px;
+}
+
+.back-link {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    color: #1d4ed8;
+    background: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    transition: 0.3s;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+    outline: none;
 }
 
 /* CARD LOGIN */
@@ -154,4 +183,21 @@ hr {
 .test-credentials {
     text-align: center;
     color: #64748b;
+}
+
+@media(max-width:640px) {
+    body {
+        align-items: flex-start;
+        padding-top: 88px;
+    }
+
+    .back-link {
+        left: 16px;
+        right: 16px;
+        justify-content: center;
+    }
+
+    .login-container {
+        width: 100%;
+    }
 }
