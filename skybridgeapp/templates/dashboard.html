@@ -1,0 +1,69 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard | Sky Bridge</title>
+
+    <link rel="stylesheet" href="{% static 'css/auth_home.css' %}">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+<header>
+    <a href="{% url 'home' %}" class="back-link">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        Voltar para ofertas
+    </a>
+
+    <div class="logo-container">
+        <div class="logo-icon">
+            <i class="fa-solid fa-plane"></i>
+        </div>
+
+        <div class="logo-text">
+            <h1>Sky Bridge</h1>
+            <p>Area do usuario</p>
+        </div>
+    </div>
+</header>
+
+<main>
+    <h2>Ola, {{ user.get_full_name|default:user.username }}</h2>
+
+    <p class="subtitle">
+        Seu acesso foi autenticado com sucesso.
+        {% if notificacoes_nao_lidas %}
+            Voce tem {{ notificacoes_nao_lidas }} notificacoes nao lidas.
+        {% endif %}
+    </p>
+
+    <section class="cards" aria-label="Acoes da conta">
+        <div class="card">
+            <div class="card-icon blue">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+
+            <h3>Conta ativa</h3>
+
+            <p>
+                Esta pagina protegida confirma que o login esta conectado
+                ao sistema de usuarios do Django.
+            </p>
+
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn blue-btn">
+                    Sair
+                </button>
+            </form>
+        </div>
+    </section>
+</main>
+</body>
+</html>

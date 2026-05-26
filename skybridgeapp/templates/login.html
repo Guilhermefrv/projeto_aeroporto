@@ -34,20 +34,57 @@
         Entre com suas credenciais para continuar
     </p>
 
-    <form method="post">
+    <form method="post" action="{% url 'login' %}">
         {% csrf_token %}
+        {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
 
-        <label for="email">Email</label>
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <label for="id_username">Usuario</label>
         <div class="input-group">
-            <span><i class="fa-solid fa-envelope"></i></span>
-            <input id="email" name="email" type="email" placeholder="seu@email.com" required>
+            <span><i class="fa-solid fa-user"></i></span>
+            <input id="id_username"
+                   name="username"
+                   type="text"
+                   placeholder="seu usuario"
+                   value="{{ form.username.value|default_if_none:'' }}"
+                   autocomplete="username"
+                   required
+                   autofocus>
         </div>
+        {% if form.username.errors %}
+            <div class="field-errors" role="alert">
+                {% for error in form.username.errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
 
-        <label for="senha">Senha</label>
+        <label for="id_password">Senha</label>
         <div class="input-group">
             <span><i class="fa-solid fa-lock"></i></span>
-            <input id="senha" name="senha" type="password" placeholder="********" required>
+            <input id="id_password"
+                   name="password"
+                   type="password"
+                   placeholder="********"
+                   autocomplete="current-password"
+                   required>
         </div>
+        {% if form.password.errors %}
+            <div class="field-errors" role="alert">
+                {% for error in form.password.errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
 
         <a href="#" class="forgot-password" data-noop>
             Esqueceu a senha?

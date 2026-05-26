@@ -1,4 +1,7 @@
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import render
+from django.urls import reverse_lazy
 
 
 LANDING_CONTEXT = {
@@ -148,5 +151,19 @@ def auth_home(request):
     return render(request, 'auth_home.html')
 
 
-def login_view(request):
-    return render(request, 'login.html')
+def cadastro(request):
+    return render(request, 'cadastro.html')
+
+
+@login_required
+def dashboard(request):
+    return render(request, 'dashboard.html')
+
+
+class SkyBridgeLoginView(LoginView):
+    template_name = 'login.html'
+    redirect_authenticated_user = True
+
+
+class SkyBridgeLogoutView(LogoutView):
+    next_page = reverse_lazy('home')
