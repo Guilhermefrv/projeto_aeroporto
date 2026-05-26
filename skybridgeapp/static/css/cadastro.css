@@ -1,3 +1,5 @@
+@import url('theme.css');
+
 * {
     margin: 0;
     padding: 0;
@@ -7,32 +9,38 @@
 
 body {
     min-height: 100vh;
-    background: linear-gradient(135deg, #eef6ff 0%, #f8fbff 48%, #eaf1ff 100%);
-    color: #172033;
-    padding: 36px 18px;
+    background: var(--page-bg);
+    color: var(--ink);
+    padding: 88px 18px 40px;
 }
 
 .back-link {
     position: fixed;
-    top: 28px;
-    left: 28px;
+    top: 24px;
+    left: 24px;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     min-height: 42px;
     padding: 0 16px;
+    border: 1px solid var(--line);
     border-radius: 999px;
-    color: #1d4ed8;
+    color: var(--navy);
+    background: white;
     text-decoration: none;
-    font-size: 15px;
-    font-weight: 700;
-    transition: 0.2s ease;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(16,24,40,0.05);
+    transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 
 .back-link:hover,
 .back-link:focus-visible {
-    background: #dbeafe;
-    outline: none;
+    border-color: var(--blue);
+    color: var(--blue);
+    outline: var(--ring);
+    transform: translateY(-1px);
 }
 
 .signup-page {
@@ -41,12 +49,12 @@ body {
 }
 
 .signup-card {
-    width: min(100%, 700px);
-    margin-top: 58px;
+    width: min(100%, 720px);
     padding: 34px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 20px 60px rgba(30, 64, 175, 0.14);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    box-shadow: var(--shadow);
 }
 
 .signup-header {
@@ -61,20 +69,22 @@ body {
     height: 54px;
     display: grid;
     place-items: center;
-    border-radius: 12px;
-    background: #2563eb;
+    border-radius: 8px;
+    background: linear-gradient(135deg,var(--navy),var(--blue) 52%,var(--red));
     color: white;
     font-size: 24px;
+    box-shadow: 0 10px 24px rgba(17,26,69,0.2);
 }
 
 .signup-header h1 {
+    color: var(--navy);
     font-size: 28px;
     line-height: 1.1;
 }
 
 .signup-header p {
     margin-top: 4px;
-    color: #5b6b85;
+    color: var(--muted);
 }
 
 fieldset {
@@ -86,14 +96,14 @@ legend,
 label {
     display: block;
     margin-bottom: 10px;
-    color: #24324a;
+    color: #344054;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 legend span,
 label span {
-    color: #ef4444;
+    color: var(--red);
 }
 
 .account-types {
@@ -105,11 +115,12 @@ label span {
 .type-card {
     min-height: 118px;
     padding: 18px 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fbfcff;
     text-align: center;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
 }
 
 .type-card input {
@@ -121,19 +132,20 @@ label span {
 .type-card i {
     display: block;
     margin-bottom: 8px;
-    color: #2563eb;
+    color: var(--blue);
     font-size: 24px;
 }
 
 .type-card strong {
     display: block;
     margin-bottom: 6px;
+    color: var(--navy);
     font-size: 18px;
 }
 
 .type-card span {
     display: block;
-    color: #64748b;
+    color: var(--muted);
     font-size: 13px;
     line-height: 1.35;
 }
@@ -141,8 +153,10 @@ label span {
 .type-card:hover,
 .type-card:focus-within,
 .type-card.active {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    background: white;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(27,59,143,0.12);
+    transform: translateY(-1px);
 }
 
 .signup-form {
@@ -164,20 +178,22 @@ label span {
     display: flex;
     align-items: center;
     min-height: 54px;
-    border: 1px solid #d7deea;
-    border-radius: 12px;
-    background: white;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fbfcff;
     padding: 0 16px;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
 }
 
 .input-group:focus-within {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    background: white;
+    border-color: var(--blue);
+    box-shadow: var(--ring);
 }
 
 .input-group i {
     margin-right: 12px;
-    color: #8aa1c0;
+    color: var(--blue);
 }
 
 .input-group input {
@@ -185,7 +201,7 @@ label span {
     border: 0;
     outline: 0;
     background: transparent;
-    color: #172033;
+    color: var(--ink);
     font-size: 16px;
 }
 
@@ -196,51 +212,58 @@ label span {
     gap: 8px;
     min-height: 54px;
     border: 0;
-    border-radius: 12px;
-    background: #1797d4;
+    border-radius: 999px;
+    background: var(--green);
     color: white;
     font-size: 17px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
-    transition: 0.2s ease;
+    box-shadow: 0 12px 24px rgba(22,163,74,0.16);
+    transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
 }
 
 .submit-button:hover,
 .submit-button:focus-visible {
-    background: #0f7eb7;
-    outline: none;
+    background: var(--green-hover);
+    outline: var(--ring);
+    transform: translateY(-1px);
 }
 
 .login-copy {
     text-align: center;
-    color: #64748b;
+    color: var(--muted);
 }
 
 .login-copy a {
-    color: #2563eb;
-    font-weight: 700;
+    color: var(--blue);
+    font-weight: 800;
     text-decoration: none;
 }
 
 .login-copy a:hover,
 .login-copy a:focus-visible {
+    color: var(--navy);
     text-decoration: underline;
     outline: none;
 }
 
 @media (max-width: 760px) {
     body {
-        padding-top: 82px;
+        padding: 82px 12px 28px;
     }
 
     .back-link {
         top: 18px;
-        left: 18px;
+        left: 16px;
+        right: 16px;
     }
 
     .signup-card {
-        margin-top: 0;
         padding: 24px;
+    }
+
+    .signup-header {
+        align-items: flex-start;
     }
 
     .account-types,
