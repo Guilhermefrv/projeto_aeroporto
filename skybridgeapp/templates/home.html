@@ -94,8 +94,27 @@
                     <button class="field-control{% if field.wide %} promo-control{% endif %}"
                             type="button"
                             aria-label="{{ field.aria_label }}">
-                        <span>{{ field.label }}</span>
-                        <strong>{{ field.value }}</strong>
+                        <span class="field-icon" aria-hidden="true">
+                            {% if forloop.counter == 1 %}
+                                <i class="fa-solid fa-plane-departure"></i>
+                            {% elif forloop.counter == 2 %}
+                                <i class="fa-solid fa-plane-arrival"></i>
+                            {% elif forloop.counter == 3 %}
+                                <i class="fa-solid fa-calendar-day"></i>
+                            {% elif forloop.counter == 4 %}
+                                <i class="fa-solid fa-calendar-check"></i>
+                            {% elif forloop.counter == 5 %}
+                                <i class="fa-solid fa-users"></i>
+                            {% elif forloop.counter == 6 %}
+                                <i class="fa-solid fa-couch"></i>
+                            {% else %}
+                                <i class="fa-solid fa-tag"></i>
+                            {% endif %}
+                        </span>
+                        <span class="field-copy">
+                            <span>{{ field.label }}</span>
+                            <strong>{{ field.value }}</strong>
+                        </span>
                     </button>
                 {% endfor %}
             </div>
@@ -115,6 +134,37 @@
                 </button>
             </div>
         </div>
+    </section>
+
+    <section class="trust-strip" aria-label="BenefÃ­cios de confianÃ§a">
+        <article>
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <div>
+                <h2>Compra segura</h2>
+                <p>Ambiente protegido para planejar sua viagem.</p>
+            </div>
+        </article>
+        <article>
+            <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+            <div>
+                <h2>Taxas incluÃ­das</h2>
+                <p>Valores apresentados com clareza.</p>
+            </div>
+        </article>
+        <article>
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            <div>
+                <h2>Check-in online</h2>
+                <p>Mais agilidade antes do embarque.</p>
+            </div>
+        </article>
+        <article>
+            <i class="fa-solid fa-headset" aria-hidden="true"></i>
+            <div>
+                <h2>Suporte</h2>
+                <p>Ajuda disponÃ­vel durante a jornada.</p>
+            </div>
+        </article>
     </section>
 
     <section class="offers-section" aria-labelledby="offers-title">

@@ -10,6 +10,9 @@
     --wine:#661238;
     --focus:#f2b705;
     --shadow:0 18px 46px rgba(17,26,69,0.14);
+    --shadow-soft:0 10px 28px rgba(16,24,40,0.08);
+    --shadow-strong:0 24px 60px rgba(17,26,69,0.18);
+    --ring:0 0 0 3px rgba(242,183,5,0.28);
 }
 
 *{
@@ -24,7 +27,9 @@ html{
 
 body{
     min-height:100vh;
-    background:var(--soft);
+    background:
+        radial-gradient(circle at 12% 0%,rgba(27,59,143,0.08),transparent 28%),
+        linear-gradient(180deg,#fbfcff 0%,var(--soft) 38%,#ffffff 100%);
     color:var(--ink);
     font-family:Arial, Helvetica, sans-serif;
 }
@@ -65,6 +70,7 @@ button{
     background:rgba(255,255,255,0.96);
     border-bottom:1px solid var(--line);
     backdrop-filter:blur(12px);
+    box-shadow:0 6px 24px rgba(16,24,40,0.06);
 }
 
 .header-inner{
@@ -84,6 +90,7 @@ button{
     text-decoration:none;
     color:var(--navy);
     flex:0 0 auto;
+    transition:transform 0.2s ease;
 }
 
 .brand-mark{
@@ -94,6 +101,20 @@ button{
     place-items:center;
     color:white;
     background:linear-gradient(135deg,var(--navy),var(--blue) 52%,var(--red));
+    box-shadow:0 10px 24px rgba(17,26,69,0.2);
+    transition:transform 0.2s ease,box-shadow 0.2s ease;
+}
+
+.brand:hover,
+.brand:focus-visible{
+    outline:none;
+    transform:translateY(-1px);
+}
+
+.brand:hover .brand-mark,
+.brand:focus-visible .brand-mark{
+    box-shadow:0 14px 30px rgba(17,26,69,0.26);
+    transform:rotate(-4deg) scale(1.03);
 }
 
 .brand-copy{
@@ -127,7 +148,7 @@ button{
     font-weight:700;
     padding:10px 12px;
     text-decoration:none;
-    transition:background 0.2s ease,color 0.2s ease;
+    transition:background 0.2s ease,color 0.2s ease,transform 0.2s ease;
 }
 
 .main-nav a:hover,
@@ -135,6 +156,7 @@ button{
     background:#eef2ff;
     color:var(--blue);
     outline:none;
+    transform:translateY(-1px);
 }
 
 .header-actions{
@@ -156,7 +178,7 @@ button{
 .field-control{
     cursor:pointer;
     border:0;
-    transition:transform 0.2s ease,box-shadow 0.2s ease,background 0.2s ease,color 0.2s ease,border-color 0.2s ease;
+    transition:transform 0.22s ease,box-shadow 0.22s ease,background 0.22s ease,color 0.22s ease,border-color 0.22s ease;
 }
 
 .login-link{
@@ -171,6 +193,7 @@ button{
     font-size:14px;
     font-weight:800;
     text-decoration:none;
+    box-shadow:0 10px 22px rgba(17,26,69,0.18);
 }
 
 .login-link:hover,
@@ -191,12 +214,14 @@ button{
     color:var(--navy);
     display:grid;
     place-items:center;
+    box-shadow:0 8px 18px rgba(27,59,143,0.08);
 }
 
 .icon-button:hover,
 .icon-button:focus-visible{
     background:#dfe7ff;
-    outline:3px solid rgba(242,183,5,0.35);
+    outline:var(--ring);
+    transform:translateY(-1px);
 }
 
 .hero-section{
@@ -244,6 +269,12 @@ button{
     position:relative;
     overflow:hidden;
     box-shadow:var(--shadow);
+    transition:box-shadow 0.25s ease,transform 0.25s ease;
+}
+
+.hero-media:hover{
+    box-shadow:var(--shadow-strong);
+    transform:translateY(-2px);
 }
 
 .hero-badge{
@@ -255,6 +286,7 @@ button{
     background:rgba(255,255,255,0.94);
     padding:18px;
     box-shadow:0 16px 32px rgba(16,24,40,0.24);
+    backdrop-filter:blur(8px);
 }
 
 .hero-badge span,
@@ -281,11 +313,12 @@ button{
 }
 
 .search-panel{
-    background:white;
-    border:1px solid var(--line);
+    background:
+        linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);
+    border:1px solid rgba(27,59,143,0.12);
     border-radius:8px;
-    box-shadow:var(--shadow);
-    padding:24px;
+    box-shadow:var(--shadow-strong);
+    padding:26px;
 }
 
 .search-heading,
@@ -319,13 +352,15 @@ button{
     font-size:14px;
     font-weight:800;
     padding:0 16px;
+    box-shadow:0 8px 18px rgba(16,24,40,0.05);
 }
 
 .ghost-button:hover,
 .ghost-button:focus-visible{
     border-color:var(--blue);
     color:var(--blue);
-    outline:3px solid rgba(242,183,5,0.25);
+    outline:var(--ring);
+    transform:translateY(-1px);
 }
 
 .tabs{
@@ -347,6 +382,7 @@ button{
     font-weight:800;
     padding:0 16px;
     white-space:nowrap;
+    border:1px solid transparent;
 }
 
 .tab.active,
@@ -354,6 +390,7 @@ button{
 .filter-chip.active{
     background:var(--navy);
     color:white;
+    box-shadow:0 10px 22px rgba(17,26,69,0.18);
 }
 
 .tab:hover,
@@ -363,8 +400,10 @@ button{
 .filter-chip:hover,
 .filter-chip:focus-visible{
     background:#e7ecf8;
+    border-color:#d8e2f7;
     color:var(--blue);
     outline:none;
+    transform:translateY(-1px);
 }
 
 .tab.active:hover,
@@ -388,9 +427,30 @@ button{
     color:var(--ink);
     padding:14px;
     text-align:left;
+    display:flex;
+    align-items:center;
+    gap:13px;
+    box-shadow:0 6px 18px rgba(16,24,40,0.04);
 }
 
-.field-control span{
+.field-icon{
+    width:40px;
+    height:40px;
+    border-radius:999px;
+    background:#eef2ff;
+    color:var(--blue);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    transition:background 0.22s ease,color 0.22s ease,transform 0.22s ease;
+}
+
+.field-copy{
+    display:block;
+    min-width:0;
+}
+
+.field-copy span{
     display:block;
     color:var(--muted);
     font-size:13px;
@@ -398,11 +458,12 @@ button{
     margin-bottom:8px;
 }
 
-.field-control strong{
+.field-copy strong{
     display:block;
     color:var(--navy);
     font-size:17px;
     line-height:1.25;
+    overflow-wrap:anywhere;
 }
 
 .field-control:hover,
@@ -410,7 +471,15 @@ button{
     border-color:var(--blue);
     background:white;
     box-shadow:0 10px 22px rgba(27,59,143,0.11);
-    outline:3px solid rgba(242,183,5,0.22);
+    outline:var(--ring);
+    transform:translateY(-2px);
+}
+
+.field-control:hover .field-icon,
+.field-control:focus-visible .field-icon{
+    background:var(--blue);
+    color:white;
+    transform:scale(1.04);
 }
 
 .promo-control{
@@ -444,11 +513,64 @@ button{
     min-width:170px;
     background:var(--red);
     color:white;
+    box-shadow:0 14px 28px rgba(215,25,63,0.24);
 }
 
 .primary-button:hover,
 .primary-button:focus-visible{
     background:#b81435;
+    box-shadow:0 18px 34px rgba(215,25,63,0.3);
+}
+
+.trust-strip{
+    width:min(1180px, calc(100% - 32px));
+    margin:-24px auto 62px;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;
+}
+
+.trust-strip article{
+    min-height:106px;
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:18px;
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:8px;
+    background:rgba(255,255,255,0.92);
+    box-shadow:var(--shadow-soft);
+    transition:transform 0.22s ease,box-shadow 0.22s ease,border-color 0.22s ease;
+}
+
+.trust-strip article:hover{
+    border-color:rgba(27,59,143,0.28);
+    box-shadow:0 16px 34px rgba(16,24,40,0.1);
+    transform:translateY(-2px);
+}
+
+.trust-strip i{
+    width:38px;
+    height:38px;
+    border-radius:999px;
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    background:#f8e9ed;
+    color:var(--red);
+}
+
+.trust-strip h2{
+    color:var(--navy);
+    font-size:16px;
+    line-height:1.2;
+    margin-bottom:6px;
+}
+
+.trust-strip p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.45;
 }
 
 .offers-section,
@@ -479,6 +601,14 @@ button{
     box-shadow:0 8px 24px rgba(16,24,40,0.08);
     display:flex;
     flex-direction:column;
+    min-height:438px;
+    transition:transform 0.24s ease,box-shadow 0.24s ease,border-color 0.24s ease;
+}
+
+.offer-card:hover{
+    border-color:rgba(27,59,143,0.24);
+    box-shadow:0 22px 44px rgba(16,24,40,0.14);
+    transform:translateY(-4px);
 }
 
 .offer-rio{
@@ -511,6 +641,12 @@ button{
         linear-gradient(180deg,rgba(17,26,69,0),rgba(17,26,69,0.18)),
         var(--offer-image) center/cover,
         #d9dee8;
+    transition:transform 0.35s ease,filter 0.35s ease;
+}
+
+.offer-card:hover .offer-image{
+    filter:saturate(1.06) contrast(1.03);
+    transform:scale(1.035);
 }
 
 .offer-body{
@@ -519,6 +655,7 @@ button{
     flex-direction:column;
     gap:12px;
     flex:1;
+    min-height:270px;
 }
 
 .route{
@@ -566,12 +703,14 @@ button{
     width:100%;
     background:var(--navy);
     color:white;
+    box-shadow:0 12px 24px rgba(17,26,69,0.16);
 }
 
 .card-button:hover,
 .card-button:focus-visible{
     background:var(--blue);
-    outline:3px solid rgba(242,183,5,0.28);
+    outline:var(--ring);
+    transform:translateY(-1px);
 }
 
 .miles-section{
@@ -608,7 +747,7 @@ button{
 .secondary-button:hover,
 .secondary-button:focus-visible{
     background:#f8e9ed;
-    outline:3px solid rgba(242,183,5,0.32);
+    outline:var(--ring);
     transform:translateY(-1px);
 }
 
@@ -618,6 +757,8 @@ button{
     background:rgba(255,255,255,0.12);
     padding:22px;
     text-align:center;
+    backdrop-filter:blur(8px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.18);
 }
 
 .miles-stat span,
@@ -650,6 +791,14 @@ button{
     border:1px solid var(--line);
     border-radius:8px;
     padding:22px;
+    box-shadow:var(--shadow-soft);
+    transition:transform 0.22s ease,box-shadow 0.22s ease,border-color 0.22s ease;
+}
+
+.benefit-card:hover{
+    border-color:rgba(27,59,143,0.22);
+    box-shadow:0 18px 36px rgba(16,24,40,0.12);
+    transform:translateY(-3px);
 }
 
 .benefit-card i{
@@ -661,6 +810,13 @@ button{
     display:grid;
     place-items:center;
     margin-bottom:18px;
+    transition:background 0.22s ease,color 0.22s ease,transform 0.22s ease;
+}
+
+.benefit-card:hover i{
+    background:var(--blue);
+    color:white;
+    transform:scale(1.04);
 }
 
 .benefit-card h3{
@@ -719,6 +875,14 @@ button{
     place-items:center;
     background:rgba(255,255,255,0.12);
     margin:0;
+    transition:background 0.2s ease,transform 0.2s ease;
+}
+
+.social-row a:hover,
+.social-row a:focus-visible{
+    background:rgba(255,255,255,0.2);
+    transform:translateY(-1px);
+    text-decoration:none;
 }
 
 @media(max-width:1050px){
@@ -751,7 +915,8 @@ button{
     }
 
     .offer-grid,
-    .benefits-grid{
+    .benefits-grid,
+    .trust-strip{
         grid-template-columns:repeat(2,minmax(0,1fr));
     }
 
@@ -764,6 +929,7 @@ button{
     .header-inner,
     .hero-section,
     .search-shell,
+    .trust-strip,
     .offers-section,
     .miles-section,
     .benefits-section,
@@ -829,6 +995,7 @@ button{
     .search-grid,
     .offer-grid,
     .benefits-grid,
+    .trust-strip,
     .miles-section,
     .footer-grid{
         grid-template-columns:1fr;
@@ -845,5 +1012,9 @@ button{
 
     .miles-section{
         padding:24px;
+    }
+
+    .trust-strip{
+        margin:0 auto 48px;
     }
 }
