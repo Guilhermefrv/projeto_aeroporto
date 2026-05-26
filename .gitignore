@@ -1,10 +1,40 @@
+# ── Ambiente virtual Python ──────────────────────────────────
 meuMundo/
-__pycache__/
+venv/
+env/
+.venv/
+
+# ── Django ───────────────────────────────────────────────────
 *.pyc
+__pycache__/
+*.pyo
+*.pyd
 db.sqlite3
+
+# ── Arquivos estáticos coletados (produção) ──────────────────
+staticfiles/
+static_root/
+mediafiles/
+media/
+
+# ── Variáveis de ambiente / segredos ────────────────────────
 .env
+.env.*
+secrets.py
+
+# ── IDEs e editores ──────────────────────────────────────────
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 
+# ── Sistema operacional ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
 
-
+# ── Logs e temporários ───────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.swp
