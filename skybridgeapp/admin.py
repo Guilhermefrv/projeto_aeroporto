@@ -2,7 +2,9 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import (
     UsuarioCustomizado, Passageiro, Funcionario, Administrador,
-    Aeronave, Voo, Reserva, Bilhete, Bagagem, CheckIn, PortaoEmbarque, Notificacao,
+    Aeroporto, CompanhiaAerea, Aeronave, Voo, Tarifa, Promocao, Reserva,
+    Pagamento, Bilhete, Bagagem, CheckIn, PortaoEmbarque, Notificacao,
+    ContaMilhas, TransacaoMilhas,
 )
 
 
@@ -34,6 +36,19 @@ class PassageiroAdmin(admin.ModelAdmin):
     search_fields = ['nome', 'cpf_passaporte']
 
 
+@admin.register(ContaMilhas)
+class ContaMilhasAdmin(admin.ModelAdmin):
+    list_display = ['numero_programa', 'passageiro', 'saldo']
+    search_fields = ['numero_programa', 'passageiro__nome']
+
+
+@admin.register(TransacaoMilhas)
+class TransacaoMilhasAdmin(admin.ModelAdmin):
+    list_display = ['conta', 'tipo', 'quantidade', 'data']
+    list_filter = ['tipo']
+    search_fields = ['conta__numero_programa', 'descricao']
+
+
 @admin.register(Funcionario)
 class FuncionarioAdmin(admin.ModelAdmin):
     list_display = ['nome', 'cargo', 'matricula', 'contato']
@@ -49,6 +64,20 @@ class AdministradorAdmin(admin.ModelAdmin):
 # ──────────────────────────────────────────
 #  Domínio Aeroportuário
 # ──────────────────────────────────────────
+
+@admin.register(Aeroporto)
+class AeroportoAdmin(admin.ModelAdmin):
+    list_display = ['codigo_iata', 'nome', 'cidade', 'pais']
+    search_fields = ['codigo_iata', 'nome', 'cidade', 'pais']
+    list_filter = ['pais']
+
+
+@admin.register(CompanhiaAerea)
+class CompanhiaAereaAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'codigo_iata', 'pais']
+    search_fields = ['nome', 'codigo_iata', 'pais']
+    list_filter = ['pais']
+
 
 @admin.register(Aeronave)
 class AeronaveAdmin(admin.ModelAdmin):
@@ -70,11 +99,32 @@ class VooAdmin(admin.ModelAdmin):
     ordering = ['partida']
 
 
+@admin.register(Tarifa)
+class TarifaAdmin(admin.ModelAdmin):
+    list_display = ['voo', 'classe', 'preco_base', 'taxas', 'ativa']
+    list_filter = ['classe', 'ativa']
+    search_fields = ['voo__numero_voo']
+
+
+@admin.register(Promocao)
+class PromocaoAdmin(admin.ModelAdmin):
+    list_display = ['titulo', 'origem', 'destino', 'preco_a_partir_de', 'data_inicio', 'data_fim', 'ativa']
+    list_filter = ['ativa', 'data_inicio', 'data_fim']
+    search_fields = ['titulo', 'origem__codigo_iata', 'destino__codigo_iata']
+
+
 @admin.register(Reserva)
 class ReservaAdmin(admin.ModelAdmin):
     list_display = ['id', 'passageiro', 'voo', 'assento', 'status']
     list_filter = ['status']
     search_fields = ['passageiro__nome', 'voo__numero_voo']
+
+
+@admin.register(Pagamento)
+class PagamentoAdmin(admin.ModelAdmin):
+    list_display = ['reserva', 'valor_total', 'metodo', 'status', 'data_pagamento']
+    list_filter = ['metodo', 'status']
+    search_fields = ['reserva__passageiro__nome', 'reserva__voo__numero_voo']
 
 
 @admin.register(Bilhete)

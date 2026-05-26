@@ -59,6 +59,51 @@ class Passageiro(models.Model):
         verbose_name_plural = 'Passageiros'
 
 
+class ContaMilhas(models.Model):
+    passageiro = models.OneToOneField(
+        Passageiro,
+        on_delete=models.CASCADE,
+        related_name='conta_milhas',
+        verbose_name='Passageiro',
+    )
+    saldo = models.PositiveIntegerField(default=0, verbose_name='Saldo')
+    numero_programa = models.CharField(max_length=30, unique=True, verbose_name='Numero do programa')
+
+    def __str__(self):
+        return f"Conta de milhas - {self.passageiro.nome}"
+
+    class Meta:
+        verbose_name = 'Conta de milhas'
+        verbose_name_plural = 'Contas de milhas'
+
+
+class TransacaoMilhas(models.Model):
+    TIPOS = [
+        ('acumulo', 'Acumulo'),
+        ('resgate', 'Resgate'),
+        ('expiracao', 'Expiracao'),
+    ]
+
+    conta = models.ForeignKey(
+        ContaMilhas,
+        on_delete=models.CASCADE,
+        related_name='transacoes',
+        verbose_name='Conta de milhas',
+    )
+    tipo = models.CharField(max_length=20, choices=TIPOS, verbose_name='Tipo')
+    quantidade = models.IntegerField(verbose_name='Quantidade')
+    descricao = models.CharField(max_length=200, verbose_name='Descricao')
+    data = models.DateTimeField(auto_now_add=True, verbose_name='Data')
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} de {self.quantidade} milhas"
+
+    class Meta:
+        verbose_name = 'Transacao de milhas'
+        verbose_name_plural = 'Transacoes de milhas'
+        ordering = ['-data']
+
+
 class Funcionario(models.Model):
     """
     Perfil complementar do usuário com tipo='funcionario'.
@@ -107,6 +152,36 @@ class Administrador(models.Model):
     class Meta:
         verbose_name = 'Administrador (legado)'
         verbose_name_plural = 'Administradores (legado)'
+
+
+class Aeroporto(models.Model):
+    codigo_iata = models.CharField(max_length=3, unique=True, verbose_name='Codigo IATA')
+    nome = models.CharField(max_length=100, verbose_name='Nome')
+    cidade = models.CharField(max_length=100, verbose_name='Cidade')
+    estado = models.CharField(max_length=50, blank=True, verbose_name='Estado')
+    pais = models.CharField(max_length=50, verbose_name='Pais')
+
+    def __str__(self):
+        return f"{self.codigo_iata} - {self.nome}"
+
+    class Meta:
+        verbose_name = 'Aeroporto'
+        verbose_name_plural = 'Aeroportos'
+        ordering = ['codigo_iata']
+
+
+class CompanhiaAerea(models.Model):
+    nome = models.CharField(max_length=100, verbose_name='Nome')
+    codigo_iata = models.CharField(max_length=3, unique=True, verbose_name='Codigo IATA')
+    pais = models.CharField(max_length=50, verbose_name='Pais')
+
+    def __str__(self):
+        return f"{self.nome} ({self.codigo_iata})"
+
+    class Meta:
+        verbose_name = 'Companhia aerea'
+        verbose_name_plural = 'Companhias aereas'
+        ordering = ['nome']
 
 
 class Aeronave(models.Model):
@@ -175,6 +250,69 @@ class Voo(models.Model):
         ordering = ['partida']
 
 
+class Tarifa(models.Model):
+    CLASSES = [
+        ('economy', 'Economy'),
+        ('premium_economy', 'Premium economy'),
+        ('executiva', 'Executiva'),
+    ]
+
+    voo = models.ForeignKey(
+        Voo,
+        on_delete=models.CASCADE,
+        related_name='tarifas',
+        verbose_name='Voo',
+    )
+    classe = models.CharField(max_length=20, choices=CLASSES, verbose_name='Classe')
+    preco_base = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Preco base')
+    taxas = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Taxas')
+    ativa = models.BooleanField(default=True, verbose_name='Ativa')
+
+    def __str__(self):
+        return f"{self.voo.numero_voo} - {self.get_classe_display()}"
+
+    class Meta:
+        verbose_name = 'Tarifa'
+        verbose_name_plural = 'Tarifas'
+
+
+class Promocao(models.Model):
+    titulo = models.CharField(max_length=120, verbose_name='Titulo')
+    descricao = models.TextField(blank=True, verbose_name='Descricao')
+    origem = models.ForeignKey(
+        Aeroporto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='promocoes_origem',
+        verbose_name='Origem',
+    )
+    destino = models.ForeignKey(
+        Aeroporto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='promocoes_destino',
+        verbose_name='Destino',
+    )
+    preco_a_partir_de = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name='Preco a partir de',
+    )
+    data_inicio = models.DateField(verbose_name='Data de inicio')
+    data_fim = models.DateField(verbose_name='Data de fim')
+    ativa = models.BooleanField(default=True, verbose_name='Ativa')
+
+    def __str__(self):
+        return self.titulo
+
+    class Meta:
+        verbose_name = 'Promocao'
+        verbose_name_plural = 'Promocoes'
+        ordering = ['-data_inicio']
+
+
 class Reserva(models.Model):
     STATUS = [
         ('confirmada', 'Confirmada'),
@@ -199,6 +337,44 @@ class Reserva(models.Model):
     class Meta:
         verbose_name = 'Reserva'
         verbose_name_plural = 'Reservas'
+
+
+class Pagamento(models.Model):
+    METODOS = [
+        ('pix', 'Pix'),
+        ('cartao', 'Cartao'),
+        ('boleto', 'Boleto'),
+        ('milhas', 'Milhas'),
+    ]
+    STATUS = [
+        ('pendente', 'Pendente'),
+        ('aprovado', 'Aprovado'),
+        ('recusado', 'Recusado'),
+        ('estornado', 'Estornado'),
+    ]
+
+    reserva = models.OneToOneField(
+        Reserva,
+        on_delete=models.CASCADE,
+        related_name='pagamento',
+        verbose_name='Reserva',
+    )
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor total')
+    metodo = models.CharField(max_length=20, choices=METODOS, verbose_name='Metodo')
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS,
+        default='pendente',
+        verbose_name='Status',
+    )
+    data_pagamento = models.DateTimeField(null=True, blank=True, verbose_name='Data de pagamento')
+
+    def __str__(self):
+        return f"Pagamento da reserva #{self.reserva_id}"
+
+    class Meta:
+        verbose_name = 'Pagamento'
+        verbose_name_plural = 'Pagamentos'
 
 
 class Bilhete(models.Model):

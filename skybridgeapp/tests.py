@@ -1,6 +1,47 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+
+
+class AirportDomainModelMetadataTests(SimpleTestCase):
+    def test_airport_and_airline_models_have_core_fields(self):
+        from .models import Aeroporto, CompanhiaAerea
+
+        self.assertEqual(Aeroporto._meta.get_field('codigo_iata').max_length, 3)
+        self.assertTrue(Aeroporto._meta.get_field('codigo_iata').unique)
+        self.assertTrue(Aeroporto._meta.get_field('estado').blank)
+        self.assertEqual(str(Aeroporto(codigo_iata='GRU', nome='Guarulhos', cidade='Sao Paulo', pais='Brasil')), 'GRU - Guarulhos')
+
+        self.assertEqual(CompanhiaAerea._meta.get_field('codigo_iata').max_length, 3)
+        self.assertTrue(CompanhiaAerea._meta.get_field('codigo_iata').unique)
+        self.assertEqual(str(CompanhiaAerea(nome='Sky Bridge Air', codigo_iata='SBA', pais='Brasil')), 'Sky Bridge Air (SBA)')
+
+    def test_commercial_models_have_simple_choices_and_relations(self):
+        from .models import Pagamento, Promocao, Tarifa
+
+        self.assertEqual(Tarifa._meta.get_field('voo').remote_field.model.__name__, 'Voo')
+        self.assertIn(('economy', 'Economy'), Tarifa.CLASSES)
+        self.assertIn(('executiva', 'Executiva'), Tarifa.CLASSES)
+
+        self.assertEqual(Promocao._meta.get_field('origem').remote_field.model.__name__, 'Aeroporto')
+        self.assertTrue(Promocao._meta.get_field('descricao').blank)
+        self.assertTrue(Promocao._meta.get_field('origem').null)
+        self.assertTrue(Promocao._meta.get_field('destino').null)
+
+        self.assertEqual(Pagamento._meta.get_field('reserva').remote_field.model.__name__, 'Reserva')
+        self.assertIn(('pix', 'Pix'), Pagamento.METODOS)
+        self.assertIn(('aprovado', 'Aprovado'), Pagamento.STATUS)
+
+    def test_mileage_models_have_account_and_transaction_fields(self):
+        from .models import ContaMilhas, TransacaoMilhas
+
+        self.assertEqual(ContaMilhas._meta.get_field('passageiro').remote_field.model.__name__, 'Passageiro')
+        self.assertEqual(ContaMilhas._meta.get_field('saldo').default, 0)
+        self.assertTrue(ContaMilhas._meta.get_field('numero_programa').unique)
+
+        self.assertEqual(TransacaoMilhas._meta.get_field('conta').remote_field.model.__name__, 'ContaMilhas')
+        self.assertIn(('acumulo', 'Acumulo'), TransacaoMilhas.TIPOS)
+        self.assertIn(('resgate', 'Resgate'), TransacaoMilhas.TIPOS)
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
