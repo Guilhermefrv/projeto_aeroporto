@@ -34,6 +34,14 @@
         Entre com suas credenciais para continuar
     </p>
 
+    {% if messages %}
+        <div class="messages" role="status">
+            {% for message in messages %}
+                <p class="message {{ message.tags }}">{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <form method="post" action="{% url 'login' %}">
         {% csrf_token %}
         {% if next %}

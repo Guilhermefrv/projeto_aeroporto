@@ -32,103 +32,214 @@
             </div>
         </header>
 
-        <form class="signup-form" action="#" method="post" data-noop-form>
+        <form class="signup-form" action="{% url 'cadastro' %}" method="post">
             {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="form-errors" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
             <fieldset>
                 <legend>Tipo de Usuario <span aria-hidden="true">*</span></legend>
 
                 <div class="account-types" role="radiogroup" aria-label="Tipo de usuario">
                     <label class="type-card active">
-                        <input type="radio" name="tipo" value="passageiro" checked>
+                        <input type="radio" name="tipo" value="passageiro" checked readonly>
                         <i class="fa-solid fa-users" aria-hidden="true"></i>
                         <strong>Passageiro</strong>
                         <span>Para reservar voos e fazer check-in</span>
-                    </label>
-
-                    <label class="type-card">
-                        <input type="radio" name="tipo" value="funcionario">
-                        <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
-                        <strong>Funcionario</strong>
-                        <span>Para atendimento e operacoes</span>
-                    </label>
-
-                    <label class="type-card">
-                        <input type="radio" name="tipo" value="administrador">
-                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-                        <strong>Administrador</strong>
-                        <span>Para gestao completa do sistema</span>
                     </label>
                 </div>
             </fieldset>
 
             <div class="form-field full">
-                <label for="nome">Nome Completo <span aria-hidden="true">*</span></label>
+                <label for="id_username">Usuario <span aria-hidden="true">*</span></label>
                 <div class="input-group">
-                    <i class="fa-solid fa-user" aria-hidden="true"></i>
-                    <input id="nome" name="nome" type="text" placeholder="Joao da Silva" autocomplete="name" required>
+                    <i class="fa-solid fa-user-tag" aria-hidden="true"></i>
+                    <input id="id_username"
+                           name="username"
+                           type="text"
+                           placeholder="maria.silva"
+                           value="{{ form.username.value|default_if_none:'' }}"
+                           autocomplete="username"
+                           required>
                 </div>
+                {% if form.username.errors %}
+                    <div class="field-errors" role="alert">
+                        {% for error in form.username.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
             <div class="form-field full">
-                <label for="email">Email <span aria-hidden="true">*</span></label>
+                <label for="id_nome">Nome Completo <span aria-hidden="true">*</span></label>
+                <div class="input-group">
+                    <i class="fa-solid fa-user" aria-hidden="true"></i>
+                    <input id="id_nome"
+                           name="nome"
+                           type="text"
+                           placeholder="Joao da Silva"
+                           value="{{ form.nome.value|default_if_none:'' }}"
+                           autocomplete="name"
+                           required>
+                </div>
+                {% if form.nome.errors %}
+                    <div class="field-errors" role="alert">
+                        {% for error in form.nome.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-field full">
+                <label for="id_email">Email <span aria-hidden="true">*</span></label>
                 <div class="input-group">
                     <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-                    <input id="email" name="email" type="email" placeholder="seu@email.com" autocomplete="email" required>
+                    <input id="id_email"
+                           name="email"
+                           type="email"
+                           placeholder="seu@email.com"
+                           value="{{ form.email.value|default_if_none:'' }}"
+                           autocomplete="email"
+                           required>
                 </div>
+                {% if form.email.errors %}
+                    <div class="field-errors" role="alert">
+                        {% for error in form.email.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
             <div class="form-row">
                 <div class="form-field">
-                    <label for="telefone">Telefone <span aria-hidden="true">*</span></label>
+                    <label for="id_contato">Telefone <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-phone" aria-hidden="true"></i>
-                        <input id="telefone" name="telefone" type="tel" placeholder="(11) 99999-9999" autocomplete="tel" required>
+                        <input id="id_contato"
+                               name="contato"
+                               type="tel"
+                               placeholder="(11) 99999-9999"
+                               value="{{ form.contato.value|default_if_none:'' }}"
+                               autocomplete="tel"
+                               required>
                     </div>
+                    {% if form.contato.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.contato.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
 
                 <div class="form-field">
-                    <label for="cpf">CPF <span aria-hidden="true">*</span></label>
+                    <label for="id_cpf_passaporte">CPF / Passaporte <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-id-card" aria-hidden="true"></i>
-                        <input id="cpf" name="cpf" type="text" placeholder="000.000.000-00" required>
+                        <input id="id_cpf_passaporte"
+                               name="cpf_passaporte"
+                               type="text"
+                               placeholder="000.000.000-00"
+                               value="{{ form.cpf_passaporte.value|default_if_none:'' }}"
+                               required>
                     </div>
+                    {% if form.cpf_passaporte.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.cpf_passaporte.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-field">
-                    <label for="data_nascimento">Data de Nascimento</label>
+                    <label for="id_data_nascimento">Data de Nascimento <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-calendar" aria-hidden="true"></i>
-                        <input id="data_nascimento" name="data_nascimento" type="date">
+                        <input id="id_data_nascimento"
+                               name="data_nascimento"
+                               type="date"
+                               value="{{ form.data_nascimento.value|default_if_none:'' }}"
+                               required>
                     </div>
+                    {% if form.data_nascimento.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.data_nascimento.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
 
                 <div class="form-field">
-                    <label for="nacionalidade">Nacionalidade</label>
+                    <label for="id_nacionalidade">Nacionalidade <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-globe" aria-hidden="true"></i>
-                        <input id="nacionalidade" name="nacionalidade" type="text" placeholder="Brasileira">
+                        <input id="id_nacionalidade"
+                               name="nacionalidade"
+                               type="text"
+                               placeholder="Brasileira"
+                               value="{{ form.nacionalidade.value|default_if_none:'' }}"
+                               required>
                     </div>
+                    {% if form.nacionalidade.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.nacionalidade.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-field">
-                    <label for="senha">Senha <span aria-hidden="true">*</span></label>
+                    <label for="id_password1">Senha <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                        <input id="senha" name="senha" type="password" autocomplete="new-password" required>
+                        <input id="id_password1"
+                               name="password1"
+                               type="password"
+                               autocomplete="new-password"
+                               required>
                     </div>
+                    {% if form.password1.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.password1.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
 
                 <div class="form-field">
-                    <label for="confirmar_senha">Confirmar Senha <span aria-hidden="true">*</span></label>
+                    <label for="id_password2">Confirmar Senha <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                        <input id="confirmar_senha" name="confirmar_senha" type="password" autocomplete="new-password" required>
+                        <input id="id_password2"
+                               name="password2"
+                               type="password"
+                               autocomplete="new-password"
+                               required>
                     </div>
+                    {% if form.password2.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.password2.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -144,13 +255,5 @@
         </form>
     </section>
 </main>
-
-<script>
-    document.querySelectorAll('[data-noop-form]').forEach((form) => {
-        form.addEventListener('submit', (event) => {
-            event.preventDefault();
-        });
-    });
-</script>
 </body>
 </html>

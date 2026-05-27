@@ -108,7 +108,7 @@ label span {
 
 .account-types {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
 }
 
@@ -162,6 +162,21 @@ label span {
 .signup-form {
     display: grid;
     gap: 20px;
+}
+
+.form-errors,
+.field-errors {
+    padding: 12px 14px;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.field-errors {
+    margin-top: 8px;
 }
 
 .form-row {

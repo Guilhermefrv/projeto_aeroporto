@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
+from .models import Passageiro
+
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
     def test_airport_and_airline_models_have_core_fields(self):
@@ -65,8 +67,12 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Criar Conta')
         self.assertContains(response, 'name="tipo"')
+        self.assertContains(response, 'name="username"')
         self.assertContains(response, 'name="nome"')
         self.assertContains(response, 'name="email"')
+        self.assertContains(response, 'name="cpf_passaporte"')
+        self.assertContains(response, 'name="password1"')
+        self.assertContains(response, 'name="password2"')
 
     def test_login_page_renders(self):
         response = self.client.get(reverse('login'))
@@ -97,3 +103,49 @@ class AuthFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'usuario_teste')
+
+
+class CadastroUsuarioTests(TestCase):
+    def setUp(self):
+        self.cadastro_url = reverse('cadastro')
+        self.login_url = reverse('login')
+        self.form_data = {
+            'username': 'maria.silva',
+            'nome': 'Maria Silva',
+            'email': 'maria@example.com',
+            'cpf_passaporte': '12345678900',
+            'data_nascimento': '1995-05-12',
+            'contato': '(11) 99999-0000',
+            'nacionalidade': 'Brasileira',
+            'password1': 'SenhaForte123',
+            'password2': 'SenhaForte123',
+        }
+
+    def test_cadastro_cria_usuario_passageiro(self):
+        response = self.client.post(self.cadastro_url, self.form_data)
+
+        self.assertRedirects(response, self.login_url)
+
+        usuario = get_user_model().objects.get(username='maria.silva')
+        self.assertEqual(usuario.tipo, 'passageiro')
+        self.assertEqual(usuario.email, 'maria@example.com')
+        self.assertEqual(usuario.first_name, 'Maria Silva')
+
+    def test_cadastro_cria_perfil_passageiro_vinculado(self):
+        self.client.post(self.cadastro_url, self.form_data)
+
+        usuario = get_user_model().objects.get(username='maria.silva')
+        passageiro = Passageiro.objects.get(usuario=usuario)
+
+        self.assertEqual(passageiro.nome, 'Maria Silva')
+        self.assertEqual(passageiro.cpf_passaporte, '12345678900')
+        self.assertEqual(passageiro.contato, '(11) 99999-0000')
+        self.assertEqual(passageiro.nacionalidade, 'Brasileira')
+
+    def test_cadastro_nao_salva_senha_em_texto_puro(self):
+        self.client.post(self.cadastro_url, self.form_data)
+
+        usuario = get_user_model().objects.get(username='maria.silva')
+
+        self.assertNotEqual(usuario.password, 'SenhaForte123')
+        self.assertTrue(usuario.check_password('SenhaForte123'))

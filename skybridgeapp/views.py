@@ -1,7 +1,10 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
-from django.shortcuts import render
+from django.contrib import messages
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+
+from .forms import CadastroPassageiroForm
 
 
 LANDING_CONTEXT = {
@@ -152,7 +155,16 @@ def auth_home(request):
 
 
 def cadastro(request):
-    return render(request, 'cadastro.html')
+    if request.method == 'POST':
+        form = CadastroPassageiroForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Conta criada com sucesso. Faca login para continuar.')
+            return redirect('login')
+    else:
+        form = CadastroPassageiroForm()
+
+    return render(request, 'cadastro.html', {'form': form})
 
 
 @login_required
