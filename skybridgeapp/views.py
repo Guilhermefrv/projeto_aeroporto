@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
 from .forms import CadastroPassageiroForm
+from .models import Passageiro
 
 
 LANDING_CONTEXT = {
@@ -169,7 +170,8 @@ def cadastro(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'dashboard.html')
+    passageiro = Passageiro.objects.filter(usuario=request.user).first()
+    return render(request, 'dashboard.html', {'passageiro': passageiro})
 
 
 class SkyBridgeLoginView(LoginView):

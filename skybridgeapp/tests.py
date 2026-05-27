@@ -48,6 +48,24 @@ class AirportDomainModelMetadataTests(SimpleTestCase):
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
 class AuthFlowTests(TestCase):
+    def criar_usuario_passageiro(self):
+        user = get_user_model().objects.create_user(
+            username='usuario_teste',
+            password='senha-segura-123',
+            first_name='Usuario',
+            last_name='Teste',
+            tipo='passageiro',
+        )
+        Passageiro.objects.create(
+            usuario=user,
+            nome='Usuario Teste',
+            cpf_passaporte='TST123456',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        return user
+
     def test_home_page_renders_with_login_link(self):
         response = self.client.get(reverse('home'))
 
@@ -81,10 +99,60 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, 'name="username"')
         self.assertContains(response, 'name="password"')
 
+    def test_login_page_preserves_next_parameter(self):
+        response = self.client.get(f'{reverse("login")}?next={reverse("dashboard")}')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'name="next" value="{reverse("dashboard")}"')
+
+    def test_valid_user_can_login_and_redirect_to_dashboard(self):
+        self.criar_usuario_passageiro()
+
+        response = self.client.post(reverse('login'), {
+            'username': 'usuario_teste',
+            'password': 'senha-segura-123',
+        })
+
+        self.assertRedirects(response, reverse('dashboard'))
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_valid_user_can_login_with_next_redirect(self):
+        self.criar_usuario_passageiro()
+
+        response = self.client.post(reverse('login'), {
+            'username': 'usuario_teste',
+            'password': 'senha-segura-123',
+            'next': reverse('dashboard'),
+        })
+
+        self.assertRedirects(response, reverse('dashboard'))
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_invalid_user_cannot_login(self):
+        self.criar_usuario_passageiro()
+
+        response = self.client.post(reverse('login'), {
+            'username': 'usuario_teste',
+            'password': 'senha-incorreta',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.assertTrue(response.context['form'].non_field_errors())
+
     def test_logout_redirects_to_home(self):
         response = self.client.post(reverse('logout'))
 
         self.assertRedirects(response, reverse('home'))
+
+    def test_authenticated_user_can_logout_to_home(self):
+        user = self.criar_usuario_passageiro()
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('logout'))
+
+        self.assertRedirects(response, reverse('home'))
+        self.assertNotIn('_auth_user_id', self.client.session)
 
     def test_dashboard_redirects_anonymous_user_to_login(self):
         response = self.client.get(reverse('dashboard'))
@@ -93,18 +161,19 @@ class AuthFlowTests(TestCase):
         self.assertRedirects(response, expected_url)
 
     def test_authenticated_user_can_access_dashboard(self):
-        user = get_user_model().objects.create_user(
-            username='usuario_teste',
-            password='senha-segura-123',
-        )
+        user = self.criar_usuario_passageiro()
         self.client.force_login(user)
 
         response = self.client.get(reverse('dashboard'))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'usuario_teste')
+        self.assertContains(response, 'Passageiro')
+        self.assertContains(response, 'Nome do passageiro')
+        self.assertContains(response, 'Usuario Teste')
 
 
+@override_settings(ALLOWED_HOSTS=['testserver'])
 class CadastroUsuarioTests(TestCase):
     def setUp(self):
         self.cadastro_url = reverse('cadastro')

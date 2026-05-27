@@ -56,6 +56,15 @@
                 ao sistema de usuarios do Django.
             </p>
 
+            <div class="account-summary" aria-label="Dados da conta">
+                <p><strong>Usuario:</strong> {{ user.username }}</p>
+                <p><strong>Tipo:</strong> {{ user.get_tipo_display }}</p>
+                {% if passageiro %}
+                    <p><strong>Nome do passageiro:</strong> {{ passageiro.nome }}</p>
+                    <p><strong>Nacionalidade:</strong> {{ passageiro.nacionalidade }}</p>
+                {% endif %}
+            </div>
+
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button type="submit" class="btn blue-btn">
