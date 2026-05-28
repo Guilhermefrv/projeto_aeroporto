@@ -41,6 +41,9 @@
                 <i class="fa-regular fa-user" aria-hidden="true"></i>
                 {% if user.is_authenticated %}
                     {{ user.get_full_name|default:user.username }}
+                    {% if notificacoes_nao_lidas %}
+                        <span class="notification-badge">{{ notificacoes_nao_lidas }}</span>
+                    {% endif %}
                 {% else %}
                     Fazer login
                 {% endif %}

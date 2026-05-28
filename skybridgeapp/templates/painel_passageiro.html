@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Passageiro | Sky Bridge</title>
+    <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-plane"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Sky Bridge</h1>
+                    <span>Área do Cliente</span>
+                </div>
+            </a>
+            <div class="user-menu">
+                <span class="user-badge">
+                    <i class="fa-solid fa-passport"></i> Passageiro
+                </span>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Layout -->
+    <div class="dashboard-layout">
+        
+        <!-- Sidebar: Perfil -->
+        <aside class="dashboard-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    {{ user.username|slice:":2"|upper }}
+                </div>
+                <h2>{{ user.get_full_name|default:user.username }}</h2>
+                <div class="user-type">Passageiro Oficial</div>
+                
+                <div class="profile-details">
+                    {% if passageiro %}
+                        <div class="profile-item">
+                            <strong>Nome Completo</strong>
+                            <span>{{ passageiro.nome }}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>CPF / Passaporte</strong>
+                            <span>{{ passageiro.cpf_passaporte }}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>Nacionalidade</strong>
+                            <span>{{ passageiro.nacionalidade }}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>Contato</strong>
+                            <span>{{ passageiro.contato }}</span>
+                        </div>
+                    {% else %}
+                        <div class="profile-item">
+                            <strong>Aviso</strong>
+                            <span style="color: var(--red); font-weight: 500;">
+                                <i class="fa-solid fa-circle-exclamation"></i> Complete seu perfil de passageiro.
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            
+            <!-- Boas-vindas -->
+            <section class="welcome-header">
+                <h2>Olá, {{ passageiro.nome|default:user.username }}!</h2>
+                <p>Bem-vindo de volta ao seu painel. Aqui você pode gerenciar suas reservas, ver notificações e acompanhar seu programa de milhas.</p>
+            </section>
+
+            <!-- Widgets -->
+            <section class="widgets-grid">
+                <!-- Widget Milhas -->
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: #fef3c7; color: #d97706;">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Saldo de Milhas</h3>
+                        {% if passageiro.conta_milhas %}
+                            <p>{{ passageiro.conta_milhas.saldo }} milhas</p>
+                            <span style="font-size: 11px; color: var(--muted)">Programa: {{ passageiro.conta_milhas.numero_programa }}</span>
+                        {% else %}
+                            <p>0 milhas</p>
+                            <span style="font-size: 11px; color: var(--muted)">Nenhum programa ativo</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Widget Notificações -->
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--blue-soft); color: var(--blue);">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Alertas Importantes</h3>
+                        <p>{{ notificacoes_nao_lidas }} não lidas</p>
+                    </div>
+                </div>
+
+                <!-- Widget Reservas Ativas -->
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--green-soft); color: var(--green);">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Minhas Reservas</h3>
+                        <p>{{ reservas.count|default:0 }} ativas</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ações Rápidas -->
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-bolt"></i> Ações Rápidas</h3>
+                </div>
+                <div class="quick-actions">
+                    <a href="{% url 'home' %}" class="btn-action primary">
+                        <i class="fa-solid fa-magnifying-glass"></i> Buscar e Comprar Voos
+                    </a>
+                    <a href="#" class="btn-action secondary" onclick="alert('Funcionalidade de check-in estará disponível no início do período de embarque.'); return false;">
+                        <i class="fa-solid fa-qrcode"></i> Realizar Check-in
+                    </a>
+                </div>
+            </section>
+
+            <!-- Reservas Recentes -->
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-plane-departure"></i> Reservas Recentes</h3>
+                </div>
+                {% if reservas %}
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Reserva</th>
+                                    <th>Voo</th>
+                                    <th>Origem / Destino</th>
+                                    <th>Partida</th>
+                                    <th>Assento</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reserva in reservas %}
+                                    <tr>
+                                        <td><strong>#{{ reserva.id }}</strong></td>
+                                        <td>{{ reserva.voo.numero_voo }}</td>
+                                        <td>{{ reserva.voo.origem }} → {{ reserva.voo.destino }}</td>
+                                        <td>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ reserva.assento }}</td>
+                                        <td>
+                                            <span class="badge-status status-{{ reserva.status }}">
+                                                {{ reserva.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Você ainda não possui nenhuma reserva de voo.</p>
+                {% endif %}
+            </section>
+
+            <!-- Notificações -->
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-message"></i> Mensagens e Alertas</h3>
+                </div>
+                {% if notificacoes %}
+                    <div class="notification-list">
+                        {% for notif in notificacoes %}
+                            <div class="notification-item alert-{{ notif.tipo }}">
+                                <div class="notification-icon">
+                                    {% if notif.tipo == 'atraso' %}
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+                                    {% elif notif.tipo == 'mudanca_portao' %}
+                                        <i class="fa-solid fa-right-left"></i>
+                                    {% elif notif.tipo == 'cancelamento' %}
+                                        <i class="fa-solid fa-ban"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-info-circle"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="notification-body">
+                                    <p>{{ notif.mensagem }}</p>
+                                    <div class="notification-meta">
+                                        {{ notif.data_hora|date:"d M Y, H:i" }} • {{ notif.get_tipo_display }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Nenhuma notificação importante para exibir no momento.</p>
+                {% endif %}
+            </section>
+
+        </main>
+    </div>
+</body>
+</html>

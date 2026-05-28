@@ -1,0 +1,184 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Administrador | Sky Bridge</title>
+    <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="brand">
+                <div class="brand-icon" style="background: linear-gradient(135deg, var(--navy), var(--red) 60%, var(--wine));">
+                    <i class="fa-solid fa-plane"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Sky Bridge</h1>
+                    <span>Painel Administrativo</span>
+                </div>
+            </a>
+            <div class="user-menu">
+                <span class="user-badge" style="background: #fee2e2; color: var(--red); border-color: rgba(215, 25, 63, 0.1);">
+                    <i class="fa-solid fa-user-gear"></i> Administrador
+                </span>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Layout -->
+    <div class="dashboard-layout">
+        
+        <!-- Sidebar: Info -->
+        <aside class="dashboard-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar" style="background: linear-gradient(135deg, #fee2e2 0%, #ffcdd2 100%); color: var(--red);">
+                    {{ user.username|slice:":2"|upper }}
+                </div>
+                <h2>{{ user.get_full_name|default:user.username }}</h2>
+                <div class="user-type" style="color: var(--red);">Administrador Global</div>
+                
+                <div class="profile-details">
+                    <div class="profile-item">
+                        <strong>Nome de Usuário</strong>
+                        <span>{{ user.username }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>E-mail</strong>
+                        <span>{{ user.email|default:"Nenhum e-mail cadastrado" }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Privilégio</strong>
+                        <span style="font-weight: 600; color: var(--red);">Administração Completa</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Último Login</strong>
+                        <span>{{ user.last_login|date:"d/m/Y H:i"|default:"Primeiro acesso" }}</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            
+            <!-- Boas-vindas -->
+            <section class="welcome-header" style="background: linear-gradient(135deg, var(--navy) 0%, var(--wine) 100%);">
+                <h2>Olá, Administrador!</h2>
+                <p>Painel de controle global ativo. Monitore o crescimento do aeroporto, gerencie dados de sistema e usuários autorizados.</p>
+            </section>
+
+            <!-- Widgets de Métricas Consolidadas -->
+            <section class="widgets-grid">
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--blue-soft); color: var(--blue);">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Passageiros Cadastrados</h3>
+                        <p>{{ stats.total_passageiros }}</p>
+                    </div>
+                </div>
+
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: #fef3c7; color: #d97706;">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Corpo de Funcionários</h3>
+                        <p>{{ stats.total_funcionarios }}</p>
+                    </div>
+                </div>
+
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--green-soft); color: var(--green);">
+                        <i class="fa-solid fa-plane"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Voos Cadastrados</h3>
+                        <p>{{ stats.total_voos }}</p>
+                    </div>
+                </div>
+
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: #f3e8ff; color: #9333ea;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Reservas Realizadas</h3>
+                        <p>{{ stats.total_reservas }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Atalhos Globais de Administração -->
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-gears"></i> Central de Controle de Modelos</h3>
+                </div>
+                <div class="quick-actions">
+                    <a href="/admin/" class="btn-action primary">
+                        <i class="fa-solid fa-screwdriver-wrench"></i> Acessar Django Admin Completo
+                    </a>
+                </div>
+                
+                <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                    <a href="/admin/skybridgeapp/usuariocustomizado/" class="btn-action secondary">
+                        <i class="fa-solid fa-user-shield"></i> Gerenciar Usuários
+                    </a>
+                    <a href="/admin/skybridgeapp/voo/" class="btn-action secondary">
+                        <i class="fa-solid fa-plane-up"></i> Gerenciar Voos
+                    </a>
+                    <a href="/admin/skybridgeapp/aeroporto/" class="btn-action secondary">
+                        <i class="fa-solid fa-location-dot"></i> Aeroportos Parceiros
+                    </a>
+                    <a href="/admin/skybridgeapp/aeronave/" class="btn-action secondary">
+                        <i class="fa-solid fa-plane-slash"></i> Frota de Aeronaves
+                    </a>
+                </div>
+            </section>
+
+            <!-- Resumo e Saúde do Sistema -->
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-circle-info"></i> Detalhes do Ambiente</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <tbody>
+                            <tr>
+                                <td><strong>Framework</strong></td>
+                                <td>Django 4.x / 5.x</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Banco de Dados</strong></td>
+                                <td>PostgreSQL (Ativo)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status da Conexão</strong></td>
+                                <td>
+                                    <span class="badge-status status-confirmada">
+                                        <i class="fa-solid fa-circle-check"></i> Estável
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</body>
+</html>

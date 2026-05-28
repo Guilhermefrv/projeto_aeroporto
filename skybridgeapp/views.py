@@ -192,8 +192,61 @@ def cadastro(request):
 
 @login_required
 def dashboard(request):
-    passageiro = Passageiro.objects.filter(usuario=request.user).first()
-    return render(request, 'dashboard.html', {'passageiro': passageiro})
+    user = request.user
+    
+    # 1. Roteamento e dados específicos para Passageiro
+    if user.tipo == 'passageiro':
+        from .models import Passageiro
+        passageiro = getattr(user, 'passageiro', None)
+        
+        reservas = []
+        notificacoes = []
+        if passageiro:
+            reservas = passageiro.reserva_set.select_related('voo').all().order_by('-id')[:5]
+            notificacoes = passageiro.notificacao_set.all()[:5]
+            
+        context = {
+            'passageiro': passageiro,
+            'reservas': reservas,
+            'notificacoes': notificacoes,
+        }
+        return render(request, 'painel_passageiro.html', context)
+        
+    # 2. Roteamento e dados específicos para Funcionário
+    elif user.tipo == 'funcionario':
+        from .models import Funcionario, Voo, Bagagem, PortaoEmbarque
+        funcionario = getattr(user, 'funcionario', None)
+        
+        voos = Voo.objects.all().order_by('partida')[:5]
+        bagagens = Bagagem.objects.select_related('reserva__passageiro').all().order_by('-id')[:5]
+        portoes = PortaoEmbarque.objects.all().order_by('numero_portao')[:6]
+        
+        context = {
+            'funcionario': funcionario,
+            'voos': voos,
+            'bagagens': bagagens,
+            'portoes': portoes,
+        }
+        return render(request, 'painel_funcionario.html', context)
+        
+    # 3. Roteamento e dados específicos para Administrador
+    elif user.tipo == 'administrador':
+        from .models import Passageiro, Funcionario, Voo, Reserva
+        
+        stats = {
+            'total_passageiros': Passageiro.objects.count(),
+            'total_funcionarios': Funcionario.objects.count(),
+            'total_voos': Voo.objects.count(),
+            'total_reservas': Reserva.objects.count(),
+        }
+        
+        context = {
+            'stats': stats,
+        }
+        return render(request, 'painel_admin.html', context)
+        
+    # Fallback caso o tipo de usuário seja genérico
+    return render(request, 'dashboard.html')
 
 
 class SkyBridgeLoginView(LoginView):
