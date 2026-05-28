@@ -5,6 +5,31 @@ from django.db import transaction
 from .models import Funcionario, Passageiro, UsuarioCustomizado
 
 
+NACIONALIDADES_CHOICES = [
+    ('', 'Selecione sua nacionalidade'),
+    ('Brasileira', 'Brasileira'),
+    ('Argentina', 'Argentina'),
+    ('Chilena', 'Chilena'),
+    ('Uruguaia', 'Uruguaia'),
+    ('Paraguaia', 'Paraguaia'),
+    ('Boliviana', 'Boliviana'),
+    ('Peruana', 'Peruana'),
+    ('Colombiana', 'Colombiana'),
+    ('Venezuelana', 'Venezuelana'),
+    ('Portuguesa', 'Portuguesa'),
+    ('Espanhola', 'Espanhola'),
+    ('Italiana', 'Italiana'),
+    ('Francesa', 'Francesa'),
+    ('Alemã', 'Alemã'),
+    ('Estadunidense', 'Estadunidense'),
+    ('Canadense', 'Canadense'),
+    ('Mexicana', 'Mexicana'),
+    ('Japonesa', 'Japonesa'),
+    ('Chinesa', 'Chinesa'),
+    ('Outra', 'Outra'),
+]
+
+
 class CadastroBaseForm(UserCreationForm):
     nome = forms.CharField(label='Nome completo', max_length=100)
     email = forms.EmailField(label='Email')
@@ -30,7 +55,10 @@ class CadastroPassageiroForm(CadastroBaseForm):
         label='Data de nascimento',
         widget=forms.DateInput(attrs={'type': 'date'}),
     )
-    nacionalidade = forms.CharField(label='Nacionalidade', max_length=50)
+    nacionalidade = forms.ChoiceField(
+        label='Nacionalidade',
+        choices=NACIONALIDADES_CHOICES,
+    )
 
     class Meta(CadastroBaseForm.Meta):
         fields = CadastroBaseForm.Meta.fields + (

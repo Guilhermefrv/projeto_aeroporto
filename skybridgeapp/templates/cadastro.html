@@ -189,7 +189,11 @@
                             <label for="id_passageiro_nacionalidade">Nacionalidade <span aria-hidden="true">*</span></label>
                             <div class="input-group">
                                 <i class="fa-solid fa-globe" aria-hidden="true"></i>
-                                <input id="id_passageiro_nacionalidade" name="nacionalidade" type="text" placeholder="Brasileira" value="{{ passageiro_form.nacionalidade.value|default_if_none:'' }}" required>
+                                <select id="id_passageiro_nacionalidade" name="nacionalidade" required>
+                                    {% for value, label in passageiro_form.fields.nacionalidade.choices %}
+                                        <option value="{{ value }}" {% if passageiro_form.nacionalidade.value == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                             {% if passageiro_form.nacionalidade.errors %}
                                 <div class="field-errors" role="alert">

@@ -271,20 +271,24 @@ label span {
     align-items: center;
     justify-content: center;
     min-height: 48px;
-    padding: 0 22px;
+    min-width: 150px;
+    padding: 0 24px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: white;
+    background: #f8fafc;
     color: var(--navy);
     font-size: 15px;
     font-weight: 900;
+    text-decoration: none;
     cursor: pointer;
-    transition: transform 0.22s ease, box-shadow 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+    box-shadow: 0 8px 18px rgba(16,24,40,0.05);
+    transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 
 .modal-cancel-button:hover,
 .modal-cancel-button:focus-visible {
     border-color: var(--blue);
+    background: white;
     color: var(--blue);
     outline: var(--ring);
     transform: translateY(-1px);
@@ -310,10 +314,18 @@ label span {
 
 .modal-footer {
     gap: 12px;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.modal-footer > * {
+    margin: 0;
 }
 
 .modal-footer .submit-button {
     min-height: 48px;
+    min-width: 170px;
     padding: 0 22px;
     font-size: 15px;
 }
@@ -379,5 +391,15 @@ label span {
     .account-types,
     .form-row {
         grid-template-columns: 1fr;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .modal-footer .submit-button,
+    .modal-cancel-button {
+        width: 100%;
     }
 }

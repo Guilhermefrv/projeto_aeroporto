@@ -96,6 +96,9 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, 'name="nome"')
         self.assertContains(response, 'name="email"')
         self.assertContains(response, 'name="cpf_passaporte"')
+        self.assertContains(response, '<select id="id_passageiro_nacionalidade"', html=False)
+        self.assertContains(response, 'Selecione sua nacionalidade')
+        self.assertContains(response, 'value="Italiana"')
         self.assertContains(response, 'name="cargo"')
         self.assertContains(response, 'name="matricula"')
         self.assertContains(response, 'name="password1"')
@@ -237,7 +240,10 @@ class CadastroUsuarioTests(TestCase):
         self.assertEqual(usuario.first_name, 'Maria Silva')
 
     def test_cadastro_cria_perfil_passageiro_vinculado(self):
-        self.client.post(self.cadastro_url, self.form_data)
+        data = self.form_data.copy()
+        data['nacionalidade'] = 'Italiana'
+
+        self.client.post(self.cadastro_url, data)
 
         usuario = get_user_model().objects.get(username='maria.silva')
         passageiro = Passageiro.objects.get(usuario=usuario)
@@ -245,7 +251,7 @@ class CadastroUsuarioTests(TestCase):
         self.assertEqual(passageiro.nome, 'Maria Silva')
         self.assertEqual(passageiro.cpf_passaporte, '12345678900')
         self.assertEqual(passageiro.contato, '(11) 99999-0000')
-        self.assertEqual(passageiro.nacionalidade, 'Brasileira')
+        self.assertEqual(passageiro.nacionalidade, 'Italiana')
 
     def test_cadastro_cria_usuario_funcionario(self):
         response = self.client.post(self.cadastro_url, self.dados_funcionario())
