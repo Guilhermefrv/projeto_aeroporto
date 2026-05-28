@@ -66,6 +66,33 @@ class AuthFlowTests(TestCase):
         )
         return user
 
+    def criar_usuario_funcionario(self):
+        user = get_user_model().objects.create_user(
+            username='funcionario_teste',
+            password='senha-segura-123',
+            first_name='Funcionario',
+            last_name='Teste',
+            tipo='funcionario',
+        )
+        Funcionario.objects.create(
+            usuario=user,
+            nome='Funcionario Teste',
+            cargo='atendente',
+            matricula='MAT999',
+            contato='(11) 91111-0000',
+        )
+        return user
+
+    def criar_usuario_administrador(self):
+        return get_user_model().objects.create_user(
+            username='admin_teste',
+            password='senha-segura-123',
+            first_name='Admin',
+            last_name='Teste',
+            tipo='administrador',
+            is_staff=True,
+        )
+
     def test_home_page_renders_with_login_link(self):
         response = self.client.get(reverse('home'))
 
@@ -86,6 +113,8 @@ class AuthFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Guilherme Silva')
+        self.assertContains(response, f'href="{reverse("dashboard_passageiro")}"')
+        self.assertContains(response, 'Sair')
         self.assertNotContains(response, 'Fazer login')
 
     def test_home_login_link_falls_back_to_username_for_authenticated_user(self):
@@ -99,6 +128,30 @@ class AuthFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'guilherme')
+        self.assertContains(response, f'href="{reverse("dashboard_passageiro")}"')
+        self.assertContains(response, 'Sair')
+        self.assertNotContains(response, 'Fazer login')
+
+    def test_home_account_link_points_to_employee_dashboard(self):
+        user = self.criar_usuario_funcionario()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Funcionario Teste')
+        self.assertContains(response, f'href="{reverse("dashboard_funcionario")}"')
+        self.assertNotContains(response, 'Fazer login')
+
+    def test_home_account_link_points_to_admin_dashboard(self):
+        user = self.criar_usuario_administrador()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Admin Teste')
+        self.assertContains(response, f'href="{reverse("dashboard_administrador")}"')
         self.assertNotContains(response, 'Fazer login')
 
     def test_auth_home_links_to_login_and_registration(self):
@@ -107,6 +160,22 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'href="{reverse("login")}"')
         self.assertContains(response, f'href="{reverse("cadastro")}"')
+
+    def test_auth_home_redirects_authenticated_passenger_to_home(self):
+        user = self.criar_usuario_passageiro()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('auth_home'))
+
+        self.assertRedirects(response, reverse('home'))
+
+    def test_auth_home_redirects_authenticated_employee_to_dashboard(self):
+        user = self.criar_usuario_funcionario()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('auth_home'))
+
+        self.assertRedirects(response, reverse('dashboard_funcionario'))
 
     def test_cadastro_page_renders(self):
         response = self.client.get(reverse('cadastro'))
@@ -148,7 +217,7 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'name="next" value="{reverse("dashboard")}"')
 
-    def test_valid_user_can_login_and_redirect_to_dashboard(self):
+    def test_passenger_login_redirects_to_home(self):
         self.criar_usuario_passageiro()
 
         response = self.client.post(reverse('login'), {
@@ -156,7 +225,29 @@ class AuthFlowTests(TestCase):
             'password': 'senha-segura-123',
         })
 
-        self.assertRedirects(response, reverse('dashboard'))
+        self.assertRedirects(response, reverse('home'))
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_employee_login_redirects_to_employee_dashboard(self):
+        self.criar_usuario_funcionario()
+
+        response = self.client.post(reverse('login'), {
+            'username': 'funcionario_teste',
+            'password': 'senha-segura-123',
+        })
+
+        self.assertRedirects(response, reverse('dashboard_funcionario'))
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_admin_login_redirects_to_admin_dashboard(self):
+        self.criar_usuario_administrador()
+
+        response = self.client.post(reverse('login'), {
+            'username': 'admin_teste',
+            'password': 'senha-segura-123',
+        })
+
+        self.assertRedirects(response, reverse('dashboard_administrador'))
         self.assertIn('_auth_user_id', self.client.session)
 
     def test_valid_user_can_login_with_next_redirect(self):
@@ -168,7 +259,8 @@ class AuthFlowTests(TestCase):
             'next': reverse('dashboard'),
         })
 
-        self.assertRedirects(response, reverse('dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], reverse('dashboard'))
         self.assertIn('_auth_user_id', self.client.session)
 
     def test_invalid_user_cannot_login(self):
@@ -203,17 +295,47 @@ class AuthFlowTests(TestCase):
         expected_url = f"{reverse('login')}?next={reverse('dashboard')}"
         self.assertRedirects(response, expected_url)
 
-    def test_authenticated_user_can_access_dashboard(self):
+    def test_specific_dashboards_redirect_anonymous_user_to_login(self):
+        for dashboard_name in ['dashboard_passageiro', 'dashboard_funcionario', 'dashboard_administrador']:
+            with self.subTest(dashboard_name=dashboard_name):
+                response = self.client.get(reverse(dashboard_name))
+                expected_url = f"{reverse('login')}?next={reverse(dashboard_name)}"
+                self.assertRedirects(response, expected_url)
+
+    def test_dashboard_router_sends_passenger_to_passenger_panel(self):
         user = self.criar_usuario_passageiro()
         self.client.force_login(user)
 
         response = self.client.get(reverse('dashboard'))
 
+        self.assertRedirects(response, reverse('dashboard_passageiro'))
+
+    def test_passenger_can_access_passenger_dashboard(self):
+        user = self.criar_usuario_passageiro()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard_passageiro'))
+
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'usuario_teste')
         self.assertContains(response, 'Passageiro')
-        self.assertContains(response, 'Nome do passageiro')
+        self.assertContains(response, 'Nome Completo')
         self.assertContains(response, 'Usuario Teste')
+
+    def test_passenger_cannot_access_employee_dashboard(self):
+        user = self.criar_usuario_passageiro()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard_funcionario'))
+
+        self.assertRedirects(response, reverse('dashboard_passageiro'))
+
+    def test_employee_cannot_access_admin_dashboard(self):
+        user = self.criar_usuario_funcionario()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard_administrador'))
+
+        self.assertRedirects(response, reverse('dashboard_funcionario'))
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
@@ -362,4 +484,4 @@ class CadastroUsuarioTests(TestCase):
             'password': 'SenhaForte123',
         })
 
-        self.assertRedirects(response, reverse('dashboard'))
+        self.assertRedirects(response, reverse('dashboard_funcionario'))

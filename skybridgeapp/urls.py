@@ -7,5 +7,8 @@ urlpatterns = [
     path('cadastro/', views.cadastro, name='cadastro'),
     path('login/', views.SkyBridgeLoginView.as_view(), name='login'),
     path('logout/', views.SkyBridgeLogoutView.as_view(), name='logout'),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard/', views.dashboard_router, name='dashboard'),
+    path('dashboard/passageiro/', views.dashboard_passageiro, name='dashboard_passageiro'),
+    path('dashboard/funcionario/', views.dashboard_funcionario, name='dashboard_funcionario'),
+    path('dashboard/administrador/', views.dashboard_administrador, name='dashboard_administrador'),
 ]

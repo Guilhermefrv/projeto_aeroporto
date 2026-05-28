@@ -150,6 +150,7 @@ button{
 }
 
 .login-link,
+.logout-link,
 .icon-button,
 .ghost-button,
 .primary-button,
@@ -179,6 +180,53 @@ button{
     box-shadow:0 10px 22px rgba(17,26,69,0.18);
 }
 
+.account-link{
+    max-width:220px;
+}
+
+.account-link,
+.logout-link{
+    white-space:nowrap;
+}
+
+.account-link{
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.logout-form{
+    margin:0;
+}
+
+.logout-link{
+    min-height:42px;
+    padding:0 14px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:white;
+    color:var(--navy);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    font-weight:800;
+    box-shadow:0 8px 18px rgba(16,24,40,0.05);
+}
+
+.notification-badge{
+    min-width:18px;
+    height:18px;
+    border-radius:999px;
+    background:var(--red);
+    color:white;
+    display:inline-grid;
+    place-items:center;
+    padding:0 6px;
+    font-size:11px;
+    font-weight:900;
+    line-height:1;
+}
+
 .login-link:hover,
 .login-link:focus-visible,
 .primary-button:hover,
@@ -186,6 +234,14 @@ button{
     background:#0b1238;
     box-shadow:0 12px 26px rgba(17,26,69,0.22);
     outline:none;
+    transform:translateY(-1px);
+}
+
+.logout-link:hover,
+.logout-link:focus-visible{
+    border-color:var(--blue);
+    color:var(--blue);
+    outline:var(--ring);
     transform:translateY(-1px);
 }
 
@@ -929,9 +985,14 @@ button{
         display:none;
     }
 
-    .login-link{
+    .login-link,
+    .logout-link{
         min-height:40px;
         padding:0 12px;
+    }
+
+    .account-link{
+        max-width:170px;
     }
 
     .hero-section{

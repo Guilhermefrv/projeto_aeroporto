@@ -2,10 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 
 from .forms import CadastroAdministradorForm, CadastroFuncionarioForm, CadastroPassageiroForm
-from .models import Passageiro
+from .models import Bagagem, Funcionario, Passageiro, PortaoEmbarque, Reserva, Voo
 
 
 LANDING_CONTEXT = {
@@ -152,6 +152,9 @@ def home(request):
 
 
 def auth_home(request):
+    if request.user.is_authenticated:
+        return redirect(_post_login_route_for_user(request.user))
+
     return render(request, 'auth_home.html')
 
 
@@ -190,68 +193,94 @@ def cadastro(request):
     })
 
 
-@login_required
-def dashboard(request):
-    user = request.user
-    
-    # 1. Roteamento e dados específicos para Passageiro
+def _dashboard_route_for_user(user):
+    if user.tipo == 'funcionario':
+        return 'dashboard_funcionario'
+    if user.tipo == 'administrador' or user.is_staff:
+        return 'dashboard_administrador'
+    return 'dashboard_passageiro'
+
+
+def _post_login_route_for_user(user):
     if user.tipo == 'passageiro':
-        from .models import Passageiro
-        passageiro = getattr(user, 'passageiro', None)
-        
-        reservas = []
-        notificacoes = []
-        if passageiro:
-            reservas = passageiro.reserva_set.select_related('voo').all().order_by('-id')[:5]
-            notificacoes = passageiro.notificacao_set.all()[:5]
-            
-        context = {
-            'passageiro': passageiro,
-            'reservas': reservas,
-            'notificacoes': notificacoes,
-        }
-        return render(request, 'painel_passageiro.html', context)
-        
-    # 2. Roteamento e dados específicos para Funcionário
-    elif user.tipo == 'funcionario':
-        from .models import Funcionario, Voo, Bagagem, PortaoEmbarque
-        funcionario = getattr(user, 'funcionario', None)
-        
-        voos = Voo.objects.all().order_by('partida')[:5]
-        bagagens = Bagagem.objects.select_related('reserva__passageiro').all().order_by('-id')[:5]
-        portoes = PortaoEmbarque.objects.all().order_by('numero_portao')[:6]
-        
-        context = {
-            'funcionario': funcionario,
-            'voos': voos,
-            'bagagens': bagagens,
-            'portoes': portoes,
-        }
-        return render(request, 'painel_funcionario.html', context)
-        
-    # 3. Roteamento e dados específicos para Administrador
-    elif user.tipo == 'administrador':
-        from .models import Passageiro, Funcionario, Voo, Reserva
-        
-        stats = {
-            'total_passageiros': Passageiro.objects.count(),
-            'total_funcionarios': Funcionario.objects.count(),
-            'total_voos': Voo.objects.count(),
-            'total_reservas': Reserva.objects.count(),
-        }
-        
-        context = {
-            'stats': stats,
-        }
-        return render(request, 'painel_admin.html', context)
-        
-    # Fallback caso o tipo de usuário seja genérico
-    return render(request, 'dashboard.html')
+        return 'home'
+    return _dashboard_route_for_user(user)
+
+
+def _can_access_dashboard(user, tipo):
+    if tipo == 'administrador':
+        return user.tipo == 'administrador' or user.is_staff
+    return user.tipo == tipo
+
+
+def _redirect_to_user_dashboard(user):
+    return redirect(_dashboard_route_for_user(user))
+
+
+@login_required
+def dashboard_router(request):
+    return _redirect_to_user_dashboard(request.user)
+
+
+@login_required
+def dashboard_passageiro(request):
+    if not _can_access_dashboard(request.user, 'passageiro'):
+        return _redirect_to_user_dashboard(request.user)
+
+    passageiro = getattr(request.user, 'passageiro', None)
+    reservas = []
+    notificacoes = []
+
+    if passageiro:
+        reservas = passageiro.reserva_set.select_related('voo').all().order_by('-id')[:5]
+        notificacoes = passageiro.notificacao_set.all()[:5]
+
+    return render(request, 'painel_passageiro.html', {
+        'passageiro': passageiro,
+        'reservas': reservas,
+        'notificacoes': notificacoes,
+    })
+
+
+@login_required
+def dashboard_funcionario(request):
+    if not _can_access_dashboard(request.user, 'funcionario'):
+        return _redirect_to_user_dashboard(request.user)
+
+    funcionario = getattr(request.user, 'funcionario', None)
+    voos = Voo.objects.all().order_by('partida')[:5]
+    bagagens = Bagagem.objects.select_related('reserva__passageiro').all().order_by('-id')[:5]
+    portoes = PortaoEmbarque.objects.all().order_by('numero_portao')[:6]
+
+    return render(request, 'painel_funcionario.html', {
+        'funcionario': funcionario,
+        'voos': voos,
+        'bagagens': bagagens,
+        'portoes': portoes,
+    })
+
+
+@login_required
+def dashboard_administrador(request):
+    if not _can_access_dashboard(request.user, 'administrador'):
+        return _redirect_to_user_dashboard(request.user)
+
+    stats = {
+        'total_passageiros': Passageiro.objects.count(),
+        'total_funcionarios': Funcionario.objects.count(),
+        'total_voos': Voo.objects.count(),
+        'total_reservas': Reserva.objects.count(),
+    }
+
+    return render(request, 'painel_admin.html', {'stats': stats})
 
 
 class SkyBridgeLoginView(LoginView):
     template_name = 'login.html'
     redirect_authenticated_user = True
+
+    def get_default_redirect_url(self):
+        return reverse(_post_login_route_for_user(self.request.user))
 
 
 class SkyBridgeLogoutView(LogoutView):
