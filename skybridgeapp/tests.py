@@ -92,6 +92,8 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, 'name="tipo_usuario" value="passageiro"')
         self.assertContains(response, 'name="tipo_usuario" value="funcionario"')
         self.assertContains(response, 'name="tipo_usuario" value="administrador"')
+        self.assertContains(response, 'class="btn btn-outline-secondary modal-cancel-btn"')
+        self.assertContains(response, 'data-bs-dismiss="modal"')
         self.assertContains(response, 'name="username"')
         self.assertContains(response, 'name="nome"')
         self.assertContains(response, 'name="email"')

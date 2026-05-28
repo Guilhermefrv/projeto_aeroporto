@@ -266,7 +266,7 @@ label span {
     transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
 }
 
-.modal-cancel-button {
+.modal-cancel-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -285,8 +285,8 @@ label span {
     transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 
-.modal-cancel-button:hover,
-.modal-cancel-button:focus-visible {
+.modal-cancel-btn:hover,
+.modal-cancel-btn:focus-visible {
     border-color: var(--blue);
     background: white;
     color: var(--blue);
@@ -399,7 +399,7 @@ label span {
     }
 
     .modal-footer .submit-button,
-    .modal-cancel-button {
+    .modal-cancel-btn {
         width: 100%;
     }
 }
