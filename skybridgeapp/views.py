@@ -148,7 +148,13 @@ LANDING_CONTEXT = {
 
 
 def home(request):
-    return render(request, 'home.html', LANDING_CONTEXT)
+    context = {**LANDING_CONTEXT}
+
+    if request.user.is_authenticated:
+        context['account_dashboard_url'] = reverse(_dashboard_route_for_user(request.user))
+        context['account_label'] = _account_label_for_user(request.user)
+
+    return render(request, 'home.html', context)
 
 
 def auth_home(request):
@@ -199,6 +205,13 @@ def _dashboard_route_for_user(user):
     if user.tipo == 'administrador' or user.is_staff:
         return 'dashboard_administrador'
     return 'dashboard_passageiro'
+
+
+def _account_label_for_user(user):
+    first_name = (user.first_name or '').strip().split(' ')[0]
+    if first_name:
+        return f'Olá, {first_name}'
+    return 'Minha conta'
 
 
 def _post_login_route_for_user(user):
@@ -279,9 +292,18 @@ class SkyBridgeLoginView(LoginView):
     template_name = 'login.html'
     redirect_authenticated_user = True
 
+    def form_valid(self, form):
+        messages.success(self.request, 'Login realizado com sucesso.')
+        return super().form_valid(form)
+
     def get_default_redirect_url(self):
         return reverse(_post_login_route_for_user(self.request.user))
 
 
 class SkyBridgeLogoutView(LogoutView):
     next_page = reverse_lazy('home')
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        messages.success(request, 'Você saiu da sua conta.')
+        return response

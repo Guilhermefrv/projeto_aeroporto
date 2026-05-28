@@ -99,8 +99,9 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'href="{reverse("auth_home")}"')
         self.assertContains(response, 'Fazer login')
+        self.assertNotContains(response, 'class="account-menu"')
 
-    def test_home_login_link_shows_full_name_for_authenticated_user(self):
+    def test_home_account_menu_greets_authenticated_user_by_first_name(self):
         user = get_user_model().objects.create_user(
             username='guilherme',
             password='senha-segura-123',
@@ -112,12 +113,15 @@ class AuthFlowTests(TestCase):
         response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Guilherme Silva')
+        self.assertContains(response, 'class="account-menu"')
+        self.assertContains(response, 'Olá, Guilherme')
+        self.assertContains(response, 'Minha conta')
+        self.assertContains(response, 'Notificações')
+        self.assertContains(response, 'action="{0}"'.format(reverse('logout')))
         self.assertContains(response, f'href="{reverse("dashboard_passageiro")}"')
-        self.assertContains(response, 'Sair')
         self.assertNotContains(response, 'Fazer login')
 
-    def test_home_login_link_falls_back_to_username_for_authenticated_user(self):
+    def test_home_account_menu_falls_back_to_generic_label(self):
         user = get_user_model().objects.create_user(
             username='guilherme',
             password='senha-segura-123',
@@ -127,9 +131,8 @@ class AuthFlowTests(TestCase):
         response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'guilherme')
+        self.assertContains(response, 'Minha conta')
         self.assertContains(response, f'href="{reverse("dashboard_passageiro")}"')
-        self.assertContains(response, 'Sair')
         self.assertNotContains(response, 'Fazer login')
 
     def test_home_account_link_points_to_employee_dashboard(self):
@@ -139,7 +142,7 @@ class AuthFlowTests(TestCase):
         response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Funcionario Teste')
+        self.assertContains(response, 'Olá, Funcionario')
         self.assertContains(response, f'href="{reverse("dashboard_funcionario")}"')
         self.assertNotContains(response, 'Fazer login')
 
@@ -150,7 +153,7 @@ class AuthFlowTests(TestCase):
         response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Admin Teste')
+        self.assertContains(response, 'Olá, Admin')
         self.assertContains(response, f'href="{reverse("dashboard_administrador")}"')
         self.assertNotContains(response, 'Fazer login')
 
@@ -228,6 +231,16 @@ class AuthFlowTests(TestCase):
         self.assertRedirects(response, reverse('home'))
         self.assertIn('_auth_user_id', self.client.session)
 
+    def test_passenger_login_shows_success_message_on_home(self):
+        self.criar_usuario_passageiro()
+
+        response = self.client.post(reverse('login'), {
+            'username': 'usuario_teste',
+            'password': 'senha-segura-123',
+        }, follow=True)
+
+        self.assertContains(response, 'Login realizado com sucesso.')
+
     def test_employee_login_redirects_to_employee_dashboard(self):
         self.criar_usuario_funcionario()
 
@@ -287,6 +300,16 @@ class AuthFlowTests(TestCase):
         response = self.client.post(reverse('logout'))
 
         self.assertRedirects(response, reverse('home'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_logout_shows_success_message_on_home(self):
+        user = self.criar_usuario_passageiro()
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('logout'), follow=True)
+
+        self.assertContains(response, 'Você saiu da sua conta.')
+        self.assertContains(response, 'Fazer login')
         self.assertNotIn('_auth_user_id', self.client.session)
 
     def test_dashboard_redirects_anonymous_user_to_login(self):

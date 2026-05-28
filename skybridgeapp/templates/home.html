@@ -38,27 +38,38 @@
 
         <div class="header-actions">
             {% if user.is_authenticated %}
-                {% if user.tipo == 'funcionario' %}
-                    <a class="login-link account-link" href="{% url 'dashboard_funcionario' %}">
-                {% elif user.tipo == 'administrador' %}
-                    <a class="login-link account-link" href="{% url 'dashboard_administrador' %}">
-                {% else %}
-                    <a class="login-link account-link" href="{% url 'dashboard_passageiro' %}">
-                {% endif %}
-                    <i class="fa-regular fa-user" aria-hidden="true"></i>
-                    {{ user.get_full_name|default:user.username }}
-                    {% if notificacoes_nao_lidas %}
-                        <span class="notification-badge">{{ notificacoes_nao_lidas }}</span>
-                    {% endif %}
-                </a>
+                <details class="account-menu">
+                    <summary class="account-trigger" aria-label="Abrir menu da conta">
+                        <i class="fa-regular fa-user" aria-hidden="true"></i>
+                        <span class="account-greeting">{{ account_label }}</span>
+                        {% if notificacoes_nao_lidas %}
+                            <span class="notification-badge">{{ notificacoes_nao_lidas }}</span>
+                        {% endif %}
+                        <i class="fa-solid fa-chevron-down account-chevron" aria-hidden="true"></i>
+                    </summary>
 
-                <form class="logout-form" method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <button class="logout-link" type="submit">
-                        <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
-                        Sair
-                    </button>
-                </form>
+                    <div class="account-dropdown" role="menu" aria-label="Menu da conta">
+                        <a href="{{ account_dashboard_url }}" role="menuitem">
+                            <i class="fa-regular fa-user" aria-hidden="true"></i>
+                            Minha conta
+                        </a>
+                        <a href="{{ account_dashboard_url }}" role="menuitem">
+                            <i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i>
+                            Minhas viagens
+                        </a>
+                        <a href="{{ account_dashboard_url }}" role="menuitem">
+                            <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                            Notificações
+                        </a>
+                        <form class="account-menu-form" method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button class="account-menu-button" type="submit" role="menuitem">
+                                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                                Sair
+                            </button>
+                        </form>
+                    </div>
+                </details>
             {% else %}
                 <a class="login-link" href="{% url 'auth_home' %}">
                     <i class="fa-regular fa-user" aria-hidden="true"></i>
@@ -71,6 +82,16 @@
         </div>
     </div>
 </header>
+
+{% if messages %}
+    <div class="message-stack" aria-live="polite" aria-label="Mensagens do sistema">
+        {% for message in messages %}
+            <div class="system-message {{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 
 <main id="conteudo">
     <section class="hero-section" aria-labelledby="hero-title">
