@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
-from .forms import CadastroPassageiroForm
+from .forms import CadastroUsuarioForm
 from .models import Passageiro
 
 
@@ -157,15 +157,20 @@ def auth_home(request):
 
 def cadastro(request):
     if request.method == 'POST':
-        form = CadastroPassageiroForm(request.POST)
+        form = CadastroUsuarioForm(request.POST)
         if form.is_valid():
             form.save()
             messages.success(request, 'Conta criada com sucesso. Faca login para continuar.')
             return redirect('login')
     else:
-        form = CadastroPassageiroForm()
+        form = CadastroUsuarioForm()
 
-    return render(request, 'cadastro.html', {'form': form})
+    tipo_atual = form['tipo'].value() or 'passageiro'
+    return render(request, 'cadastro.html', {
+        'form': form,
+        'tipo_atual': tipo_atual,
+        'cargo_choices': form.fields['cargo'].choices,
+    })
 
 
 @login_required

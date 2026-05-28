@@ -47,13 +47,34 @@
                 <legend>Tipo de Usuario <span aria-hidden="true">*</span></legend>
 
                 <div class="account-types" role="radiogroup" aria-label="Tipo de usuario">
-                    <label class="type-card active">
-                        <input type="radio" name="tipo" value="passageiro" checked readonly>
+                    <label class="type-card{% if tipo_atual == 'passageiro' %} active{% endif %}" data-account-card>
+                        <input type="radio" name="tipo" value="passageiro" {% if tipo_atual == 'passageiro' %}checked{% endif %}>
                         <i class="fa-solid fa-users" aria-hidden="true"></i>
                         <strong>Passageiro</strong>
                         <span>Para reservar voos e fazer check-in</span>
                     </label>
+
+                    <label class="type-card{% if tipo_atual == 'funcionario' %} active{% endif %}" data-account-card>
+                        <input type="radio" name="tipo" value="funcionario" {% if tipo_atual == 'funcionario' %}checked{% endif %}>
+                        <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+                        <strong>Funcionario</strong>
+                        <span>Para atendimento e operacoes</span>
+                    </label>
+
+                    <label class="type-card{% if tipo_atual == 'administrador' %} active{% endif %}" data-account-card>
+                        <input type="radio" name="tipo" value="administrador" {% if tipo_atual == 'administrador' %}checked{% endif %}>
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                        <strong>Administrador</strong>
+                        <span>Para gestao do sistema</span>
+                    </label>
                 </div>
+                {% if form.tipo.errors %}
+                    <div class="field-errors" role="alert">
+                        {% for error in form.tipo.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </fieldset>
 
             <div class="form-field full">
@@ -120,7 +141,7 @@
             </div>
 
             <div class="form-row">
-                <div class="form-field">
+                <div class="form-field{% if tipo_atual == 'administrador' %} is-hidden{% endif %}" data-account-field="passageiro funcionario" data-required-for="passageiro funcionario">
                     <label for="id_contato">Telefone <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-phone" aria-hidden="true"></i>
@@ -129,8 +150,7 @@
                                type="tel"
                                placeholder="(11) 99999-9999"
                                value="{{ form.contato.value|default_if_none:'' }}"
-                               autocomplete="tel"
-                               required>
+                               autocomplete="tel">
                     </div>
                     {% if form.contato.errors %}
                         <div class="field-errors" role="alert">
@@ -141,7 +161,7 @@
                     {% endif %}
                 </div>
 
-                <div class="form-field">
+                <div class="form-field{% if tipo_atual != 'passageiro' %} is-hidden{% endif %}" data-account-field="passageiro" data-required-for="passageiro">
                     <label for="id_cpf_passaporte">CPF / Passaporte <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-id-card" aria-hidden="true"></i>
@@ -149,8 +169,7 @@
                                name="cpf_passaporte"
                                type="text"
                                placeholder="000.000.000-00"
-                               value="{{ form.cpf_passaporte.value|default_if_none:'' }}"
-                               required>
+                               value="{{ form.cpf_passaporte.value|default_if_none:'' }}">
                     </div>
                     {% if form.cpf_passaporte.errors %}
                         <div class="field-errors" role="alert">
@@ -163,15 +182,14 @@
             </div>
 
             <div class="form-row">
-                <div class="form-field">
+                <div class="form-field{% if tipo_atual != 'passageiro' %} is-hidden{% endif %}" data-account-field="passageiro" data-required-for="passageiro">
                     <label for="id_data_nascimento">Data de Nascimento <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-calendar" aria-hidden="true"></i>
                         <input id="id_data_nascimento"
                                name="data_nascimento"
                                type="date"
-                               value="{{ form.data_nascimento.value|default_if_none:'' }}"
-                               required>
+                               value="{{ form.data_nascimento.value|default_if_none:'' }}">
                     </div>
                     {% if form.data_nascimento.errors %}
                         <div class="field-errors" role="alert">
@@ -182,7 +200,7 @@
                     {% endif %}
                 </div>
 
-                <div class="form-field">
+                <div class="form-field{% if tipo_atual != 'passageiro' %} is-hidden{% endif %}" data-account-field="passageiro" data-required-for="passageiro">
                     <label for="id_nacionalidade">Nacionalidade <span aria-hidden="true">*</span></label>
                     <div class="input-group">
                         <i class="fa-solid fa-globe" aria-hidden="true"></i>
@@ -190,12 +208,51 @@
                                name="nacionalidade"
                                type="text"
                                placeholder="Brasileira"
-                               value="{{ form.nacionalidade.value|default_if_none:'' }}"
-                               required>
+                               value="{{ form.nacionalidade.value|default_if_none:'' }}">
                     </div>
                     {% if form.nacionalidade.errors %}
                         <div class="field-errors" role="alert">
                             {% for error in form.nacionalidade.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field{% if tipo_atual != 'funcionario' %} is-hidden{% endif %}" data-account-field="funcionario" data-required-for="funcionario">
+                    <label for="id_cargo">Cargo <span aria-hidden="true">*</span></label>
+                    <div class="input-group">
+                        <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+                        <select id="id_cargo" name="cargo">
+                            {% for value, label in cargo_choices %}
+                                <option value="{{ value }}" {% if form.cargo.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if form.cargo.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.cargo.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-field{% if tipo_atual != 'funcionario' %} is-hidden{% endif %}" data-account-field="funcionario" data-required-for="funcionario">
+                    <label for="id_matricula">Matricula <span aria-hidden="true">*</span></label>
+                    <div class="input-group">
+                        <i class="fa-solid fa-address-card" aria-hidden="true"></i>
+                        <input id="id_matricula"
+                               name="matricula"
+                               type="text"
+                               placeholder="MAT123"
+                               value="{{ form.matricula.value|default_if_none:'' }}">
+                    </div>
+                    {% if form.matricula.errors %}
+                        <div class="field-errors" role="alert">
+                            {% for error in form.matricula.errors %}
                                 <p>{{ error }}</p>
                             {% endfor %}
                         </div>
@@ -255,5 +312,37 @@
         </form>
     </section>
 </main>
+
+<script>
+    const radios = document.querySelectorAll('input[name="tipo"]');
+    const cards = document.querySelectorAll('[data-account-card]');
+    const conditionalFields = document.querySelectorAll('[data-account-field]');
+
+    function updateAccountFields() {
+        const selectedType = document.querySelector('input[name="tipo"]:checked')?.value || 'passageiro';
+
+        cards.forEach((card) => {
+            const input = card.querySelector('input[name="tipo"]');
+            card.classList.toggle('active', input?.value === selectedType);
+        });
+
+        conditionalFields.forEach((field) => {
+            const visibleFor = field.dataset.accountField.split(' ');
+            const requiredFor = (field.dataset.requiredFor || '').split(' ');
+            const shouldShow = visibleFor.includes(selectedType);
+            const shouldRequire = requiredFor.includes(selectedType);
+
+            field.classList.toggle('is-hidden', !shouldShow);
+            field.querySelectorAll('input, select').forEach((input) => {
+                input.required = shouldShow && shouldRequire;
+            });
+        });
+    }
+
+    radios.forEach((radio) => {
+        radio.addEventListener('change', updateAccountFields);
+    });
+    updateAccountFields();
+</script>
 </body>
 </html>
