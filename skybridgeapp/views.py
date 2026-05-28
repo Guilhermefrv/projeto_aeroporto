@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
-from .forms import CadastroUsuarioForm
+from .forms import CadastroAdministradorForm, CadastroFuncionarioForm, CadastroPassageiroForm
 from .models import Passageiro
 
 
@@ -155,21 +155,38 @@ def auth_home(request):
     return render(request, 'auth_home.html')
 
 
+CADASTRO_FORMS = {
+    'passageiro': CadastroPassageiroForm,
+    'funcionario': CadastroFuncionarioForm,
+    'administrador': CadastroAdministradorForm,
+}
+
+
 def cadastro(request):
+    tipo_enviado = request.POST.get('tipo_usuario') if request.method == 'POST' else None
+    forms = {
+        tipo: form_class(request.POST if tipo == tipo_enviado else None)
+        for tipo, form_class in CADASTRO_FORMS.items()
+    }
+    modal_aberto = None
+
     if request.method == 'POST':
-        form = CadastroUsuarioForm(request.POST)
-        if form.is_valid():
+        form = forms.get(tipo_enviado)
+        if form and form.is_valid():
             form.save()
             messages.success(request, 'Conta criada com sucesso. Faca login para continuar.')
             return redirect('login')
-    else:
-        form = CadastroUsuarioForm()
 
-    tipo_atual = form['tipo'].value() or 'passageiro'
+        if form:
+            modal_aberto = tipo_enviado
+        else:
+            messages.error(request, 'Selecione um tipo de usuario valido.')
+
     return render(request, 'cadastro.html', {
-        'form': form,
-        'tipo_atual': tipo_atual,
-        'cargo_choices': form.fields['cargo'].choices,
+        'passageiro_form': forms['passageiro'],
+        'funcionario_form': forms['funcionario'],
+        'administrador_form': forms['administrador'],
+        'modal_aberto': modal_aberto,
     })
 
 

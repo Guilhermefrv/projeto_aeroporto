@@ -8,6 +8,7 @@
 
     <title>Criar Conta | Sky Bridge</title>
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/cadastro.css' %}">
 
     <link rel="stylesheet"
@@ -32,317 +33,484 @@
             </div>
         </header>
 
-        <form class="signup-form" action="{% url 'cadastro' %}" method="post">
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-                <div class="form-errors" role="alert">
-                    {% for error in form.non_field_errors %}
-                        <p>{{ error }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            <fieldset>
-                <legend>Tipo de Usuario <span aria-hidden="true">*</span></legend>
-
-                <div class="account-types" role="radiogroup" aria-label="Tipo de usuario">
-                    <label class="type-card{% if tipo_atual == 'passageiro' %} active{% endif %}" data-account-card>
-                        <input type="radio" name="tipo" value="passageiro" {% if tipo_atual == 'passageiro' %}checked{% endif %}>
-                        <i class="fa-solid fa-users" aria-hidden="true"></i>
-                        <strong>Passageiro</strong>
-                        <span>Para reservar voos e fazer check-in</span>
-                    </label>
-
-                    <label class="type-card{% if tipo_atual == 'funcionario' %} active{% endif %}" data-account-card>
-                        <input type="radio" name="tipo" value="funcionario" {% if tipo_atual == 'funcionario' %}checked{% endif %}>
-                        <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
-                        <strong>Funcionario</strong>
-                        <span>Para atendimento e operacoes</span>
-                    </label>
-
-                    <label class="type-card{% if tipo_atual == 'administrador' %} active{% endif %}" data-account-card>
-                        <input type="radio" name="tipo" value="administrador" {% if tipo_atual == 'administrador' %}checked{% endif %}>
-                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-                        <strong>Administrador</strong>
-                        <span>Para gestao do sistema</span>
-                    </label>
-                </div>
-                {% if form.tipo.errors %}
-                    <div class="field-errors" role="alert">
-                        {% for error in form.tipo.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </fieldset>
-
-            <div class="form-field full">
-                <label for="id_username">Usuario <span aria-hidden="true">*</span></label>
-                <div class="input-group">
-                    <i class="fa-solid fa-user-tag" aria-hidden="true"></i>
-                    <input id="id_username"
-                           name="username"
-                           type="text"
-                           placeholder="maria.silva"
-                           value="{{ form.username.value|default_if_none:'' }}"
-                           autocomplete="username"
-                           required>
-                </div>
-                {% if form.username.errors %}
-                    <div class="field-errors" role="alert">
-                        {% for error in form.username.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
+        {% if messages %}
+            <div class="form-messages" role="status">
+                {% for message in messages %}
+                    <p class="message {{ message.tags }}">{{ message }}</p>
+                {% endfor %}
             </div>
+        {% endif %}
 
-            <div class="form-field full">
-                <label for="id_nome">Nome Completo <span aria-hidden="true">*</span></label>
-                <div class="input-group">
-                    <i class="fa-solid fa-user" aria-hidden="true"></i>
-                    <input id="id_nome"
-                           name="nome"
-                           type="text"
-                           placeholder="Joao da Silva"
-                           value="{{ form.nome.value|default_if_none:'' }}"
-                           autocomplete="name"
-                           required>
-                </div>
-                {% if form.nome.errors %}
-                    <div class="field-errors" role="alert">
-                        {% for error in form.nome.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="form-field full">
-                <label for="id_email">Email <span aria-hidden="true">*</span></label>
-                <div class="input-group">
-                    <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-                    <input id="id_email"
-                           name="email"
-                           type="email"
-                           placeholder="seu@email.com"
-                           value="{{ form.email.value|default_if_none:'' }}"
-                           autocomplete="email"
-                           required>
-                </div>
-                {% if form.email.errors %}
-                    <div class="field-errors" role="alert">
-                        {% for error in form.email.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="form-row">
-                <div class="form-field{% if tipo_atual == 'administrador' %} is-hidden{% endif %}" data-account-field="passageiro funcionario" data-required-for="passageiro funcionario">
-                    <label for="id_contato">Telefone <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-phone" aria-hidden="true"></i>
-                        <input id="id_contato"
-                               name="contato"
-                               type="tel"
-                               placeholder="(11) 99999-9999"
-                               value="{{ form.contato.value|default_if_none:'' }}"
-                               autocomplete="tel">
-                    </div>
-                    {% if form.contato.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.contato.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="form-field{% if tipo_atual != 'passageiro' %} is-hidden{% endif %}" data-account-field="passageiro" data-required-for="passageiro">
-                    <label for="id_cpf_passaporte">CPF / Passaporte <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-id-card" aria-hidden="true"></i>
-                        <input id="id_cpf_passaporte"
-                               name="cpf_passaporte"
-                               type="text"
-                               placeholder="000.000.000-00"
-                               value="{{ form.cpf_passaporte.value|default_if_none:'' }}">
-                    </div>
-                    {% if form.cpf_passaporte.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.cpf_passaporte.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-field{% if tipo_atual != 'passageiro' %} is-hidden{% endif %}" data-account-field="passageiro" data-required-for="passageiro">
-                    <label for="id_data_nascimento">Data de Nascimento <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-calendar" aria-hidden="true"></i>
-                        <input id="id_data_nascimento"
-                               name="data_nascimento"
-                               type="date"
-                               value="{{ form.data_nascimento.value|default_if_none:'' }}">
-                    </div>
-                    {% if form.data_nascimento.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.data_nascimento.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="form-field{% if tipo_atual != 'passageiro' %} is-hidden{% endif %}" data-account-field="passageiro" data-required-for="passageiro">
-                    <label for="id_nacionalidade">Nacionalidade <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-globe" aria-hidden="true"></i>
-                        <input id="id_nacionalidade"
-                               name="nacionalidade"
-                               type="text"
-                               placeholder="Brasileira"
-                               value="{{ form.nacionalidade.value|default_if_none:'' }}">
-                    </div>
-                    {% if form.nacionalidade.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.nacionalidade.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-field{% if tipo_atual != 'funcionario' %} is-hidden{% endif %}" data-account-field="funcionario" data-required-for="funcionario">
-                    <label for="id_cargo">Cargo <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
-                        <select id="id_cargo" name="cargo">
-                            {% for value, label in cargo_choices %}
-                                <option value="{{ value }}" {% if form.cargo.value == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    {% if form.cargo.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.cargo.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="form-field{% if tipo_atual != 'funcionario' %} is-hidden{% endif %}" data-account-field="funcionario" data-required-for="funcionario">
-                    <label for="id_matricula">Matricula <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-address-card" aria-hidden="true"></i>
-                        <input id="id_matricula"
-                               name="matricula"
-                               type="text"
-                               placeholder="MAT123"
-                               value="{{ form.matricula.value|default_if_none:'' }}">
-                    </div>
-                    {% if form.matricula.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.matricula.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-field">
-                    <label for="id_password1">Senha <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                        <input id="id_password1"
-                               name="password1"
-                               type="password"
-                               autocomplete="new-password"
-                               required>
-                    </div>
-                    {% if form.password1.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.password1.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="form-field">
-                    <label for="id_password2">Confirmar Senha <span aria-hidden="true">*</span></label>
-                    <div class="input-group">
-                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                        <input id="id_password2"
-                               name="password2"
-                               type="password"
-                               autocomplete="new-password"
-                               required>
-                    </div>
-                    {% if form.password2.errors %}
-                        <div class="field-errors" role="alert">
-                            {% for error in form.password2.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <button type="submit" class="submit-button">
-                <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-                Criar Conta
+        <div class="account-types" aria-label="Escolha o tipo de usuario">
+            <button class="type-card"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalPassageiro"
+                    aria-label="Criar conta de passageiro">
+                <i class="fa-solid fa-users" aria-hidden="true"></i>
+                <strong>Passageiro</strong>
+                <span>Para reservar voos e fazer check-in</span>
             </button>
 
-            <p class="login-copy">
-                Ja tem uma conta?
-                <a href="{% url 'login' %}">Fazer login</a>
-            </p>
-        </form>
+            <button class="type-card"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalFuncionario"
+                    aria-label="Criar conta de funcionario">
+                <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+                <strong>Funcionario</strong>
+                <span>Para atendimento e operacoes</span>
+            </button>
+
+            <button class="type-card"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalAdministrador"
+                    aria-label="Criar conta de administrador">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                <strong>Administrador</strong>
+                <span>Para gestao do sistema</span>
+            </button>
+        </div>
+
+        <p class="login-copy">
+            Ja tem uma conta?
+            <a href="{% url 'login' %}">Fazer login</a>
+        </p>
     </section>
 </main>
 
-<script>
-    const radios = document.querySelectorAll('input[name="tipo"]');
-    const cards = document.querySelectorAll('[data-account-card]');
-    const conditionalFields = document.querySelectorAll('[data-account-field]');
+<div class="modal fade" id="modalPassageiro" tabindex="-1" aria-labelledby="modalPassageiroLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content signup-modal-content">
+            <form class="modal-form" action="{% url 'cadastro' %}" method="post" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="tipo_usuario" value="passageiro">
 
-    function updateAccountFields() {
-        const selectedType = document.querySelector('input[name="tipo"]:checked')?.value || 'passageiro';
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">Conta de passageiro</p>
+                        <h2 class="modal-title" id="modalPassageiroLabel">Criar conta para viajar</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
 
-        cards.forEach((card) => {
-            const input = card.querySelector('input[name="tipo"]');
-            card.classList.toggle('active', input?.value === selectedType);
+                <div class="modal-body">
+                    {% if passageiro_form.non_field_errors %}
+                        <div class="form-errors" role="alert">
+                            {% for error in passageiro_form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-field full">
+                        <label for="id_passageiro_username">Usuario <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-user-tag" aria-hidden="true"></i>
+                            <input id="id_passageiro_username" name="username" type="text" placeholder="maria.silva" value="{{ passageiro_form.username.value|default_if_none:'' }}" autocomplete="username" required>
+                        </div>
+                        {% if passageiro_form.username.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in passageiro_form.username.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="id_passageiro_nome">Nome Completo <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-user" aria-hidden="true"></i>
+                            <input id="id_passageiro_nome" name="nome" type="text" placeholder="Joao da Silva" value="{{ passageiro_form.nome.value|default_if_none:'' }}" autocomplete="name" required>
+                        </div>
+                        {% if passageiro_form.nome.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in passageiro_form.nome.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="id_passageiro_email">Email <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                            <input id="id_passageiro_email" name="email" type="email" placeholder="seu@email.com" value="{{ passageiro_form.email.value|default_if_none:'' }}" autocomplete="email" required>
+                        </div>
+                        {% if passageiro_form.email.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in passageiro_form.email.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="id_passageiro_contato">Telefone <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                                <input id="id_passageiro_contato" name="contato" type="tel" placeholder="(11) 99999-9999" value="{{ passageiro_form.contato.value|default_if_none:'' }}" autocomplete="tel" required>
+                            </div>
+                            {% if passageiro_form.contato.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in passageiro_form.contato.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_passageiro_cpf">CPF / Passaporte <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                                <input id="id_passageiro_cpf" name="cpf_passaporte" type="text" placeholder="000.000.000-00" value="{{ passageiro_form.cpf_passaporte.value|default_if_none:'' }}" required>
+                            </div>
+                            {% if passageiro_form.cpf_passaporte.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in passageiro_form.cpf_passaporte.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="id_passageiro_data">Data de Nascimento <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+                                <input id="id_passageiro_data" name="data_nascimento" type="date" value="{{ passageiro_form.data_nascimento.value|default_if_none:'' }}" required>
+                            </div>
+                            {% if passageiro_form.data_nascimento.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in passageiro_form.data_nascimento.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_passageiro_nacionalidade">Nacionalidade <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-globe" aria-hidden="true"></i>
+                                <input id="id_passageiro_nacionalidade" name="nacionalidade" type="text" placeholder="Brasileira" value="{{ passageiro_form.nacionalidade.value|default_if_none:'' }}" required>
+                            </div>
+                            {% if passageiro_form.nacionalidade.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in passageiro_form.nacionalidade.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="id_passageiro_password1">Senha <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                                <input id="id_passageiro_password1" name="password1" type="password" autocomplete="new-password" required>
+                            </div>
+                            {% if passageiro_form.password1.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in passageiro_form.password1.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_passageiro_password2">Confirmar Senha <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                                <input id="id_passageiro_password2" name="password2" type="password" autocomplete="new-password" required>
+                            </div>
+                            {% if passageiro_form.password2.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in passageiro_form.password2.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="modal-cancel-button" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="submit-button">
+                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                        Criar Conta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalFuncionario" tabindex="-1" aria-labelledby="modalFuncionarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content signup-modal-content">
+            <form class="modal-form" action="{% url 'cadastro' %}" method="post" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="tipo_usuario" value="funcionario">
+
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">Conta de funcionario</p>
+                        <h2 class="modal-title" id="modalFuncionarioLabel">Criar acesso operacional</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+
+                <div class="modal-body">
+                    {% if funcionario_form.non_field_errors %}
+                        <div class="form-errors" role="alert">
+                            {% for error in funcionario_form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-field full">
+                        <label for="id_funcionario_username">Usuario <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-user-tag" aria-hidden="true"></i>
+                            <input id="id_funcionario_username" name="username" type="text" placeholder="joao.funcionario" value="{{ funcionario_form.username.value|default_if_none:'' }}" autocomplete="username" required>
+                        </div>
+                        {% if funcionario_form.username.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in funcionario_form.username.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="id_funcionario_nome">Nome Completo <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-user" aria-hidden="true"></i>
+                            <input id="id_funcionario_nome" name="nome" type="text" placeholder="Joao da Silva" value="{{ funcionario_form.nome.value|default_if_none:'' }}" autocomplete="name" required>
+                        </div>
+                        {% if funcionario_form.nome.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in funcionario_form.nome.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="id_funcionario_email">Email <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                            <input id="id_funcionario_email" name="email" type="email" placeholder="funcionario@email.com" value="{{ funcionario_form.email.value|default_if_none:'' }}" autocomplete="email" required>
+                        </div>
+                        {% if funcionario_form.email.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in funcionario_form.email.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="id_funcionario_contato">Telefone <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                                <input id="id_funcionario_contato" name="contato" type="tel" placeholder="(11) 99999-9999" value="{{ funcionario_form.contato.value|default_if_none:'' }}" autocomplete="tel" required>
+                            </div>
+                            {% if funcionario_form.contato.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in funcionario_form.contato.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_funcionario_cargo">Cargo <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+                                <select id="id_funcionario_cargo" name="cargo" required>
+                                    <option value="">Selecione um cargo</option>
+                                    {% for value, label in funcionario_form.fields.cargo.choices %}
+                                        <option value="{{ value }}" {% if funcionario_form.cargo.value == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% if funcionario_form.cargo.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in funcionario_form.cargo.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="id_funcionario_matricula">Matricula <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-address-card" aria-hidden="true"></i>
+                            <input id="id_funcionario_matricula" name="matricula" type="text" placeholder="MAT123" value="{{ funcionario_form.matricula.value|default_if_none:'' }}" required>
+                        </div>
+                        {% if funcionario_form.matricula.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in funcionario_form.matricula.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="id_funcionario_password1">Senha <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                                <input id="id_funcionario_password1" name="password1" type="password" autocomplete="new-password" required>
+                            </div>
+                            {% if funcionario_form.password1.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in funcionario_form.password1.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_funcionario_password2">Confirmar Senha <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                                <input id="id_funcionario_password2" name="password2" type="password" autocomplete="new-password" required>
+                            </div>
+                            {% if funcionario_form.password2.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in funcionario_form.password2.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="modal-cancel-button" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="submit-button">
+                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                        Criar Conta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAdministrador" tabindex="-1" aria-labelledby="modalAdministradorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content signup-modal-content">
+            <form class="modal-form" action="{% url 'cadastro' %}" method="post" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="tipo_usuario" value="administrador">
+
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">Conta administrativa</p>
+                        <h2 class="modal-title" id="modalAdministradorLabel">Criar acesso administrativo</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+
+                <div class="modal-body">
+                    {% if administrador_form.non_field_errors %}
+                        <div class="form-errors" role="alert">
+                            {% for error in administrador_form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-field full">
+                        <label for="id_administrador_username">Usuario <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-user-tag" aria-hidden="true"></i>
+                            <input id="id_administrador_username" name="username" type="text" placeholder="ana.admin" value="{{ administrador_form.username.value|default_if_none:'' }}" autocomplete="username" required>
+                        </div>
+                        {% if administrador_form.username.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in administrador_form.username.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="id_administrador_nome">Nome Completo <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-user" aria-hidden="true"></i>
+                            <input id="id_administrador_nome" name="nome" type="text" placeholder="Ana Silva" value="{{ administrador_form.nome.value|default_if_none:'' }}" autocomplete="name" required>
+                        </div>
+                        {% if administrador_form.nome.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in administrador_form.nome.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="id_administrador_email">Email <span aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                            <input id="id_administrador_email" name="email" type="email" placeholder="admin@email.com" value="{{ administrador_form.email.value|default_if_none:'' }}" autocomplete="email" required>
+                        </div>
+                        {% if administrador_form.email.errors %}
+                            <div class="field-errors" role="alert">
+                                {% for error in administrador_form.email.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="id_administrador_password1">Senha <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                                <input id="id_administrador_password1" name="password1" type="password" autocomplete="new-password" required>
+                            </div>
+                            {% if administrador_form.password1.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in administrador_form.password1.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_administrador_password2">Confirmar Senha <span aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                                <input id="id_administrador_password2" name="password2" type="password" autocomplete="new-password" required>
+                            </div>
+                            {% if administrador_form.password2.errors %}
+                                <div class="field-errors" role="alert">
+                                    {% for error in administrador_form.password2.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="modal-cancel-button" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="submit-button">
+                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                        Criar Conta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% if modal_aberto %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalIds = {
+                passageiro: 'modalPassageiro',
+                funcionario: 'modalFuncionario',
+                administrador: 'modalAdministrador',
+            };
+            const modalId = modalIds['{{ modal_aberto }}'];
+            const modalElement = modalId ? document.getElementById(modalId) : null;
+
+            if (modalElement) {
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            }
         });
-
-        conditionalFields.forEach((field) => {
-            const visibleFor = field.dataset.accountField.split(' ');
-            const requiredFor = (field.dataset.requiredFor || '').split(' ');
-            const shouldShow = visibleFor.includes(selectedType);
-            const shouldRequire = requiredFor.includes(selectedType);
-
-            field.classList.toggle('is-hidden', !shouldShow);
-            field.querySelectorAll('input, select').forEach((input) => {
-                input.required = shouldShow && shouldRequire;
-            });
-        });
-    }
-
-    radios.forEach((radio) => {
-        radio.addEventListener('change', updateAccountFields);
-    });
-    updateAccountFields();
-</script>
+    </script>
+{% endif %}
 </body>
 </html>

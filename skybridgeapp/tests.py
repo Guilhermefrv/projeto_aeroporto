@@ -84,10 +84,14 @@ class AuthFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Criar Conta')
-        self.assertContains(response, 'name="tipo"')
-        self.assertContains(response, 'value="passageiro"')
-        self.assertContains(response, 'value="funcionario"')
-        self.assertContains(response, 'value="administrador"')
+        self.assertContains(response, 'data-bs-toggle="modal"')
+        self.assertContains(response, 'data-bs-target="#modalPassageiro"')
+        self.assertContains(response, 'data-bs-target="#modalFuncionario"')
+        self.assertContains(response, 'data-bs-target="#modalAdministrador"')
+        self.assertContains(response, 'class="modal fade"')
+        self.assertContains(response, 'name="tipo_usuario" value="passageiro"')
+        self.assertContains(response, 'name="tipo_usuario" value="funcionario"')
+        self.assertContains(response, 'name="tipo_usuario" value="administrador"')
         self.assertContains(response, 'name="username"')
         self.assertContains(response, 'name="nome"')
         self.assertContains(response, 'name="email"')
@@ -187,7 +191,7 @@ class CadastroUsuarioTests(TestCase):
 
     def dados_passageiro(self):
         return {
-            'tipo': 'passageiro',
+            'tipo_usuario': 'passageiro',
             'username': 'maria.silva',
             'nome': 'Maria Silva',
             'email': 'maria@example.com',
@@ -201,7 +205,7 @@ class CadastroUsuarioTests(TestCase):
 
     def dados_funcionario(self):
         return {
-            'tipo': 'funcionario',
+            'tipo_usuario': 'funcionario',
             'username': 'joao.funcionario',
             'nome': 'Joao Funcionario',
             'email': 'joao.funcionario@example.com',
@@ -214,7 +218,7 @@ class CadastroUsuarioTests(TestCase):
 
     def dados_administrador(self):
         return {
-            'tipo': 'administrador',
+            'tipo_usuario': 'administrador',
             'username': 'ana.admin',
             'nome': 'Ana Admin',
             'email': 'ana.admin@example.com',
@@ -275,6 +279,35 @@ class CadastroUsuarioTests(TestCase):
         self.assertFalse(usuario.is_superuser)
         self.assertFalse(Passageiro.objects.filter(usuario=usuario).exists())
         self.assertFalse(Funcionario.objects.filter(usuario=usuario).exists())
+
+    def test_cadastro_passageiro_nao_exige_cargo_ou_matricula(self):
+        data = self.dados_passageiro()
+        data.pop('cargo', None)
+        data.pop('matricula', None)
+
+        response = self.client.post(self.cadastro_url, data)
+
+        self.assertRedirects(response, self.login_url)
+
+    def test_cadastro_funcionario_exige_cargo_e_matricula(self):
+        data = self.dados_funcionario()
+        data.pop('cargo')
+        data.pop('matricula')
+
+        response = self.client.post(self.cadastro_url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['modal_aberto'], 'funcionario')
+        self.assertFalse(get_user_model().objects.filter(username='joao.funcionario').exists())
+        self.assertTrue(response.context['funcionario_form'].errors['cargo'])
+        self.assertTrue(response.context['funcionario_form'].errors['matricula'])
+
+    def test_cadastro_administrador_nao_exige_campos_de_perfis(self):
+        data = self.dados_administrador()
+
+        response = self.client.post(self.cadastro_url, data)
+
+        self.assertRedirects(response, self.login_url)
 
     def test_cadastro_nao_salva_senha_em_texto_puro(self):
         self.client.post(self.cadastro_url, self.form_data)
