@@ -46,7 +46,9 @@
                             data-bs-toggle="dropdown"
                             data-bs-auto-close="outside"
                             aria-expanded="false">
-                        <i class="fa-regular fa-user" aria-hidden="true"></i>
+                        <span class="account-trigger-icon" aria-hidden="true">
+                            <i class="fa-regular fa-user"></i>
+                        </span>
                         <span class="account-greeting">{{ account_label }}</span>
                         {% if notificacoes_nao_lidas %}
                             <span class="notification-badge">{{ notificacoes_nao_lidas }}</span>
@@ -55,26 +57,37 @@
 
                     <div class="dropdown-menu dropdown-menu-end account-dropdown" aria-labelledby="accountMenuButton">
                         <div class="account-user-summary">
-                            <strong>{{ user.get_full_name|default:user.username }}</strong>
-                            <span>{{ user.get_tipo_display }}</span>
+                            <span class="account-avatar" aria-hidden="true">{{ account_initials }}</span>
+                            <span class="account-user-copy">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <span>{{ user.get_tipo_display }}</span>
+                            </span>
                         </div>
                         <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
-                            <i class="fa-regular fa-user" aria-hidden="true"></i>
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-regular fa-user"></i>
+                            </span>
                             Minha conta
                         </a>
                         <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
-                            <i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i>
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-solid fa-suitcase-rolling"></i>
+                            </span>
                             Minhas viagens
                         </a>
                         <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
-                            <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-regular fa-bell"></i>
+                            </span>
                             Notificações
                         </a>
                         <div class="dropdown-divider"></div>
                         <form class="account-menu-form" method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
                             <button class="dropdown-item account-dropdown-item account-logout-item" type="submit">
-                                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                                <span class="account-item-icon" aria-hidden="true">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </span>
                                 Sair
                             </button>
                         </form>
@@ -119,10 +132,10 @@
 <main id="conteudo">
     <section class="hero-section" aria-labelledby="hero-title">
         <div class="hero-copy">
-            <p class="eyebrow">Promoções por tempo limitado</p>
-            <h1 id="hero-title">Ofertas e promoções para sua próxima viagem</h1>
+            <p class="eyebrow">Promoções nacionais por tempo limitado</p>
+            <h1 id="hero-title">Ofertas nacionais para sua próxima viagem</h1>
             <p>
-                Encontre passagens, pacotes e destinos selecionados com preços especiais,
+                Encontre passagens, pacotes e destinos selecionados pelo Brasil com preços especiais,
                 opções flexíveis e benefícios para viajar melhor.
             </p>
         </div>
@@ -141,11 +154,11 @@
             <div class="search-heading">
                 <div>
                     <p class="eyebrow">Planeje sua viagem</p>
-                    <h2 id="search-title">Busque ofertas de voos e serviços</h2>
+                    <h2 id="search-title">Busque voos nacionais e serviços</h2>
                 </div>
                 <button class="ghost-button" type="button">
                     <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-                    Todos os aeroportos
+                    Aeroportos do Brasil
                 </button>
             </div>
 
@@ -185,6 +198,18 @@
                         </span>
                     </button>
                 {% endfor %}
+            </div>
+
+            <div class="airport-strip" aria-label="Aeroportos nacionais em destaque">
+                <span>Destinos selecionados pelo Brasil</span>
+                <div class="airport-chip-row">
+                    {% for airport in domestic_airports %}
+                        <button class="airport-chip" type="button" aria-label="{{ airport.code }} - {{ airport.city }} - {{ airport.name }}">
+                            <strong>{{ airport.code }}</strong>
+                            <span>{{ airport.city }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
             </div>
 
             <div class="search-footer">
@@ -238,8 +263,8 @@
     <section class="offers-section" aria-labelledby="offers-title">
         <div class="section-heading">
             <div>
-                <p class="eyebrow">Ofertas em destaque</p>
-                <h2 id="offers-title">Encontre ofertas para sua próxima viagem</h2>
+                <p class="eyebrow">Destinos pelo Brasil</p>
+                <h2 id="offers-title">Encontre ofertas nacionais para sua próxima viagem</h2>
             </div>
             <button class="ghost-button" type="button">Ver calendário de preços</button>
         </div>

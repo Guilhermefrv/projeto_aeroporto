@@ -24,8 +24,8 @@ LANDING_CONTEXT = {
         {'label': 'Carros'},
     ],
     'search_fields': [
-        {'label': 'Origem', 'value': 'São Paulo', 'aria_label': 'Selecionar origem'},
-        {'label': 'Destino', 'value': 'Para onde?', 'aria_label': 'Selecionar destino'},
+        {'label': 'Origem', 'value': 'GRU - São Paulo', 'aria_label': 'Selecionar origem nacional'},
+        {'label': 'Destino', 'value': 'Destino nacional', 'aria_label': 'Selecionar destino nacional'},
         {'label': 'Ida', 'value': 'Escolher data', 'aria_label': 'Selecionar data de ida'},
         {'label': 'Volta', 'value': 'Escolher data', 'aria_label': 'Selecionar data de volta'},
         {'label': 'Passageiros', 'value': '1 adulto', 'aria_label': 'Selecionar passageiros'},
@@ -41,10 +41,16 @@ LANDING_CONTEXT = {
         {'label': 'Usar milhas', 'active': True},
         {'label': 'Milhas + dinheiro'},
     ],
+    'domestic_airports': [
+        {'code': 'GRU', 'city': 'São Paulo', 'name': 'Guarulhos', 'region': 'Sudeste'},
+        {'code': 'CWB', 'city': 'Curitiba', 'name': 'Afonso Pena', 'region': 'Sul'},
+        {'code': 'REC', 'city': 'Recife', 'name': 'Guararapes', 'region': 'Nordeste'},
+        {'code': 'MAO', 'city': 'Manaus', 'name': 'Eduardo Gomes', 'region': 'Norte'},
+        {'code': 'BSB', 'city': 'Brasília', 'name': 'Presidente Juscelino Kubitschek', 'region': 'Centro-Oeste'},
+    ],
     'offer_filters': [
         {'label': 'Todos os destinos', 'active': True},
         {'label': 'Nacionais'},
-        {'label': 'Internacionais'},
         {'label': 'Menor preço'},
         {'label': 'Voos diretos'},
         {'label': 'Voos com conexão'},
@@ -72,25 +78,46 @@ LANDING_CONTEXT = {
             'price': 'R$ 299',
         },
         {
-            'image_class': 'offer-buenos-aires',
-            'route': 'São Paulo → Buenos Aires',
-            'title': 'Fim de semana internacional',
-            'description': 'Opções com conexão curta ou voo direto.',
-            'price': 'R$ 689',
+            'image_class': 'offer-manaus',
+            'route': 'São Paulo → Manaus',
+            'title': 'Amazônia e cultura no Norte',
+            'description': 'Trechos nacionais com opções em datas selecionadas.',
+            'price': 'R$ 549',
         },
         {
-            'image_class': 'offer-santiago',
-            'route': 'São Paulo → Santiago',
-            'title': 'Montanhas e gastronomia',
-            'description': 'Preços finais com taxas já consideradas.',
-            'price': 'R$ 759',
+            'image_class': 'offer-curitiba',
+            'route': 'São Paulo → Curitiba',
+            'title': 'Fim de semana no Sul',
+            'description': 'Rotas nacionais para viagens rápidas e flexíveis.',
+            'price': 'R$ 219',
         },
         {
-            'image_class': 'offer-lisboa',
-            'route': 'São Paulo → Lisboa',
-            'title': 'Europa com planejamento flexível',
-            'description': 'Ofertas sujeitas à disponibilidade.',
-            'price': 'R$ 2.499',
+            'image_class': 'offer-brasilia',
+            'route': 'São Paulo → Brasília',
+            'title': 'Conexão com o Centro-Oeste',
+            'description': 'Ofertas para a capital federal com taxas incluídas.',
+            'price': 'R$ 289',
+        },
+        {
+            'image_class': 'offer-belem',
+            'route': 'São Paulo → Belém',
+            'title': 'Sabores e rios do Pará',
+            'description': 'Destinos nacionais para explorar o Norte do Brasil.',
+            'price': 'R$ 579',
+        },
+        {
+            'image_class': 'offer-porto-alegre',
+            'route': 'São Paulo → Porto Alegre',
+            'title': 'Cultura e gastronomia no Sul',
+            'description': 'Trechos nacionais com tarifas promocionais.',
+            'price': 'R$ 259',
+        },
+        {
+            'image_class': 'offer-cuiaba',
+            'route': 'São Paulo → Cuiabá',
+            'title': 'Porta de entrada para o Pantanal',
+            'description': 'Preços finais para voos dentro do Brasil.',
+            'price': 'R$ 399',
         },
     ],
     'benefits': [
@@ -153,6 +180,7 @@ def home(request):
     if request.user.is_authenticated:
         context['account_dashboard_url'] = reverse(_dashboard_route_for_user(request.user))
         context['account_label'] = _account_label_for_user(request.user)
+        context['account_initials'] = _account_initials_for_user(request.user)
 
     return render(request, 'home.html', context)
 
@@ -212,6 +240,13 @@ def _account_label_for_user(user):
     if first_name:
         return f'Olá, {first_name}'
     return 'Minha conta'
+
+
+def _account_initials_for_user(user):
+    names = [name for name in [user.first_name, user.last_name] if name]
+    if not names:
+        names = [user.username]
+    return ''.join(name[0] for name in names[:2]).upper()
 
 
 def _post_login_route_for_user(user):

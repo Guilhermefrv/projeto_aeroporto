@@ -187,26 +187,37 @@ button{
 }
 
 .account-trigger{
-    min-height:42px;
-    max-width:180px;
-    padding:0 14px;
+    min-height:44px;
+    max-width:190px;
+    padding:0 16px;
     border:0;
     border-radius:999px;
-    background:var(--navy);
+    background:linear-gradient(135deg,var(--navy),#121b4f);
     color:white;
     display:inline-flex;
     align-items:center;
-    gap:8px;
+    gap:9px;
     font-size:14px;
     font-weight:800;
     list-style:none;
-    box-shadow:0 10px 22px rgba(17,26,69,0.18);
+    line-height:1;
+    box-shadow:0 12px 26px rgba(17,26,69,0.18);
 }
 
 .account-trigger.dropdown-toggle::after{
     margin-left:2px;
     border-top-color:currentColor;
     transition:transform 0.22s ease;
+}
+
+.account-trigger-icon{
+    width:22px;
+    height:22px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.13);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
 }
 
 .account-greeting{
@@ -218,8 +229,8 @@ button{
 .account-trigger.show,
 .account-trigger:hover,
 .account-trigger:focus-visible{
-    background:#0b1238;
-    box-shadow:0 12px 26px rgba(17,26,69,0.22);
+    background:linear-gradient(135deg,#0b1238,#17215d);
+    box-shadow:0 16px 32px rgba(17,26,69,0.25);
     outline:none;
     transform:translateY(-1px);
 }
@@ -230,34 +241,61 @@ button{
 
 .account-dropdown{
     z-index:30;
-    min-width:230px;
-    padding:8px;
-    border:1px solid rgba(27,59,143,0.14);
+    min-width:280px;
+    max-width:min(320px, calc(100vw - 24px));
+    padding:10px;
+    margin-top:10px !important;
+    border:1px solid rgba(27,59,143,0.12);
     border-radius:8px;
-    background:white;
-    box-shadow:0 22px 46px rgba(16,24,40,0.18);
+    background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);
+    box-shadow:0 24px 54px rgba(16,24,40,0.18);
 }
 
 .account-user-summary{
-    padding:10px 12px 12px;
-    border-bottom:1px solid var(--line);
-    margin-bottom:6px;
+    min-width:0;
+    padding:12px;
+    border:1px solid rgba(27,59,143,0.08);
+    border-radius:8px;
+    margin-bottom:8px;
+    background:#f8fbff;
+    display:flex;
+    align-items:center;
+    gap:12px;
 }
 
-.account-user-summary strong,
-.account-user-summary span{
+.account-avatar{
+    width:42px;
+    height:42px;
+    border-radius:999px;
+    background:#eef2ff;
+    color:var(--blue);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    font-size:14px;
+    font-weight:900;
+    box-shadow:inset 0 0 0 1px rgba(27,59,143,0.08);
+}
+
+.account-user-copy{
+    min-width:0;
+}
+
+.account-user-copy strong,
+.account-user-copy span{
     display:block;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
 }
 
-.account-user-summary strong{
+.account-user-copy strong{
     color:var(--navy);
-    font-size:14px;
+    font-size:15px;
+    line-height:1.2;
 }
 
-.account-user-summary span{
+.account-user-copy span{
     color:var(--muted);
     font-size:12px;
     font-weight:800;
@@ -266,15 +304,15 @@ button{
 
 .account-dropdown-item{
     width:100%;
-    min-height:42px;
+    min-height:44px;
     padding:0 12px;
     border:0;
-    border-radius:6px;
+    border-radius:8px;
     background:transparent;
     color:var(--navy);
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:11px;
     font-size:14px;
     font-weight:800;
     text-align:left;
@@ -288,8 +326,32 @@ button{
     outline:none;
 }
 
+.account-dropdown-item:hover .account-item-icon,
+.account-dropdown-item:focus-visible .account-item-icon{
+    background:white;
+    color:var(--blue);
+}
+
+.account-item-icon{
+    width:30px;
+    height:30px;
+    border-radius:999px;
+    background:#f1f5ff;
+    color:var(--blue);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    font-size:13px;
+    transition:background 0.2s ease,color 0.2s ease;
+}
+
 .account-menu-form{
     margin:0;
+}
+
+.account-dropdown .dropdown-divider{
+    margin:8px 4px;
+    border-color:rgba(17,26,69,0.08);
 }
 
 .account-logout-item{
@@ -299,6 +361,12 @@ button{
 .account-logout-item:hover,
 .account-logout-item:focus-visible{
     background:#fff1f3;
+    color:var(--red);
+}
+
+.account-logout-item:hover .account-item-icon,
+.account-logout-item:focus-visible .account-item-icon{
+    background:white;
     color:var(--red);
 }
 
@@ -677,6 +745,65 @@ button{
     grid-column:span 2;
 }
 
+.airport-strip{
+    margin-top:18px;
+    padding:14px;
+    border:1px solid rgba(27,59,143,0.1);
+    border-radius:8px;
+    background:#f8fbff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+}
+
+.airport-strip > span{
+    color:var(--navy);
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.airport-chip-row{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    gap:8px;
+}
+
+.airport-chip{
+    min-height:38px;
+    padding:0 12px;
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:999px;
+    background:white;
+    color:var(--navy);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    box-shadow:0 6px 16px rgba(16,24,40,0.04);
+    transition:transform 0.22s ease,box-shadow 0.22s ease,border-color 0.22s ease;
+}
+
+.airport-chip strong{
+    color:var(--blue);
+    font-size:13px;
+}
+
+.airport-chip span{
+    color:#344054;
+    font-size:13px;
+    font-weight:800;
+}
+
+.airport-chip:hover,
+.airport-chip:focus-visible{
+    border-color:var(--blue);
+    box-shadow:0 10px 22px rgba(27,59,143,0.1);
+    outline:var(--ring);
+    transform:translateY(-1px);
+}
+
 .search-footer{
     margin-top:22px;
 }
@@ -815,16 +942,28 @@ button{
     --offer-image:url('https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=80');
 }
 
-.offer-buenos-aires{
-    --offer-image:url('https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&w=900&q=80');
+.offer-manaus{
+    --offer-image:url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80');
 }
 
-.offer-santiago{
-    --offer-image:url('https://images.unsplash.com/photo-1519923834699-ef0b7cde4712?auto=format&fit=crop&w=900&q=80');
+.offer-curitiba{
+    --offer-image:url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80');
 }
 
-.offer-lisboa{
-    --offer-image:url('https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=900&q=80');
+.offer-brasilia{
+    --offer-image:url('https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-belem{
+    --offer-image:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-porto-alegre{
+    --offer-image:url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=80');
+}
+
+.offer-cuiaba{
+    --offer-image:url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80');
 }
 
 .offer-image{
@@ -1106,6 +1245,15 @@ button{
         grid-template-columns:repeat(2,minmax(0,1fr));
     }
 
+    .airport-strip{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .airport-chip-row{
+        justify-content:flex-start;
+    }
+
     .offer-grid,
     .benefits-grid,
     .trust-strip{
@@ -1149,7 +1297,7 @@ button{
     }
 
     .account-dropdown{
-        right:-48px;
+        min-width:min(280px, calc(100vw - 24px));
     }
 
     .hero-section{
@@ -1201,6 +1349,15 @@ button{
     .miles-section,
     .footer-grid{
         grid-template-columns:1fr;
+    }
+
+    .airport-chip-row{
+        width:100%;
+    }
+
+    .airport-chip{
+        flex:1 1 calc(50% - 8px);
+        justify-content:center;
     }
 
     .promo-control{

@@ -104,6 +104,24 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, '/static/js/main.js')
         self.assertNotContains(response, 'class="dropdown account-menu"')
 
+    def test_home_uses_only_brazilian_flight_scope(self):
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Destinos selecionados pelo Brasil')
+        self.assertContains(response, 'GRU - São Paulo')
+        self.assertContains(response, 'CWB')
+        self.assertContains(response, 'REC')
+        self.assertContains(response, 'MAO')
+        self.assertContains(response, 'BSB')
+        self.assertContains(response, 'São Paulo → Manaus')
+        self.assertContains(response, 'São Paulo → Curitiba')
+        self.assertContains(response, 'São Paulo → Brasília')
+        self.assertNotContains(response, 'Internacionais')
+        self.assertNotContains(response, 'Buenos Aires')
+        self.assertNotContains(response, 'Santiago')
+        self.assertNotContains(response, 'Lisboa')
+
     def test_home_account_menu_greets_authenticated_user_by_first_name(self):
         user = get_user_model().objects.create_user(
             username='guilherme',
@@ -120,6 +138,8 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, 'data-bs-toggle="dropdown"')
         self.assertContains(response, 'class="dropdown-menu dropdown-menu-end account-dropdown"')
         self.assertContains(response, 'class="dropdown-item account-dropdown-item"')
+        self.assertContains(response, 'class="account-avatar"')
+        self.assertContains(response, 'GS')
         self.assertContains(response, 'Olá, Guilherme')
         self.assertContains(response, 'Minha conta')
         self.assertContains(response, 'Notificações')
