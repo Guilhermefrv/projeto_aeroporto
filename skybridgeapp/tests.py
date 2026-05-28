@@ -71,6 +71,35 @@ class AuthFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'href="{reverse("auth_home")}"')
+        self.assertContains(response, 'Fazer login')
+
+    def test_home_login_link_shows_full_name_for_authenticated_user(self):
+        user = get_user_model().objects.create_user(
+            username='guilherme',
+            password='senha-segura-123',
+            first_name='Guilherme',
+            last_name='Silva',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Guilherme Silva')
+        self.assertNotContains(response, 'Fazer login')
+
+    def test_home_login_link_falls_back_to_username_for_authenticated_user(self):
+        user = get_user_model().objects.create_user(
+            username='guilherme',
+            password='senha-segura-123',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'guilherme')
+        self.assertNotContains(response, 'Fazer login')
 
     def test_auth_home_links_to_login_and_registration(self):
         response = self.client.get(reverse('auth_home'))
