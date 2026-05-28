@@ -99,7 +99,10 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'href="{reverse("auth_home")}"')
         self.assertContains(response, 'Fazer login')
-        self.assertNotContains(response, 'class="account-menu"')
+        self.assertContains(response, 'bootstrap@5.3.3/dist/css/bootstrap.min.css')
+        self.assertContains(response, 'bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js')
+        self.assertContains(response, '/static/js/main.js')
+        self.assertNotContains(response, 'class="dropdown account-menu"')
 
     def test_home_account_menu_greets_authenticated_user_by_first_name(self):
         user = get_user_model().objects.create_user(
@@ -113,7 +116,10 @@ class AuthFlowTests(TestCase):
         response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="account-menu"')
+        self.assertContains(response, 'class="dropdown account-menu"')
+        self.assertContains(response, 'data-bs-toggle="dropdown"')
+        self.assertContains(response, 'class="dropdown-menu dropdown-menu-end account-dropdown"')
+        self.assertContains(response, 'class="dropdown-item account-dropdown-item"')
         self.assertContains(response, 'Olá, Guilherme')
         self.assertContains(response, 'Minha conta')
         self.assertContains(response, 'Notificações')
@@ -239,6 +245,9 @@ class AuthFlowTests(TestCase):
             'password': 'senha-segura-123',
         }, follow=True)
 
+        self.assertContains(response, 'class="toast-container position-fixed top-0 end-0 p-3 sky-toast-container"')
+        self.assertContains(response, 'class="toast sky-toast success"')
+        self.assertContains(response, 'data-bs-delay="4200"')
         self.assertContains(response, 'Login realizado com sucesso.')
 
     def test_employee_login_redirects_to_employee_dashboard(self):
@@ -308,7 +317,9 @@ class AuthFlowTests(TestCase):
 
         response = self.client.post(reverse('logout'), follow=True)
 
-        self.assertContains(response, 'Você saiu da sua conta.')
+        self.assertContains(response, 'class="toast-container position-fixed top-0 end-0 p-3 sky-toast-container"')
+        self.assertContains(response, 'class="toast sky-toast success"')
+        self.assertContains(response, 'Logout realizado com sucesso.')
         self.assertContains(response, 'Fazer login')
         self.assertNotIn('_auth_user_id', self.client.session)
 

@@ -8,6 +8,7 @@
 
     <title>Sky Bridge | Ofertas e promoções</title>
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
 
     <!-- Font Awesome -->
@@ -38,38 +39,47 @@
 
         <div class="header-actions">
             {% if user.is_authenticated %}
-                <details class="account-menu">
-                    <summary class="account-trigger" aria-label="Abrir menu da conta">
+                <div class="dropdown account-menu">
+                    <button class="account-trigger dropdown-toggle"
+                            type="button"
+                            id="accountMenuButton"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            aria-expanded="false">
                         <i class="fa-regular fa-user" aria-hidden="true"></i>
                         <span class="account-greeting">{{ account_label }}</span>
                         {% if notificacoes_nao_lidas %}
                             <span class="notification-badge">{{ notificacoes_nao_lidas }}</span>
                         {% endif %}
-                        <i class="fa-solid fa-chevron-down account-chevron" aria-hidden="true"></i>
-                    </summary>
+                    </button>
 
-                    <div class="account-dropdown" role="menu" aria-label="Menu da conta">
-                        <a href="{{ account_dashboard_url }}" role="menuitem">
+                    <div class="dropdown-menu dropdown-menu-end account-dropdown" aria-labelledby="accountMenuButton">
+                        <div class="account-user-summary">
+                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            <span>{{ user.get_tipo_display }}</span>
+                        </div>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
                             <i class="fa-regular fa-user" aria-hidden="true"></i>
                             Minha conta
                         </a>
-                        <a href="{{ account_dashboard_url }}" role="menuitem">
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
                             <i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i>
                             Minhas viagens
                         </a>
-                        <a href="{{ account_dashboard_url }}" role="menuitem">
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
                             <i class="fa-regular fa-bell" aria-hidden="true"></i>
                             Notificações
                         </a>
+                        <div class="dropdown-divider"></div>
                         <form class="account-menu-form" method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
-                            <button class="account-menu-button" type="submit" role="menuitem">
+                            <button class="dropdown-item account-dropdown-item account-logout-item" type="submit">
                                 <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
                                 Sair
                             </button>
                         </form>
                     </div>
-                </details>
+                </div>
             {% else %}
                 <a class="login-link" href="{% url 'auth_home' %}">
                     <i class="fa-regular fa-user" aria-hidden="true"></i>
@@ -84,10 +94,23 @@
 </header>
 
 {% if messages %}
-    <div class="message-stack" aria-live="polite" aria-label="Mensagens do sistema">
+    <div class="toast-container position-fixed top-0 end-0 p-3 sky-toast-container" aria-label="Mensagens do sistema">
         {% for message in messages %}
-            <div class="system-message {{ message.tags }}">
-                {{ message }}
+            <div class="toast sky-toast {{ message.tags }}"
+                 role="status"
+                 aria-live="polite"
+                 aria-atomic="true"
+                 data-bs-delay="4200">
+                <div class="toast-header sky-toast-header">
+                    <span class="toast-icon" aria-hidden="true">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </span>
+                    <strong class="me-auto">Sky Bridge</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button>
+                </div>
+                <div class="toast-body">
+                    {{ message }}
+                </div>
             </div>
         {% endfor %}
     </div>
@@ -319,5 +342,7 @@
         });
     });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/main.js' %}"></script>
 </body>
 </html>

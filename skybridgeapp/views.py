@@ -305,5 +305,5 @@ class SkyBridgeLogoutView(LogoutView):
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-        messages.success(request, 'Você saiu da sua conta.')
+        messages.success(request, 'Logout realizado com sucesso.')
         return response
