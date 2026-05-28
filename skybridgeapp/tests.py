@@ -1,8 +1,12 @@
+from datetime import timedelta
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
-from .models import Funcionario, Passageiro
+from .models import Aeroporto, Aeronave, Funcionario, Passageiro, PortaoEmbarque, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -390,6 +394,131 @@ class AuthFlowTests(TestCase):
         response = self.client.get(reverse('dashboard_administrador'))
 
         self.assertRedirects(response, reverse('dashboard_funcionario'))
+
+
+@override_settings(ALLOWED_HOSTS=['testserver'])
+class BuscaVoosTests(TestCase):
+    def setUp(self):
+        self.gru = Aeroporto.objects.create(
+            codigo_iata='GRU',
+            nome='Guarulhos',
+            cidade='Sao Paulo',
+            estado='SP',
+            pais='Brasil',
+        )
+        self.rec = Aeroporto.objects.create(
+            codigo_iata='REC',
+            nome='Guararapes',
+            cidade='Recife',
+            estado='PE',
+            pais='Brasil',
+        )
+        self.cwb = Aeroporto.objects.create(
+            codigo_iata='CWB',
+            nome='Afonso Pena',
+            cidade='Curitiba',
+            estado='PR',
+            pais='Brasil',
+        )
+        self.aeronave = Aeronave.objects.create(
+            modelo='Airbus A320',
+            capacidade=180,
+            companhia_aerea='Sky Bridge Air',
+        )
+        self.portao = PortaoEmbarque.objects.create(
+            numero_portao='A1',
+            localizacao='Terminal 1',
+            status='livre',
+        )
+        self.partida = timezone.now().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=10)
+        self.voo = Voo.objects.create(
+            numero_voo='SB123',
+            origem='GRU - Sao Paulo',
+            destino='REC - Recife',
+            partida=self.partida,
+            chegada=self.partida + timedelta(hours=3),
+            status='programado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+
+    def test_home_renderiza_formulario_de_busca_real(self):
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'action="{reverse("buscar_voos")}"')
+        self.assertContains(response, 'method="get"')
+        self.assertContains(response, 'name="origem"')
+        self.assertContains(response, 'name="destino"')
+        self.assertContains(response, 'name="data_ida"')
+        self.assertContains(response, 'name="passageiros"')
+        self.assertContains(response, 'name="classe"')
+
+    def test_rota_busca_retorna_status_200(self):
+        response = self.client.get(reverse('buscar_voos'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Buscar voos nacionais')
+
+    def test_busca_retorna_voo_compativel_com_tarifa_ativa(self):
+        Tarifa.objects.create(
+            voo=self.voo,
+            classe='economy',
+            preco_base=Decimal('250.00'),
+            taxas=Decimal('20.00'),
+            ativa=True,
+        )
+        Tarifa.objects.create(
+            voo=self.voo,
+            classe='economy',
+            preco_base=Decimal('10.00'),
+            taxas=Decimal('5.00'),
+            ativa=False,
+        )
+
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida.date().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, 'GRU - Sao Paulo')
+        self.assertContains(response, 'REC - Recife')
+        self.assertContains(response, 'R$ 270,00')
+        self.assertNotContains(response, 'R$ 15,00')
+
+    def test_busca_sem_resultados_mostra_mensagem_amigavel(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.cwb.pk,
+            'data_ida': self.partida.date().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Nenhum voo encontrado para os criterios selecionados.')
+
+    def test_busca_nao_exibe_voo_cancelado(self):
+        Voo.objects.create(
+            numero_voo='SB999',
+            origem='GRU - Sao Paulo',
+            destino='REC - Recife',
+            partida=self.partida,
+            chegada=self.partida + timedelta(hours=3),
+            status='cancelado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida.date().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'SB999')
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])

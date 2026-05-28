@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('acesso/', views.auth_home, name='auth_home'),
+    path('voos/buscar/', views.buscar_voos, name='buscar_voos'),
     path('cadastro/', views.cadastro, name='cadastro'),
     path('login/', views.SkyBridgeLoginView.as_view(), name='login'),
     path('logout/', views.SkyBridgeLogoutView.as_view(), name='logout'),

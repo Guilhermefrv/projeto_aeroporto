@@ -1,14 +1,16 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
+from django.db.models import Prefetch, Q
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 
-from .forms import CadastroAdministradorForm, CadastroFuncionarioForm, CadastroPassageiroForm
-from .models import Bagagem, Funcionario, Passageiro, PortaoEmbarque, Reserva, Voo
+from .forms import BuscaVooForm, CadastroAdministradorForm, CadastroFuncionarioForm, CadastroPassageiroForm
+from .models import Bagagem, Funcionario, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 LANDING_CONTEXT = {
+    'asset_version': '20260528-national-polish-2',
     'nav_items': [
         'Comprar',
         'Minhas viagens',
@@ -58,6 +60,7 @@ LANDING_CONTEXT = {
     'offers': [
         {
             'image_class': 'offer-rio',
+            'image_url': 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Rio de Janeiro',
             'title': 'Escapada urbana à beira-mar',
             'description': 'Voos selecionados com taxas incluídas.',
@@ -65,6 +68,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-recife',
+            'image_url': 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Recife',
             'title': 'Praias e cultura no Nordeste',
             'description': 'Condições especiais em datas selecionadas.',
@@ -72,6 +76,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-salvador',
+            'image_url': 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Salvador',
             'title': 'Sol, música e centro histórico',
             'description': 'Tarifas promocionais para ida e volta.',
@@ -79,6 +84,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-manaus',
+            'image_url': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Manaus',
             'title': 'Amazônia e cultura no Norte',
             'description': 'Trechos nacionais com opções em datas selecionadas.',
@@ -86,6 +92,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-curitiba',
+            'image_url': 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Curitiba',
             'title': 'Fim de semana no Sul',
             'description': 'Rotas nacionais para viagens rápidas e flexíveis.',
@@ -93,6 +100,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-brasilia',
+            'image_url': 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Brasília',
             'title': 'Conexão com o Centro-Oeste',
             'description': 'Ofertas para a capital federal com taxas incluídas.',
@@ -100,6 +108,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-belem',
+            'image_url': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Belém',
             'title': 'Sabores e rios do Pará',
             'description': 'Destinos nacionais para explorar o Norte do Brasil.',
@@ -107,6 +116,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-porto-alegre',
+            'image_url': 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Porto Alegre',
             'title': 'Cultura e gastronomia no Sul',
             'description': 'Trechos nacionais com tarifas promocionais.',
@@ -114,6 +124,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-cuiaba',
+            'image_url': 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80',
             'route': 'São Paulo → Cuiabá',
             'title': 'Porta de entrada para o Pantanal',
             'description': 'Preços finais para voos dentro do Brasil.',
@@ -175,14 +186,36 @@ LANDING_CONTEXT = {
 
 
 def home(request):
-    context = {**LANDING_CONTEXT}
-
-    if request.user.is_authenticated:
-        context['account_dashboard_url'] = reverse(_dashboard_route_for_user(request.user))
-        context['account_label'] = _account_label_for_user(request.user)
-        context['account_initials'] = _account_initials_for_user(request.user)
+    context = {
+        **LANDING_CONTEXT,
+        'search_form': BuscaVooForm(),
+    }
+    _add_account_context(request, context)
 
     return render(request, 'home.html', context)
+
+
+def buscar_voos(request):
+    form = BuscaVooForm(request.GET or None)
+    busca_realizada = bool(request.GET)
+    voos = []
+
+    if busca_realizada and form.is_valid():
+        voos = _preparar_voos_para_resultado(
+            _filtrar_voos(form.cleaned_data),
+            form.cleaned_data.get('classe'),
+        )
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'search_form': form,
+        'voos': voos,
+        'busca_realizada': busca_realizada,
+    }
+    _add_account_context(request, context)
+
+    return render(request, 'buscar_voos.html', context)
 
 
 def auth_home(request):
@@ -225,6 +258,77 @@ def cadastro(request):
         'administrador_form': forms['administrador'],
         'modal_aberto': modal_aberto,
     })
+
+
+def _add_account_context(request, context):
+    if request.user.is_authenticated:
+        context['account_dashboard_url'] = reverse(_dashboard_route_for_user(request.user))
+        context['account_label'] = _account_label_for_user(request.user)
+        context['account_initials'] = _account_initials_for_user(request.user)
+
+
+def _filtrar_voos(cleaned_data):
+    voos = Voo.objects.select_related('aeronave', 'portao').filter(status='programado')
+
+    origem = cleaned_data.get('origem')
+    destino = cleaned_data.get('destino')
+    data_ida = cleaned_data.get('data_ida')
+    classe = cleaned_data.get('classe')
+
+    if origem:
+        voos = voos.filter(_aeroporto_text_query('origem', origem))
+
+    if destino:
+        voos = voos.filter(_aeroporto_text_query('destino', destino))
+
+    if data_ida:
+        voos = voos.filter(partida__date=data_ida)
+
+    if classe:
+        voos = voos.filter(tarifas__classe=classe, tarifas__ativa=True)
+
+    return voos.distinct().order_by('partida')
+
+
+def _aeroporto_text_query(field_name, aeroporto):
+    query = Q()
+    terms = {
+        aeroporto.codigo_iata,
+        aeroporto.nome,
+        aeroporto.cidade,
+        f'{aeroporto.codigo_iata} - {aeroporto.cidade}',
+        f'{aeroporto.codigo_iata} - {aeroporto.nome}',
+    }
+
+    for term in terms:
+        if term:
+            query |= Q(**{f'{field_name}__icontains': term})
+
+    return query
+
+
+def _preparar_voos_para_resultado(voos, classe=None):
+    tarifas = Tarifa.objects.filter(ativa=True)
+    if classe:
+        tarifas = tarifas.filter(classe=classe)
+
+    voos = voos.prefetch_related(
+        Prefetch('tarifas', queryset=tarifas, to_attr='tarifas_ativas_resultado'),
+    )
+    resultados = list(voos)
+
+    for voo in resultados:
+        tarifas_ativas = getattr(voo, 'tarifas_ativas_resultado', [])
+        menor_tarifa = min(tarifas_ativas, key=lambda tarifa: tarifa.preco_base + tarifa.taxas, default=None)
+        voo.preco_a_partir_de = _formatar_moeda(menor_tarifa.preco_base + menor_tarifa.taxas) if menor_tarifa else None
+        voo.classe_preco = menor_tarifa.get_classe_display() if menor_tarifa else None
+
+    return resultados
+
+
+def _formatar_moeda(valor):
+    numero = f'{valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    return f'R$ {numero}'
 
 
 def _dashboard_route_for_user(user):

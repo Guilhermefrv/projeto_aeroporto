@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
 
-from .models import Funcionario, Passageiro, UsuarioCustomizado
+from .models import Aeroporto, Funcionario, Passageiro, Tarifa, UsuarioCustomizado
 
 
 NACIONALIDADES_CHOICES = [
@@ -28,6 +28,65 @@ NACIONALIDADES_CHOICES = [
     ('Chinesa', 'Chinesa'),
     ('Outra', 'Outra'),
 ]
+
+
+class BuscaVooForm(forms.Form):
+    origem = forms.ModelChoiceField(
+        label='Origem',
+        queryset=Aeroporto.objects.none(),
+        required=False,
+        empty_label='Selecionar origem',
+        widget=forms.Select(attrs={'class': 'flight-search-input'}),
+    )
+    destino = forms.ModelChoiceField(
+        label='Destino',
+        queryset=Aeroporto.objects.none(),
+        required=False,
+        empty_label='Selecionar destino',
+        widget=forms.Select(attrs={'class': 'flight-search-input'}),
+    )
+    data_ida = forms.DateField(
+        label='Ida',
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'flight-search-input', 'type': 'date'}),
+    )
+    data_volta = forms.DateField(
+        label='Volta',
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'flight-search-input', 'type': 'date'}),
+    )
+    passageiros = forms.IntegerField(
+        label='Passageiros',
+        min_value=1,
+        max_value=9,
+        initial=1,
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'flight-search-input', 'min': '1', 'max': '9'}),
+    )
+    classe = forms.ChoiceField(
+        label='Cabine',
+        required=False,
+        choices=[('', 'Todas as classes')] + Tarifa.CLASSES,
+        widget=forms.Select(attrs={'class': 'flight-search-input'}),
+    )
+    codigo_promocional = forms.CharField(
+        label='Codigo promocional',
+        required=False,
+        max_length=30,
+        widget=forms.TextInput(attrs={'class': 'flight-search-input', 'placeholder': 'Adicionar'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        aeroportos = Aeroporto.objects.filter(pais__iexact='Brasil').order_by('codigo_iata')
+        self.fields['origem'].queryset = aeroportos
+        self.fields['destino'].queryset = aeroportos
+        self.fields['origem'].label_from_instance = self._label_aeroporto
+        self.fields['destino'].label_from_instance = self._label_aeroporto
+
+    @staticmethod
+    def _label_aeroporto(aeroporto):
+        return f'{aeroporto.codigo_iata} - {aeroporto.cidade}'
 
 
 class CadastroBaseForm(UserCreationForm):
