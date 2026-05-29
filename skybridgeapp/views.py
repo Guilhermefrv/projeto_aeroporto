@@ -197,13 +197,14 @@ def home(request):
 
 def buscar_voos(request):
     form = BuscaVooForm(request.GET or None)
-    busca_realizada = bool(request.GET)
     voos = []
+    filtros_validos = form.is_valid() if form.is_bound else True
 
-    if busca_realizada and form.is_valid():
+    if filtros_validos:
+        cleaned_data = form.cleaned_data if form.is_bound else {}
         voos = _preparar_voos_para_resultado(
-            _filtrar_voos(form.cleaned_data),
-            form.cleaned_data.get('classe'),
+            _filtrar_voos(cleaned_data),
+            cleaned_data.get('classe'),
         )
 
     context = {
@@ -211,7 +212,7 @@ def buscar_voos(request):
         'nav_items': LANDING_CONTEXT['nav_items'],
         'search_form': form,
         'voos': voos,
-        'busca_realizada': busca_realizada,
+        'busca_realizada': bool(request.GET),
     }
     _add_account_context(request, context)
 
@@ -268,7 +269,7 @@ def _add_account_context(request, context):
 
 
 def _filtrar_voos(cleaned_data):
-    voos = Voo.objects.select_related('aeronave', 'portao').filter(status='programado')
+    voos = Voo.objects.select_related('aeronave', 'portao').exclude(status='cancelado')
 
     origem = cleaned_data.get('origem')
     destino = cleaned_data.get('destino')

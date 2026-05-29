@@ -402,7 +402,7 @@ class BuscaVoosTests(TestCase):
         self.gru = Aeroporto.objects.create(
             codigo_iata='GRU',
             nome='Guarulhos',
-            cidade='Sao Paulo',
+            cidade='São Paulo',
             estado='SP',
             pais='Brasil',
         )
@@ -430,16 +430,82 @@ class BuscaVoosTests(TestCase):
             localizacao='Terminal 1',
             status='livre',
         )
-        self.partida = timezone.now().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=10)
-        self.voo = Voo.objects.create(
+        self.partida_base = timezone.now().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=10)
+        self.voo_gru_rec = Voo.objects.create(
             numero_voo='SB123',
-            origem='GRU - Sao Paulo',
+            origem='GRU - São Paulo',
             destino='REC - Recife',
-            partida=self.partida,
-            chegada=self.partida + timedelta(hours=3),
+            partida=self.partida_base,
+            chegada=self.partida_base + timedelta(hours=3),
             status='programado',
             aeronave=self.aeronave,
             portao=self.portao,
+        )
+        self.voo_gru_cwb = Voo.objects.create(
+            numero_voo='SB124',
+            origem='GRU - São Paulo',
+            destino='CWB - Curitiba',
+            partida=self.partida_base + timedelta(days=1),
+            chegada=self.partida_base + timedelta(days=1, hours=2),
+            status='programado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+        self.voo_rec_gru = Voo.objects.create(
+            numero_voo='SB125',
+            origem='REC - Recife',
+            destino='GRU - São Paulo',
+            partida=self.partida_base + timedelta(days=2),
+            chegada=self.partida_base + timedelta(days=2, hours=3),
+            status='em_andamento',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+        self.voo_cancelado = Voo.objects.create(
+            numero_voo='SB999',
+            origem='GRU - São Paulo',
+            destino='REC - Recife',
+            partida=self.partida_base + timedelta(days=3),
+            chegada=self.partida_base + timedelta(days=3, hours=3),
+            status='cancelado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+
+        Tarifa.objects.create(
+            voo=self.voo_gru_rec,
+            classe='economy',
+            preco_base=Decimal('250.00'),
+            taxas=Decimal('20.00'),
+            ativa=True,
+        )
+        Tarifa.objects.create(
+            voo=self.voo_gru_rec,
+            classe='premium_economy',
+            preco_base=Decimal('260.00'),
+            taxas=Decimal('25.00'),
+            ativa=True,
+        )
+        Tarifa.objects.create(
+            voo=self.voo_gru_rec,
+            classe='executiva',
+            preco_base=Decimal('10.00'),
+            taxas=Decimal('5.00'),
+            ativa=False,
+        )
+        Tarifa.objects.create(
+            voo=self.voo_gru_cwb,
+            classe='economy',
+            preco_base=Decimal('300.00'),
+            taxas=Decimal('30.00'),
+            ativa=True,
+        )
+        Tarifa.objects.create(
+            voo=self.voo_rec_gru,
+            classe='economy',
+            preco_base=Decimal('400.00'),
+            taxas=Decimal('40.00'),
+            ativa=False,
         )
 
     def test_home_renderiza_formulario_de_busca_real(self):
@@ -460,65 +526,85 @@ class BuscaVoosTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Buscar voos nacionais')
 
-    def test_busca_retorna_voo_compativel_com_tarifa_ativa(self):
-        Tarifa.objects.create(
-            voo=self.voo,
-            classe='economy',
-            preco_base=Decimal('250.00'),
-            taxas=Decimal('20.00'),
-            ativa=True,
-        )
-        Tarifa.objects.create(
-            voo=self.voo,
-            classe='economy',
-            preco_base=Decimal('10.00'),
-            taxas=Decimal('5.00'),
-            ativa=False,
+    def test_busca_sem_filtros_lista_todos_os_voos_ativos(self):
+        response = self.client.get(reverse('buscar_voos'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, 'SB124')
+        self.assertContains(response, 'SB125')
+        self.assertNotContains(response, 'SB999')
+        self.assertEqual(
+            [voo.numero_voo for voo in response.context['voos']],
+            ['SB123', 'SB124', 'SB125'],
         )
 
+    def test_busca_filtra_apenas_por_origem(self):
         response = self.client.get(reverse('buscar_voos'), {
             'origem': self.gru.pk,
-            'destino': self.rec.pk,
-            'data_ida': self.partida.date().isoformat(),
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SB123')
-        self.assertContains(response, 'GRU - Sao Paulo')
-        self.assertContains(response, 'REC - Recife')
-        self.assertContains(response, 'R$ 270,00')
-        self.assertNotContains(response, 'R$ 15,00')
+        self.assertContains(response, 'SB124')
+        self.assertNotContains(response, 'SB125')
+        self.assertNotContains(response, 'SB999')
 
-    def test_busca_sem_resultados_mostra_mensagem_amigavel(self):
+    def test_busca_filtra_apenas_por_destino(self):
         response = self.client.get(reverse('buscar_voos'), {
-            'origem': self.gru.pk,
-            'destino': self.cwb.pk,
-            'data_ida': self.partida.date().isoformat(),
+            'destino': self.rec.pk,
         })
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Nenhum voo encontrado para os criterios selecionados.')
+        self.assertContains(response, 'SB123')
+        self.assertNotContains(response, 'SB124')
+        self.assertNotContains(response, 'SB125')
+        self.assertNotContains(response, 'SB999')
 
-    def test_busca_nao_exibe_voo_cancelado(self):
-        Voo.objects.create(
-            numero_voo='SB999',
-            origem='GRU - Sao Paulo',
-            destino='REC - Recife',
-            partida=self.partida,
-            chegada=self.partida + timedelta(hours=3),
-            status='cancelado',
-            aeronave=self.aeronave,
-            portao=self.portao,
-        )
-
+    def test_busca_filtra_origem_e_destino_simultaneamente(self):
         response = self.client.get(reverse('buscar_voos'), {
             'origem': self.gru.pk,
             'destino': self.rec.pk,
-            'data_ida': self.partida.date().isoformat(),
         })
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertNotContains(response, 'SB124')
+        self.assertNotContains(response, 'SB125')
         self.assertNotContains(response, 'SB999')
+
+    def test_busca_filtra_por_data_de_partida(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'data_ida': self.partida_base.date().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertNotContains(response, 'SB124')
+        self.assertNotContains(response, 'SB125')
+        self.assertNotContains(response, 'SB999')
+
+    def test_busca_retorna_menor_tarifa_ativa_e_tarifa_indisponivel_quando_necessario(self):
+        response_com_tarifa = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida_base.date().isoformat(),
+        })
+
+        self.assertEqual(response_com_tarifa.status_code, 200)
+        self.assertContains(response_com_tarifa, 'SB123')
+        self.assertContains(response_com_tarifa, 'R$ 270,00')
+        self.assertNotContains(response_com_tarifa, 'R$ 15,00')
+
+        response_sem_tarifa = self.client.get(reverse('buscar_voos'), {
+            'origem': self.rec.pk,
+            'destino': self.gru.pk,
+            'data_ida': (self.partida_base + timedelta(days=2)).date().isoformat(),
+        })
+
+        self.assertEqual(response_sem_tarifa.status_code, 200)
+        self.assertContains(response_sem_tarifa, 'SB125')
+        self.assertContains(response_sem_tarifa, 'Tarifa indisponível')
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])

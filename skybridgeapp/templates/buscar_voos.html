@@ -176,7 +176,7 @@
                 <h3>Revise os campos da busca</h3>
                 <p>Algum filtro enviado nao pode ser validado. Ajuste os dados e tente novamente.</p>
             </div>
-        {% elif busca_realizada %}
+        {% else %}
             {% if voos %}
                 <div class="flight-results-grid">
                     {% for voo in voos %}
@@ -224,7 +224,7 @@
                                         <strong>{{ voo.preco_a_partir_de }}</strong>
                                         <small>{{ voo.classe_preco }}</small>
                                     {% else %}
-                                        <strong>Preco indisponivel</strong>
+                                        <strong>Tarifa indisponível</strong>
                                     {% endif %}
                                 </div>
                                 <button class="card-button" type="button">Selecionar voo</button>
@@ -235,16 +235,10 @@
             {% else %}
                 <div class="empty-results">
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                    <h3>Nenhum voo encontrado para os criterios selecionados.</h3>
+                    <h3>Nenhum voo encontrado para os filtros informados.</h3>
                     <p>Tente alterar origem, destino ou data de ida para encontrar novas opcoes.</p>
                 </div>
             {% endif %}
-        {% else %}
-            <div class="empty-results">
-                <i class="fa-solid fa-plane-circle-check" aria-hidden="true"></i>
-                <h3>Informe os dados para iniciar a busca.</h3>
-                <p>Escolha origem, destino e data de ida para consultar voos nacionais programados.</p>
-            </div>
         {% endif %}
     </section>
 </main>
