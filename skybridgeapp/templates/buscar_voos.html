@@ -125,6 +125,7 @@
                     <span class="field-copy">
                         <span>{{ search_form.destino.label }}</span>
                         {{ search_form.destino }}
+                        <small class="route-helper" data-route-helper></small>
                     </span>
                 </label>
 
@@ -135,6 +136,16 @@
                     <span class="field-copy">
                         <span>{{ search_form.data_ida.label }}</span>
                         {{ search_form.data_ida }}
+                    </span>
+                </label>
+
+                <label class="field-control field-control-input" for="{{ search_form.data_volta.id_for_label }}">
+                    <span class="field-icon" aria-hidden="true">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </span>
+                    <span class="field-copy">
+                        <span>{{ search_form.data_volta.label }}</span>
+                        {{ search_form.data_volta }}
                     </span>
                 </label>
 
@@ -162,11 +173,63 @@
         </form>
     </section>
 
+    {% if filtros_resumo %}
+        <section class="selected-filters" aria-label="Filtros selecionados">
+            <div>
+                <p class="eyebrow">Sua busca</p>
+                <h2>Filtros escolhidos</h2>
+            </div>
+            <div class="selected-filter-list">
+                {% for label, value in filtros_resumo %}
+                    <span>
+                        <small>{{ label }}</small>
+                        <strong>{{ value }}</strong>
+                    </span>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if datas_flexiveis %}
+        <section class="flex-date-section" aria-labelledby="flex-date-title">
+            <div class="flex-date-heading">
+                <div>
+                    <p class="eyebrow">Datas proximas</p>
+                    <h2 id="flex-date-title">Compare opcoes por dia</h2>
+                </div>
+                <span>Busca funcional apenas para voo de ida nesta etapa.</span>
+            </div>
+
+            <div class="flex-date-strip">
+                {% for dia in datas_flexiveis %}
+                    <a class="flex-date-chip{% if dia.selecionada %} is-selected{% endif %}{% if not dia.tem_voo %} is-empty{% endif %}"
+                       href="{{ dia.url }}"
+                       aria-label="Buscar voos em {{ dia.data|date:'d/m/Y' }}">
+                        <span>{{ dia.label }}</span>
+                        {% if dia.preco %}
+                            <strong>{{ dia.preco }}</strong>
+                        {% else %}
+                            <small>Sem voo</small>
+                        {% endif %}
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
     <section class="results-list-section" aria-labelledby="available-flights-title">
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Resultados</p>
-                <h2 id="available-flights-title">Voos disponiveis</h2>
+                <h2 id="available-flights-title">
+                    {% if resultado_tipo == 'rota_indisponivel' %}
+                        Rota indisponivel
+                    {% elif resultado_tipo == 'proximo' %}
+                        Opcoes proximas
+                    {% else %}
+                        Voos disponiveis
+                    {% endif %}
+                </h2>
             </div>
         </div>
 
@@ -177,13 +240,53 @@
                 <p>Algum filtro enviado nao pode ser validado. Ajuste os dados e tente novamente.</p>
             </div>
         {% else %}
-            {% if voos %}
+            {% if resultado_tipo == 'rota_indisponivel' %}
+                <div class="nearby-results-note warning">
+                    <i class="fa-solid fa-route" aria-hidden="true"></i>
+                    <div>
+                        <strong>Ainda nao temos voos cadastrados para essa rota.</strong>
+                        <span>Escolha uma das rotas sugeridas abaixo ou ajuste origem e destino na nova busca.</span>
+                    </div>
+                </div>
+            {% elif resultado_tipo == 'proximo' %}
+                <div class="nearby-results-note">
+                    <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                    <div>
+                        <strong>Nao encontramos voos nessa data, mas encontramos opcoes proximas.</strong>
+                        <span>Escolha uma das alternativas abaixo ou clique em outra data na faixa acima.</span>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if voos_exibidos %}
                 <div class="flight-results-grid">
-                    {% for voo in voos %}
-                        <article class="flight-card">
+                    {% for voo in voos_exibidos %}
+                        <article class="flight-card flight-option-card">
+                            <div class="flight-badges" aria-label="Destaques do voo">
+                                <span>Recomendado</span>
+                                {% if voo.preco_a_partir_de %}
+                                    <span class="economy-badge">Mais economico</span>
+                                {% endif %}
+                            </div>
                             <div class="flight-card-header">
                                 <span>Voo {{ voo.numero_voo }}</span>
                                 <strong>{{ voo.get_status_display }}</strong>
+                            </div>
+
+                            <div class="flight-timeline" aria-label="Resumo do horario do voo">
+                                <div class="flight-time-block">
+                                    <strong>{{ voo.partida|date:"H:i" }}</strong>
+                                    <span>{{ voo.origem_codigo }}</span>
+                                </div>
+                                <div class="flight-duration-block">
+                                    <span>Duracao</span>
+                                    <strong>{{ voo.duracao_label }}</strong>
+                                    <small>Direto</small>
+                                </div>
+                                <div class="flight-time-block">
+                                    <strong>{{ voo.chegada|date:"H:i" }}</strong>
+                                    <span>{{ voo.destino_codigo }}</span>
+                                </div>
                             </div>
 
                             <div class="flight-route">
@@ -219,15 +322,17 @@
 
                             <div class="flight-card-footer">
                                 <div class="flight-price">
-                                    <span>a partir de</span>
+                                    <span>Por pessoa a partir de</span>
                                     {% if voo.preco_a_partir_de %}
                                         <strong>{{ voo.preco_a_partir_de }}</strong>
-                                        <small>{{ voo.classe_preco }}</small>
+                                        <small>{{ voo.classe_preco }} · inclui taxas</small>
                                     {% else %}
                                         <strong>Tarifa indisponível</strong>
                                     {% endif %}
                                 </div>
-                                <button class="card-button" type="button">Selecionar voo</button>
+                                <button class="card-button" type="button">
+                                    {% if resultado_tipo == 'proximo' %}Ver opcao{% else %}Selecionar voo{% endif %}
+                                </button>
                             </div>
                         </article>
                     {% endfor %}
@@ -237,6 +342,19 @@
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     <h3>Nenhum voo encontrado para os filtros informados.</h3>
                     <p>Tente alterar origem, destino ou data de ida para encontrar novas opcoes.</p>
+                    {% if rotas_disponiveis.items %}
+                        <div class="available-routes" aria-label="Rotas disponiveis para teste">
+                            <strong>{{ rotas_disponiveis.titulo }}</strong>
+                            <div class="available-route-list">
+                                {% for rota in rotas_disponiveis.items %}
+                                    <span>
+                                        {{ rota.origem }} → {{ rota.destino }}
+                                        <small>{{ rota.partida|date:"d/m/Y" }}</small>
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             {% endif %}
         {% endif %}
@@ -250,6 +368,7 @@
         });
     });
 </script>
+{{ route_map|json_script:"route-map-data" }}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/main.js' %}"></script>
 </body>

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
 
-from .models import Aeroporto, Funcionario, Passageiro, Tarifa, UsuarioCustomizado
+from .models import Aeroporto, Funcionario, Passageiro, Tarifa, UsuarioCustomizado, Voo
 
 
 NACIONALIDADES_CHOICES = [
@@ -78,15 +78,31 @@ class BuscaVooForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        aeroportos = Aeroporto.objects.filter(pais__iexact='Brasil').order_by('codigo_iata')
-        self.fields['origem'].queryset = aeroportos
-        self.fields['destino'].queryset = aeroportos
+        aeroportos = Aeroporto.objects.filter(pais__iexact='Brasil')
+        origens = self._aeroportos_com_voos(aeroportos, 'origem', self.data.get('origem') if self.is_bound else None)
+        destinos = self._aeroportos_com_voos(aeroportos, 'destino', self.data.get('destino') if self.is_bound else None)
+        self.fields['origem'].queryset = origens.order_by('codigo_iata')
+        self.fields['destino'].queryset = destinos.order_by('codigo_iata')
         self.fields['origem'].label_from_instance = self._label_aeroporto
         self.fields['destino'].label_from_instance = self._label_aeroporto
 
     @staticmethod
     def _label_aeroporto(aeroporto):
         return f'{aeroporto.codigo_iata} - {aeroporto.cidade}'
+
+    @staticmethod
+    def _aeroportos_com_voos(aeroportos, campo_voo, selecionado=None):
+        codigos = set()
+        for valor in Voo.objects.filter(status='programado').values_list(campo_voo, flat=True).distinct():
+            codigo = (valor or '').split('-', 1)[0].strip().upper()
+            if codigo:
+                codigos.add(codigo)
+
+        queryset = aeroportos.filter(codigo_iata__in=codigos) if codigos else aeroportos
+        if selecionado:
+            queryset = queryset | aeroportos.filter(pk=selecionado)
+
+        return queryset.distinct()
 
 
 class CadastroBaseForm(UserCreationForm):

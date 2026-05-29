@@ -1,16 +1,19 @@
+from datetime import timedelta
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.db.models import Prefetch, Q
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 
 from .forms import BuscaVooForm, CadastroAdministradorForm, CadastroFuncionarioForm, CadastroPassageiroForm
 from .models import Bagagem, Funcionario, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 LANDING_CONTEXT = {
-    'asset_version': '20260528-national-polish-2',
+    'asset_version': '20260529-smart-search',
     'nav_items': [
         'Comprar',
         'Minhas viagens',
@@ -189,6 +192,7 @@ def home(request):
     context = {
         **LANDING_CONTEXT,
         'search_form': BuscaVooForm(),
+        'route_map': _route_map(),
     }
     _add_account_context(request, context)
 
@@ -198,21 +202,51 @@ def home(request):
 def buscar_voos(request):
     form = BuscaVooForm(request.GET or None)
     voos = []
+    voos_proximos = []
+    datas_flexiveis = []
+    resultado_tipo = 'exato'
+    filtros_resumo = []
+    rota_consultada_existe = True
+    cleaned_data = {}
     filtros_validos = form.is_valid() if form.is_bound else True
 
     if filtros_validos:
         cleaned_data = form.cleaned_data if form.is_bound else {}
-        voos = _preparar_voos_para_resultado(
-            _filtrar_voos(cleaned_data),
-            cleaned_data.get('classe'),
-        )
+        filtros_resumo = _filtros_resumo(cleaned_data)
+        rota_consultada_existe = _rota_consultada_existe(cleaned_data)
+
+        if request.GET and not rota_consultada_existe:
+            resultado_tipo = 'rota_indisponivel'
+        else:
+            voos = _preparar_voos_para_resultado(
+                _filtrar_voos(cleaned_data),
+                cleaned_data.get('classe'),
+            )
+            datas_flexiveis = _datas_flexiveis(cleaned_data, request.GET)
+
+            if request.GET and cleaned_data.get('data_ida') and not voos:
+                voos_proximos = _voos_proximos(cleaned_data)
+                if voos_proximos:
+                    resultado_tipo = 'proximo'
+                else:
+                    resultado_tipo = 'vazio'
+
+    voos_exibidos = voos if voos else voos_proximos
 
     context = {
         'asset_version': LANDING_CONTEXT['asset_version'],
         'nav_items': LANDING_CONTEXT['nav_items'],
         'search_form': form,
         'voos': voos,
+        'voos_exibidos': voos_exibidos,
+        'voos_proximos': voos_proximos,
+        'resultado_tipo': resultado_tipo,
+        'rota_consultada_existe': rota_consultada_existe,
+        'datas_flexiveis': datas_flexiveis,
+        'filtros_resumo': filtros_resumo,
         'busca_realizada': bool(request.GET),
+        'rotas_disponiveis': _rotas_disponiveis(cleaned_data),
+        'route_map': _route_map(),
     }
     _add_account_context(request, context)
 
@@ -269,7 +303,7 @@ def _add_account_context(request, context):
 
 
 def _filtrar_voos(cleaned_data):
-    voos = Voo.objects.select_related('aeronave', 'portao').exclude(status='cancelado')
+    voos = Voo.objects.select_related('aeronave', 'portao').filter(status='programado')
 
     origem = cleaned_data.get('origem')
     destino = cleaned_data.get('destino')
@@ -289,6 +323,168 @@ def _filtrar_voos(cleaned_data):
         voos = voos.filter(tarifas__classe=classe, tarifas__ativa=True)
 
     return voos.distinct().order_by('partida')
+
+
+def _rotas_disponiveis(cleaned_data=None, limit=6):
+    cleaned_data = cleaned_data or {}
+    data_base = cleaned_data.get('data_ida') or timezone.localdate()
+    origem = cleaned_data.get('origem')
+    destino = cleaned_data.get('destino')
+
+    voos = Voo.objects.filter(status='programado', partida__date__gte=data_base)
+    titulo = 'Rotas disponiveis'
+
+    if origem:
+        voos_origem = voos.filter(_aeroporto_text_query('origem', origem))
+        if destino and _rota_consultada_existe(cleaned_data):
+            voos = voos_origem.filter(_aeroporto_text_query('destino', destino))
+            titulo = f'Rotas disponiveis: proximas datas para {origem.codigo_iata} - {destino.codigo_iata}'
+        else:
+            voos = voos_origem
+            titulo = f'Rotas disponiveis a partir de {origem.codigo_iata}'
+    elif destino:
+        voos = voos.filter(_aeroporto_text_query('destino', destino))
+        titulo = f'Rotas disponiveis para {destino.codigo_iata}'
+
+    rotas = []
+    vistos = set()
+    for voo in voos.order_by('partida')[:80]:
+        chave = (voo.origem, voo.destino, voo.partida.date())
+        if chave in vistos:
+            continue
+
+        vistos.add(chave)
+        rotas.append({
+            'numero_voo': voo.numero_voo,
+            'origem': voo.origem,
+            'destino': voo.destino,
+            'partida': voo.partida,
+        })
+
+        if len(rotas) >= limit:
+            break
+
+    if not rotas and cleaned_data.get('data_ida'):
+        fallback = cleaned_data.copy()
+        fallback['data_ida'] = None
+        return _rotas_disponiveis(fallback, limit)
+
+    return {
+        'titulo': titulo,
+        'items': rotas,
+    }
+
+
+def _route_map():
+    rotas = {}
+    voos = Voo.objects.filter(
+        status='programado',
+        partida__date__gte=timezone.localdate(),
+    ).values_list('origem', 'destino').distinct()
+
+    for origem, destino in voos:
+        origem_codigo = _codigo_rota(origem)
+        destino_codigo = _codigo_rota(destino)
+        if origem_codigo and destino_codigo and origem_codigo != destino_codigo:
+            rotas.setdefault(origem_codigo, set()).add(destino_codigo)
+
+    return {origem: sorted(destinos) for origem, destinos in sorted(rotas.items())}
+
+
+def _rota_consultada_existe(cleaned_data):
+    origem = cleaned_data.get('origem')
+    destino = cleaned_data.get('destino')
+
+    if not (origem and destino):
+        return True
+
+    return Voo.objects.filter(
+        status='programado',
+        partida__date__gte=timezone.localdate(),
+    ).filter(
+        _aeroporto_text_query('origem', origem),
+        _aeroporto_text_query('destino', destino),
+    ).exists()
+
+
+def _voos_proximos(cleaned_data, janela=7):
+    origem = cleaned_data.get('origem')
+    destino = cleaned_data.get('destino')
+    data_ida = cleaned_data.get('data_ida')
+
+    if not (origem and destino and data_ida):
+        return []
+
+    filtros = cleaned_data.copy()
+    filtros['data_ida'] = None
+    inicio = data_ida - timedelta(days=janela)
+    fim = data_ida + timedelta(days=janela)
+
+    voos = (
+        _filtrar_voos(filtros)
+        .filter(partida__date__range=(inicio, fim))
+        .exclude(partida__date=data_ida)
+        .order_by('partida')[:8]
+    )
+
+    return _preparar_voos_para_resultado(voos, cleaned_data.get('classe'))
+
+
+def _datas_flexiveis(cleaned_data, query_params, janela=3):
+    origem = cleaned_data.get('origem')
+    destino = cleaned_data.get('destino')
+    data_ida = cleaned_data.get('data_ida')
+
+    if not (origem and destino and data_ida):
+        return []
+
+    datas = []
+    for deslocamento in range(-janela, janela + 1):
+        data_consulta = data_ida + timedelta(days=deslocamento)
+        filtros = cleaned_data.copy()
+        filtros['data_ida'] = data_consulta
+        voos_dia = _preparar_voos_para_resultado(
+            _filtrar_voos(filtros),
+            cleaned_data.get('classe'),
+        )
+        precos = [voo.preco_valor for voo in voos_dia if voo.preco_valor is not None]
+        menor_preco = min(precos, default=None)
+        parametros = query_params.copy()
+        parametros['data_ida'] = data_consulta.isoformat()
+
+        datas.append({
+            'data': data_consulta,
+            'label': data_consulta.strftime('%d/%m'),
+            'url': f'{reverse("buscar_voos")}?{parametros.urlencode()}',
+            'preco': _formatar_moeda(menor_preco) if menor_preco else None,
+            'tem_voo': bool(voos_dia),
+            'selecionada': data_consulta == data_ida,
+        })
+
+    return datas
+
+
+def _filtros_resumo(cleaned_data):
+    resumo = []
+
+    origem = cleaned_data.get('origem')
+    destino = cleaned_data.get('destino')
+    data_ida = cleaned_data.get('data_ida')
+    data_volta = cleaned_data.get('data_volta')
+    classe = cleaned_data.get('classe')
+
+    if origem:
+        resumo.append(('Origem', BuscaVooForm._label_aeroporto(origem)))
+    if destino:
+        resumo.append(('Destino', BuscaVooForm._label_aeroporto(destino)))
+    if data_ida:
+        resumo.append(('Ida', data_ida.strftime('%d/%m/%Y')))
+    if data_volta:
+        resumo.append(('Volta', data_volta.strftime('%d/%m/%Y')))
+    if classe:
+        resumo.append(('Cabine', dict(Tarifa.CLASSES).get(classe, classe)))
+
+    return resumo
 
 
 def _aeroporto_text_query(field_name, aeroporto):
@@ -321,10 +517,30 @@ def _preparar_voos_para_resultado(voos, classe=None):
     for voo in resultados:
         tarifas_ativas = getattr(voo, 'tarifas_ativas_resultado', [])
         menor_tarifa = min(tarifas_ativas, key=lambda tarifa: tarifa.preco_base + tarifa.taxas, default=None)
-        voo.preco_a_partir_de = _formatar_moeda(menor_tarifa.preco_base + menor_tarifa.taxas) if menor_tarifa else None
+        voo.preco_valor = menor_tarifa.preco_base + menor_tarifa.taxas if menor_tarifa else None
+        voo.preco_a_partir_de = _formatar_moeda(voo.preco_valor) if menor_tarifa else None
         voo.classe_preco = menor_tarifa.get_classe_display() if menor_tarifa else None
+        voo.origem_codigo = _codigo_rota(voo.origem)
+        voo.destino_codigo = _codigo_rota(voo.destino)
+        voo.duracao_label = _formatar_duracao(voo.chegada - voo.partida)
 
     return resultados
+
+
+def _codigo_rota(valor):
+    if not valor:
+        return ''
+    return valor.split('-', 1)[0].strip().upper()
+
+
+def _formatar_duracao(duracao):
+    minutos = max(0, int(duracao.total_seconds() // 60))
+    horas, minutos = divmod(minutos, 60)
+    if horas and minutos:
+        return f'{horas}h {minutos}min'
+    if horas:
+        return f'{horas}h'
+    return f'{minutos}min'
 
 
 def _formatar_moeda(valor):

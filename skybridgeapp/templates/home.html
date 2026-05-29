@@ -189,6 +189,7 @@
                     <span class="field-copy">
                         <span>{{ search_form.destino.label }}</span>
                         {{ search_form.destino }}
+                        <small class="route-helper" data-route-helper></small>
                     </span>
                 </label>
 
@@ -404,6 +405,7 @@
     </div>
 </footer>
 
+{{ route_map|json_script:"route-map-data" }}
 <script>
     document.querySelectorAll('[data-noop]').forEach((element) => {
         element.addEventListener('click', (event) => {

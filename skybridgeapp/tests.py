@@ -1,7 +1,9 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
+from io import StringIO
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -49,6 +51,52 @@ class AirportDomainModelMetadataTests(SimpleTestCase):
         self.assertIn(('acumulo', 'Acumulo'), TransacaoMilhas.TIPOS)
         self.assertIn(('resgate', 'Resgate'), TransacaoMilhas.TIPOS)
 
+
+class PopularBancoCommandTests(TestCase):
+    def test_popular_banco_command_popula_dados_iniciais(self):
+        output = StringIO()
+
+        call_command('popular_banco', stdout=output)
+
+        self.assertTrue(Aeroporto.objects.filter(codigo_iata='GRU').exists())
+        self.assertTrue(Aeroporto.objects.filter(codigo_iata='GIG').exists())
+        self.assertTrue(Aeroporto.objects.filter(codigo_iata='SSA').exists())
+        self.assertTrue(Aeroporto.objects.filter(codigo_iata='CWB').exists())
+        self.assertTrue(Aeroporto.objects.filter(codigo_iata='BEL').exists())
+        self.assertTrue(Aeroporto.objects.filter(codigo_iata='CGB').exists())
+        self.assertTrue(Voo.objects.filter(numero_voo__startswith='SB').exists())
+        self.assertTrue(Voo.objects.filter(origem__icontains='POA', destino__icontains='GRU', status='programado').exists())
+        self.assertTrue(Voo.objects.filter(origem__icontains='CWB', destino__icontains='GRU', status='programado').exists())
+        self.assertTrue(
+            Voo.objects.filter(
+                numero_voo__startswith='SB',
+                partida__date=date(timezone.localdate().year, 12, 31),
+            ).exists()
+        )
+
+        total_voos = Voo.objects.filter(numero_voo__startswith='SB').count()
+        total_voos_com_tarifa = Voo.objects.filter(
+            numero_voo__startswith='SB',
+            tarifas__ativa=True,
+        ).distinct().count()
+        self.assertEqual(total_voos, total_voos_com_tarifa)
+        self.assertEqual(get_user_model().objects.count(), 0)
+        self.assertIn('Banco populado com sucesso', output.getvalue())
+
+    def test_popular_banco_command_e_idempotente_e_limpa_dados_de_exemplo(self):
+        call_command('popular_banco')
+        total_voos = Voo.objects.filter(numero_voo__startswith='SB').count()
+        total_tarifas = Tarifa.objects.filter(voo__numero_voo__startswith='SB').count()
+
+        call_command('popular_banco')
+
+        self.assertEqual(Voo.objects.filter(numero_voo__startswith='SB').count(), total_voos)
+        self.assertEqual(Tarifa.objects.filter(voo__numero_voo__startswith='SB').count(), total_tarifas)
+
+        call_command('popular_banco', '--limpar')
+
+        self.assertFalse(Voo.objects.filter(numero_voo__startswith='SB').exists())
+        self.assertFalse(Tarifa.objects.filter(voo__numero_voo__startswith='SB').exists())
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
 class AuthFlowTests(TestCase):
@@ -420,6 +468,13 @@ class BuscaVoosTests(TestCase):
             estado='PR',
             pais='Brasil',
         )
+        self.cnf = Aeroporto.objects.create(
+            codigo_iata='CNF',
+            nome='Confins',
+            cidade='Belo Horizonte',
+            estado='MG',
+            pais='Brasil',
+        )
         self.aeronave = Aeronave.objects.create(
             modelo='Airbus A320',
             capacidade=180,
@@ -457,6 +512,26 @@ class BuscaVoosTests(TestCase):
             destino='GRU - São Paulo',
             partida=self.partida_base + timedelta(days=2),
             chegada=self.partida_base + timedelta(days=2, hours=3),
+            status='programado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+        self.voo_gru_rec_proximo = Voo.objects.create(
+            numero_voo='SB127',
+            origem='GRU - São Paulo',
+            destino='REC - Recife',
+            partida=self.partida_base + timedelta(days=2, hours=5),
+            chegada=self.partida_base + timedelta(days=2, hours=8),
+            status='programado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+        self.voo_em_andamento = Voo.objects.create(
+            numero_voo='SB126',
+            origem='GRU - SÃ£o Paulo',
+            destino='REC - Recife',
+            partida=self.partida_base + timedelta(days=4),
+            chegada=self.partida_base + timedelta(days=4, hours=3),
             status='em_andamento',
             aeronave=self.aeronave,
             portao=self.portao,
@@ -507,6 +582,13 @@ class BuscaVoosTests(TestCase):
             taxas=Decimal('40.00'),
             ativa=False,
         )
+        Tarifa.objects.create(
+            voo=self.voo_gru_rec_proximo,
+            classe='economy',
+            preco_base=Decimal('350.00'),
+            taxas=Decimal('35.00'),
+            ativa=True,
+        )
 
     def test_home_renderiza_formulario_de_busca_real(self):
         response = self.client.get(reverse('home'))
@@ -517,8 +599,12 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'name="origem"')
         self.assertContains(response, 'name="destino"')
         self.assertContains(response, 'name="data_ida"')
+        self.assertContains(response, 'name="data_volta"')
         self.assertContains(response, 'name="passageiros"')
         self.assertContains(response, 'name="classe"')
+        self.assertIn('GRU', response.context['route_map'])
+        self.assertIn('REC', response.context['route_map']['GRU'])
+        self.assertIn('CWB', response.context['route_map']['GRU'])
 
     def test_rota_busca_retorna_status_200(self):
         response = self.client.get(reverse('buscar_voos'))
@@ -533,10 +619,12 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'SB123')
         self.assertContains(response, 'SB124')
         self.assertContains(response, 'SB125')
+        self.assertContains(response, 'SB127')
+        self.assertNotContains(response, 'SB126')
         self.assertNotContains(response, 'SB999')
         self.assertEqual(
             [voo.numero_voo for voo in response.context['voos']],
-            ['SB123', 'SB124', 'SB125'],
+            ['SB123', 'SB124', 'SB125', 'SB127'],
         )
 
     def test_busca_filtra_apenas_por_origem(self):
@@ -547,7 +635,9 @@ class BuscaVoosTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SB123')
         self.assertContains(response, 'SB124')
+        self.assertContains(response, 'SB127')
         self.assertNotContains(response, 'SB125')
+        self.assertNotContains(response, 'SB126')
         self.assertNotContains(response, 'SB999')
 
     def test_busca_filtra_apenas_por_destino(self):
@@ -557,8 +647,10 @@ class BuscaVoosTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SB123')
+        self.assertContains(response, 'SB127')
         self.assertNotContains(response, 'SB124')
         self.assertNotContains(response, 'SB125')
+        self.assertNotContains(response, 'SB126')
         self.assertNotContains(response, 'SB999')
 
     def test_busca_filtra_origem_e_destino_simultaneamente(self):
@@ -569,8 +661,10 @@ class BuscaVoosTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SB123')
+        self.assertContains(response, 'SB127')
         self.assertNotContains(response, 'SB124')
         self.assertNotContains(response, 'SB125')
+        self.assertNotContains(response, 'SB126')
         self.assertNotContains(response, 'SB999')
 
     def test_busca_filtra_por_data_de_partida(self):
@@ -582,6 +676,7 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'SB123')
         self.assertNotContains(response, 'SB124')
         self.assertNotContains(response, 'SB125')
+        self.assertNotContains(response, 'SB126')
         self.assertNotContains(response, 'SB999')
 
     def test_busca_retorna_menor_tarifa_ativa_e_tarifa_indisponivel_quando_necessario(self):
@@ -605,6 +700,101 @@ class BuscaVoosTests(TestCase):
         self.assertEqual(response_sem_tarifa.status_code, 200)
         self.assertContains(response_sem_tarifa, 'SB125')
         self.assertContains(response_sem_tarifa, 'Tarifa indisponível')
+
+
+    def test_busca_com_todas_as_classes_nao_filtra_por_cabine(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'classe': '',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, 'SB124')
+        self.assertContains(response, 'SB127')
+
+    def test_busca_com_classe_especifica_filtra_por_tarifa_ativa(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'classe': 'premium_economy',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertNotContains(response, 'SB124')
+
+    def test_busca_com_data_inexistente_mostra_mensagem_e_sugestoes(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': (self.partida_base + timedelta(days=30)).date().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Nenhum voo encontrado para os filtros informados.')
+        self.assertContains(response, 'Rotas disponiveis')
+
+    def test_busca_com_rota_sem_malha_mostra_sugestoes_da_origem(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.cnf.pk,
+            'data_ida': (self.partida_base + timedelta(days=30)).date().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Ainda nao temos voos cadastrados para essa rota.')
+        self.assertContains(response, 'Rotas disponiveis a partir de GRU')
+        self.assertContains(response, 'REC - Recife')
+
+    def test_busca_sem_resultado_exato_mostra_opcoes_proximas(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': (self.partida_base + timedelta(days=1)).date().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Nao encontramos voos nessa data')
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, 'SB127')
+        self.assertContains(response, 'Ver opcao')
+        self.assertEqual(response.context['resultado_tipo'], 'proximo')
+
+    def test_faixa_de_datas_flexiveis_mostra_menor_preco_e_link(self):
+        data_sem_voo = (self.partida_base + timedelta(days=1)).date().isoformat()
+
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': data_sem_voo,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Datas proximas')
+        self.assertContains(response, 'R$ 270,00')
+        self.assertContains(response, 'R$ 385,00')
+        self.assertContains(response, 'Sem voo')
+        self.assertContains(response, f'data_ida={self.partida_base.date().isoformat()}')
+        self.assertContains(response, f'data_ida={data_sem_voo}')
+
+    def test_resultados_preservam_filtros_get_incluindo_volta(self):
+        data_volta = (self.partida_base + timedelta(days=7)).date().isoformat()
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida_base.date().isoformat(),
+            'data_volta': data_volta,
+            'classe': 'economy',
+        })
+
+        form = response.context['search_form']
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(str(form['origem'].value()), str(self.gru.pk))
+        self.assertEqual(str(form['destino'].value()), str(self.rec.pk))
+        self.assertEqual(form['data_ida'].value(), self.partida_base.date().isoformat())
+        self.assertEqual(form['data_volta'].value(), data_volta)
+        self.assertEqual(form['classe'].value(), 'economy')
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
