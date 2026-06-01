@@ -330,9 +330,12 @@
                                         <strong>Tarifa indisponível</strong>
                                     {% endif %}
                                 </div>
-                                <button class="card-button" type="button">
-                                    {% if resultado_tipo == 'proximo' %}Ver opcao{% else %}Selecionar voo{% endif %}
-                                </button>
+                                {% with classe_atual=search_form.classe.value passageiros_atual=search_form.passageiros.value|default:"1" %}
+                                    <a class="card-button"
+                                       href="{% url 'selecionar_voo' voo.id %}?classe={{ classe_atual|urlencode }}&passageiros={{ passageiros_atual|urlencode }}">
+                                        {% if resultado_tipo == 'proximo' %}Ver opcao{% else %}Selecionar voo{% endif %}
+                                    </a>
+                                {% endwith %}
                             </div>
                         </article>
                     {% endfor %}

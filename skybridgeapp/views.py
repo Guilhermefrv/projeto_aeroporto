@@ -4,11 +4,17 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.db.models import Prefetch, Q
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 
-from .forms import BuscaVooForm, CadastroAdministradorForm, CadastroFuncionarioForm, CadastroPassageiroForm
+from .forms import (
+    BuscaVooForm,
+    CadastroAdministradorForm,
+    CadastroFuncionarioForm,
+    CadastroPassageiroForm,
+    SelecionarVooForm,
+)
 from .models import Bagagem, Funcionario, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
@@ -251,6 +257,47 @@ def buscar_voos(request):
     _add_account_context(request, context)
 
     return render(request, 'buscar_voos.html', context)
+
+
+def detalhe_voo(request, voo_id):
+    voo = get_object_or_404(
+        Voo.objects.select_related('aeronave', 'portao'),
+        pk=voo_id,
+    )
+    form = SelecionarVooForm(request.GET or None)
+    classe = ''
+    passageiros = 1
+
+    if form.is_valid():
+        classe = form.cleaned_data.get('classe') or ''
+        passageiros = form.cleaned_data.get('passageiros') or 1
+
+    voo = _preparar_voo_para_detalhe(voo, classe, passageiros)
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'voo': voo,
+        'selection_form': form,
+        'passageiros': passageiros,
+        'classe_selecionada': classe,
+        'selecionar_url': reverse('selecionar_voo', args=[voo.id]),
+    }
+    _add_account_context(request, context)
+
+    return render(request, 'detalhe_voo.html', context)
+
+
+@login_required
+def selecionar_voo(request, voo_id):
+    get_object_or_404(Voo, pk=voo_id)
+    detalhe_url = reverse('detalhe_voo', args=[voo_id])
+    query_string = request.GET.urlencode()
+
+    if query_string:
+        detalhe_url = f'{detalhe_url}?{query_string}'
+
+    return redirect(detalhe_url)
 
 
 def auth_home(request):
@@ -525,6 +572,29 @@ def _preparar_voos_para_resultado(voos, classe=None):
         voo.duracao_label = _formatar_duracao(voo.chegada - voo.partida)
 
     return resultados
+
+
+def _preparar_voo_para_detalhe(voo, classe=None, passageiros=1):
+    tarifa = _tarifa_preferida(voo, classe)
+    voo.preco_valor = tarifa.preco_base + tarifa.taxas if tarifa else None
+    voo.preco_a_partir_de = _formatar_moeda(voo.preco_valor) if tarifa else None
+    voo.classe_preco = tarifa.get_classe_display() if tarifa else None
+    voo.valor_total_estimado = _formatar_moeda(voo.preco_valor * passageiros) if tarifa else None
+    voo.origem_codigo = _codigo_rota(voo.origem)
+    voo.destino_codigo = _codigo_rota(voo.destino)
+    voo.duracao_label = _formatar_duracao(voo.chegada - voo.partida)
+    return voo
+
+
+def _tarifa_preferida(voo, classe=None):
+    tarifas = list(voo.tarifas.filter(ativa=True))
+
+    if classe:
+        tarifas_classe = [tarifa for tarifa in tarifas if tarifa.classe == classe]
+        if tarifas_classe:
+            tarifas = tarifas_classe
+
+    return min(tarifas, key=lambda tarifa: tarifa.preco_base + tarifa.taxas, default=None)
 
 
 def _codigo_rota(valor):

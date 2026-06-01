@@ -232,9 +232,20 @@ Estado atual:
 - Mostra faixa de datas flexiveis.
 - Mostra rotas disponiveis quando a combinacao nao existe.
 
-Ponto pendente: o botao "Selecionar voo" ainda nao executa reserva real.
+## 9. Fluxo Selecionar Voo
 
-## 9. Populacao do Banco
+- Botao "Selecionar voo" da listagem agora aponta para uma rota real.
+- Rota protegida `selecionar_voo` exige login antes de seguir.
+- Usuario anonimo e redirecionado para `/login/` com `next`.
+- Usuario logado volta para o detalhe do voo selecionado.
+- Pagina de detalhe do voo exibe origem, destino, data, horarios, status, aeronave, portao, classe e preco.
+- Detalhe do voo permite ajustar quantidade simples de passageiros.
+- Preco exibido usa a tarifa ativa da classe selecionada ou a menor tarifa ativa disponivel.
+- Total estimado e calculado com base na quantidade de passageiros.
+
+Ponto pendente: o botao "Continuar para reserva" ainda nao cria `Reserva`; isso pertence a etapa "Reserva Real".
+
+## 10. Populacao do Banco
 
 - Comando principal: `python manage.py popular_banco`.
 - Comando delega para `seed`.
@@ -256,7 +267,7 @@ Aeroportos principais:
 - POA - Porto Alegre
 - CGB - Cuiaba
 
-## 10. Testes
+## 11. Testes
 
 O arquivo `skybridgeapp/tests.py` cobre:
 
@@ -270,8 +281,11 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - filtros de origem/destino/data/classe;
 - sugestoes de datas proximas;
 - preservacao dos filtros GET.
+- detalhe de voo;
+- selecao de voo com login obrigatorio e `next`;
+- exibicao de tarifa real no detalhe.
 
-## 11. Frontend e UX
+## 12. Frontend e UX
 
 - CSS proprio em `home.css`, `cadastro.css`, `login.css`, `paineis.css`, `auth_home.css` e `theme.css`.
 - Bootstrap usado em modais, dropdown e toasts.
@@ -282,41 +296,19 @@ O arquivo `skybridgeapp/tests.py` cobre:
 
 ## Prioridade Recomendada
 
-1. Selecionar voo.
-2. Reserva real.
-3. Pagamento simulado.
-4. Bilhete/comprovante.
-5. Minha conta/minhas viagens.
-6. Check-in online.
-7. Status de voo publico.
-8. Painel do funcionario real.
-9. Painel administrativo mais apresentavel.
-10. Promocoes vindas do banco.
-11. Milhas.
-12. Melhorias tecnicas finais.
+1. Reserva real.
+2. Pagamento simulado.
+3. Bilhete/comprovante.
+4. Minha conta/minhas viagens.
+5. Check-in online.
+6. Status de voo publico.
+7. Painel do funcionario real.
+8. Painel administrativo mais apresentavel.
+9. Promocoes vindas do banco.
+10. Milhas.
+11. Melhorias tecnicas finais.
 
-## 1. Fluxo Selecionar Voo
-
-Prioridade: alta.
-
-Estado atual: o botao "Selecionar voo" na listagem ainda nao fecha uma acao real.
-
-Implementar:
-
-- Pagina de detalhe do voo.
-- Confirmacao de origem, destino, data, horario, classe e preco.
-- Exigir login para reservar.
-- Se usuario anonimo clicar, redirecionar para login e voltar ao voo depois.
-- Permitir quantidade simples de passageiros.
-
-Criterios de aceite:
-
-- Usuario consegue abrir o detalhe de um voo real.
-- Usuario anonimo e enviado para login com `next`.
-- Usuario logado volta ao fluxo correto.
-- A pagina exibe o preco real da tarifa selecionada ou menor tarifa ativa.
-
-## 2. Reserva Real
+## 1. Reserva Real
 
 Prioridade: alta.
 
@@ -337,7 +329,7 @@ Criterios de aceite:
 - Assento e status aparecem corretamente.
 - Usuarios sem perfil de passageiro recebem mensagem amigavel.
 
-## 3. Pagamento Simulado
+## 2. Pagamento Simulado
 
 Prioridade: alta.
 
@@ -358,7 +350,7 @@ Criterios de aceite:
 - Pagamento e criado com valor correto.
 - Confirmacao simulada altera status para `aprovado`.
 
-## 4. Bilhete / Comprovante
+## 3. Bilhete / Comprovante
 
 Prioridade: alta.
 
@@ -377,7 +369,7 @@ Criterios de aceite:
 - Bilhete pode ser consultado pelo passageiro dono da reserva.
 - Codigo do bilhete e unico.
 
-## 5. Minha Conta / Minhas Viagens
+## 4. Minha Conta / Minhas Viagens
 
 Prioridade: alta.
 
@@ -400,7 +392,7 @@ Criterios de aceite:
 - Cancelamento altera status da reserva.
 - Links do dropdown "Minha conta", "Minhas viagens" e "Notificacoes" apontam para areas coerentes.
 
-## 6. Check-in Online
+## 5. Check-in Online
 
 Prioridade: media/alta.
 
@@ -420,7 +412,7 @@ Criterios de aceite:
 - Check-in duplicado e evitado.
 - Cartao de embarque exibe passageiro, voo, horario, portao e assento.
 
-## 7. Status de Voo Publico
+## 6. Status de Voo Publico
 
 Prioridade: media.
 
@@ -439,7 +431,7 @@ Criterios de aceite:
 - Voos inexistentes exibem mensagem amigavel.
 - Alteracao de status feita por funcionario/admin aparece na consulta publica.
 
-## 8. Painel do Funcionario Real
+## 7. Painel do Funcionario Real
 
 Prioridade: media.
 
@@ -459,7 +451,7 @@ Criterios de aceite:
 - Passageiros com reserva no voo recebem notificacao.
 - Funcionario nao acessa painel administrativo.
 
-## 9. Painel Administrativo Mais Apresentavel
+## 8. Painel Administrativo Mais Apresentavel
 
 Prioridade: media.
 
@@ -478,7 +470,7 @@ Criterios de aceite:
 - Links levam para rotas/admin corretos.
 - Receita usa pagamentos aprovados.
 
-## 10. Promocoes Vindas do Banco
+## 9. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -497,7 +489,7 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 11. Milhas
+## 10. Milhas
 
 Prioridade: baixa/media.
 
@@ -516,7 +508,7 @@ Criterios de aceite:
 - Pagamento aprovado registra transacao de acumulo.
 - Saldo aparece no painel do passageiro.
 
-## 12. Melhorias Tecnicas Importantes
+## 11. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -592,14 +584,14 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Comecar pelo fluxo "Selecionar voo" e "Reserva Real", porque eles conectam a busca ja funcional com a parte principal do sistema.
+Comecar pela etapa "Reserva Real", porque o fluxo "Selecionar voo" ja leva o usuario ate a confirmacao do voo.
 
 Sugestao de primeira entrega:
 
-1. Criar pagina de detalhe do voo.
-2. Transformar "Selecionar voo" em link real.
-3. Exigir login com `next`.
-4. Criar reserva simples para passageiro logado.
+1. Transformar o botao "Continuar para reserva" em acao real.
+2. Criar reserva simples para passageiro logado.
+3. Gerar assento simples.
+4. Definir status inicial da reserva.
 5. Mostrar tela de sucesso.
 6. Fazer a reserva aparecer em "Minhas viagens".
 

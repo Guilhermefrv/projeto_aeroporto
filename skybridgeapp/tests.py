@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 from io import StringIO
+from urllib.parse import unquote
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -795,6 +796,88 @@ class BuscaVoosTests(TestCase):
         self.assertEqual(form['data_ida'].value(), self.partida_base.date().isoformat())
         self.assertEqual(form['data_volta'].value(), data_volta)
         self.assertEqual(form['classe'].value(), 'economy')
+
+    def test_resultados_linkam_selecionar_voo_com_classe_e_passageiros(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida_base.date().isoformat(),
+            'classe': 'premium_economy',
+            'passageiros': 3,
+        })
+
+        selecionar_url = reverse('selecionar_voo', args=[self.voo_gru_rec.pk])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'href="{selecionar_url}?classe=premium_economy&passageiros=3"')
+        self.assertContains(response, 'Selecionar voo')
+
+    def test_detalhe_voo_real_exibe_resumo_e_menor_tarifa_ativa(self):
+        response = self.client.get(reverse('detalhe_voo', args=[self.voo_gru_rec.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Voo SB123')
+        self.assertContains(response, 'GRU')
+        self.assertContains(response, 'REC - Recife')
+        self.assertContains(response, 'R$ 270,00')
+        self.assertContains(response, 'Economy')
+        self.assertContains(response, 'name="passageiros"')
+        self.assertContains(response, 'value="1"')
+
+    def test_detalhe_voo_exibe_tarifa_da_classe_selecionada(self):
+        response = self.client.get(reverse('detalhe_voo', args=[self.voo_gru_rec.pk]), {
+            'classe': 'premium_economy',
+            'passageiros': 3,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'R$ 285,00')
+        self.assertContains(response, 'Premium economy')
+        self.assertContains(response, 'value="3"')
+
+    def test_detalhe_voo_cai_para_menor_tarifa_quando_classe_nao_tem_tarifa_ativa(self):
+        response = self.client.get(reverse('detalhe_voo', args=[self.voo_gru_rec.pk]), {
+            'classe': 'executiva',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'R$ 270,00')
+        self.assertContains(response, 'Economy')
+        self.assertNotContains(response, 'R$ 15,00')
+
+    def test_selecionar_voo_anonimo_redireciona_para_login_com_next(self):
+        selecionar_url = reverse('selecionar_voo', args=[self.voo_gru_rec.pk])
+
+        response = self.client.get(f'{selecionar_url}?classe=economy&passageiros=2')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response['Location'].startswith(f'{reverse("login")}?next='))
+        self.assertIn(selecionar_url, unquote(response['Location']))
+        self.assertIn('classe=economy', unquote(response['Location']))
+        self.assertIn('passageiros=2', unquote(response['Location']))
+
+    def test_selecionar_voo_logado_redireciona_para_detalhe_com_filtros(self):
+        user = get_user_model().objects.create_user(
+            username='comprador',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP123456',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        self.client.force_login(user)
+        selecionar_url = reverse('selecionar_voo', args=[self.voo_gru_rec.pk])
+        detalhe_url = reverse('detalhe_voo', args=[self.voo_gru_rec.pk])
+
+        response = self.client.get(f'{selecionar_url}?classe=economy&passageiros=2')
+
+        self.assertRedirects(response, f'{detalhe_url}?classe=economy&passageiros=2')
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])

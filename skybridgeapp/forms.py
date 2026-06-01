@@ -105,6 +105,27 @@ class BuscaVooForm(forms.Form):
         return queryset.distinct()
 
 
+class SelecionarVooForm(forms.Form):
+    passageiros = forms.IntegerField(
+        label='Passageiros',
+        min_value=1,
+        max_value=9,
+        initial=1,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'detail-input',
+            'min': '1',
+            'max': '9',
+        }),
+    )
+    classe = forms.ChoiceField(
+        label='Cabine',
+        required=False,
+        choices=[('', 'Menor tarifa disponivel')] + Tarifa.CLASSES,
+        widget=forms.Select(attrs={'class': 'detail-input'}),
+    )
+
+
 class CadastroBaseForm(UserCreationForm):
     nome = forms.CharField(label='Nome completo', max_length=100)
     email = forms.EmailField(label='Email')
