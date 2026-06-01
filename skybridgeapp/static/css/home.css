@@ -14,7 +14,7 @@ body{
     min-height:100vh;
     background:var(--page-bg);
     color:var(--ink);
-    font-family:Arial, Helvetica, sans-serif;
+    font-family:"Segoe UI", Inter, Arial, Helvetica, sans-serif;
 }
 
 a{
@@ -593,6 +593,352 @@ button{
     border-radius:8px;
     box-shadow:var(--shadow-strong);
     padding:26px;
+}
+
+.home-search-panel{
+    display:flex;
+    flex-direction:column;
+    overflow:visible;
+    padding:0 24px 24px;
+    border-color:rgba(17,26,69,0.12);
+    background:#ffffff;
+}
+
+.home-search-panel .search-heading{
+    padding-top:24px;
+}
+
+.home-search-panel .search-heading h2{
+    font-size:26px;
+    font-weight:500;
+    letter-spacing:0;
+}
+
+.home-search-panel .tabs{
+    order:-1;
+    margin:-1px -24px 24px;
+    padding:0;
+    gap:0;
+    border-radius:8px 8px 0 0;
+    background:#1a103d;
+    overflow:visible;
+}
+
+.home-search-panel .tab{
+    min-height:58px;
+    border-radius:0;
+    border-right:1px solid rgba(255,255,255,0.16);
+    background:#1a103d;
+    color:white;
+    padding:0 22px;
+    font-size:15px;
+    box-shadow:none;
+}
+
+.home-search-panel .tab.active{
+    position:relative;
+    background:white;
+    color:var(--navy);
+    box-shadow:none;
+}
+
+.home-search-panel .tab.active::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:4px;
+    background:var(--red);
+}
+
+.home-search-panel .tab:hover,
+.home-search-panel .tab:focus-visible{
+    background:#241451;
+    color:white;
+    transform:none;
+}
+
+.home-search-panel .tab.active:hover,
+.home-search-panel .tab.active:focus-visible{
+    background:white;
+    color:var(--navy);
+}
+
+.search-expand-button{
+    width:48px;
+    height:48px;
+    border:2px solid var(--red);
+    border-radius:999px;
+    background:white;
+    color:var(--red);
+    display:grid;
+    place-items:center;
+    box-shadow:0 10px 22px rgba(215,25,63,0.12);
+}
+
+.search-expand-button:hover,
+.search-expand-button:focus-visible{
+    background:#fff1f3;
+    outline:var(--ring);
+    transform:translateY(-1px);
+}
+
+.search-expand-button i{
+    transition:transform 0.22s ease;
+}
+
+.search-expand-button[aria-expanded="true"] i{
+    transform:rotate(180deg);
+}
+
+.route-picker{
+    position:relative;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+    align-items:stretch;
+    margin-top:18px;
+    border:1px solid rgba(17,26,69,0.36);
+    border-radius:8px;
+    overflow:visible;
+    background:white;
+}
+
+.route-picker-field{
+    min-height:78px;
+    border:0;
+    background:white;
+    color:var(--navy);
+    text-align:left;
+    padding:16px 20px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:8px;
+}
+
+.route-picker-field:first-child{
+    border-radius:8px 0 0 8px;
+}
+
+.route-picker-field:last-child{
+    border-radius:0 8px 8px 0;
+}
+
+.route-picker-field span{
+    color:var(--navy);
+    font-size:13px;
+    font-weight:900;
+}
+
+.route-picker-field strong{
+    color:#6b7280;
+    font-size:16px;
+    font-weight:500;
+    line-height:1.25;
+}
+
+.route-picker-field.is-filled strong{
+    color:var(--navy);
+    font-weight:800;
+}
+
+.route-picker-field:hover,
+.route-picker-field:focus-visible{
+    outline:2px solid rgba(27,59,143,0.38);
+    outline-offset:-2px;
+    background:#fbfcff;
+}
+
+.route-swap-button{
+    z-index:2;
+    align-self:center;
+    justify-self:center;
+    width:42px;
+    height:42px;
+    margin:0 -21px;
+    border:1px solid var(--red);
+    border-radius:999px;
+    background:white;
+    color:var(--red);
+    display:grid;
+    place-items:center;
+    box-shadow:0 10px 22px rgba(16,24,40,0.12);
+}
+
+.route-swap-button:hover,
+.route-swap-button:focus-visible{
+    background:#fff1f3;
+    outline:var(--ring);
+    transform:scale(1.03);
+}
+
+.home-search-advanced{
+    border-top:1px solid rgba(16,24,40,0.08);
+    margin-top:22px;
+    padding-top:22px;
+}
+
+.home-search-advanced .search-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.home-search-advanced .search-grid > .field-control:nth-child(1),
+.home-search-advanced .search-grid > .field-control:nth-child(2){
+    display:none;
+}
+
+.home-search-advanced .field-control{
+    min-height:58px;
+    border-color:rgba(17,26,69,0.26);
+    background:white;
+    box-shadow:none;
+}
+
+.home-search-advanced .field-icon{
+    background:white;
+    color:#5b6474;
+    font-size:20px;
+}
+
+.home-search-advanced .field-copy span{
+    color:#5b6474;
+    margin-bottom:5px;
+}
+
+.home-search-advanced .flight-search-input{
+    color:#3f4654;
+    font-size:16px;
+    font-weight:500;
+}
+
+.home-search-advanced .airport-strip{
+    display:none;
+}
+
+.home-search-panel .route-helper{
+    color:#6b7280;
+    margin-top:2px;
+}
+
+.home-search-footer{
+    border-top:1px solid rgba(16,24,40,0.08);
+    padding-top:16px;
+}
+
+.home-search-footer .primary-button{
+    background:var(--red);
+    box-shadow:0 14px 28px rgba(215,25,63,0.22);
+}
+
+.home-search-footer .primary-button:hover,
+.home-search-footer .primary-button:focus-visible{
+    background:#b80f31;
+    box-shadow:0 18px 34px rgba(215,25,63,0.28);
+}
+
+.airport-modal .modal-content{
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:8px;
+    box-shadow:0 24px 70px rgba(16,24,40,0.22);
+    overflow:hidden;
+}
+
+.airport-modal .modal-header{
+    align-items:flex-start;
+    padding:22px 24px 14px;
+    border-bottom:1px solid rgba(16,24,40,0.08);
+}
+
+.airport-modal .modal-title{
+    color:var(--navy);
+    font-size:26px;
+    font-weight:600;
+    line-height:1.2;
+}
+
+.airport-modal .modal-body{
+    padding:22px 24px 24px;
+    background:#fbfcff;
+}
+
+.airport-option-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+}
+
+.airport-option{
+    min-height:92px;
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:8px;
+    background:white;
+    color:var(--navy);
+    padding:16px;
+    text-align:left;
+    display:grid;
+    gap:4px;
+    box-shadow:0 8px 18px rgba(16,24,40,0.05);
+}
+
+.airport-option span{
+    color:var(--red);
+    font-size:13px;
+    font-weight:900;
+}
+
+.airport-option strong{
+    color:var(--navy);
+    font-size:18px;
+    line-height:1.15;
+}
+
+.airport-option small{
+    color:var(--muted);
+    font-size:13px;
+    font-weight:700;
+}
+
+.airport-option:hover,
+.airport-option:focus-visible{
+    border-color:var(--blue);
+    background:#f8fbff;
+    box-shadow:0 14px 30px rgba(27,59,143,0.12);
+    outline:var(--ring);
+    transform:translateY(-2px);
+}
+
+.airport-option.is-selected{
+    border-color:var(--blue);
+    background:#f7fbff;
+    box-shadow:0 14px 30px rgba(27,59,143,0.13);
+}
+
+.airport-option.is-selected::after{
+    content:"Selecionado";
+    justify-self:start;
+    margin-top:4px;
+    border-radius:999px;
+    background:#e8f0ff;
+    color:var(--blue);
+    font-size:11px;
+    font-weight:900;
+    padding:4px 9px;
+}
+
+.airport-option:disabled{
+    cursor:not-allowed;
+    opacity:0.45;
+    transform:none;
+    box-shadow:none;
+}
+
+.airport-empty,
+.destination-modal-helper{
+    color:var(--muted);
+    font-size:14px;
+    font-weight:800;
+    margin:14px 0 0;
 }
 
 .search-heading,
@@ -2187,6 +2533,50 @@ button{
     .benefits-section h2,
     .miles-section h2{
         font-size:26px;
+    }
+
+    .home-search-panel{
+        padding:0 16px 18px;
+    }
+
+    .home-search-panel .tabs{
+        margin:-1px -16px 18px;
+    }
+
+    .home-search-panel .tab{
+        min-height:50px;
+        padding:0 16px;
+    }
+
+    .route-picker{
+        grid-template-columns:1fr;
+        overflow:hidden;
+    }
+
+    .route-picker-field:first-child,
+    .route-picker-field:last-child{
+        border-radius:0;
+    }
+
+    .route-swap-button + .route-picker-field{
+        border-top:1px solid rgba(17,26,69,0.18);
+    }
+
+    .route-swap-button{
+        position:absolute;
+        left:50%;
+        top:50%;
+        margin:0;
+        transform:translate(-50%,-50%) rotate(90deg);
+    }
+
+    .route-swap-button:hover,
+    .route-swap-button:focus-visible{
+        transform:translate(-50%,-50%) rotate(90deg) scale(1.03);
+    }
+
+    .airport-option-grid{
+        grid-template-columns:1fr;
     }
 
     .search-grid,

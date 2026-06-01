@@ -20,7 +20,7 @@ from .models import Bagagem, Funcionario, Passageiro, PortaoEmbarque, Reserva, T
 
 
 LANDING_CONTEXT = {
-    'asset_version': '20260529-smart-search',
+    'asset_version': '20260601-search-modal-fix',
     'nav_items': [
         'Comprar',
         'Minhas viagens',
