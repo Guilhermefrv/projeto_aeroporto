@@ -1894,6 +1894,86 @@ button{
     transform:translateY(-1px);
 }
 
+.reservation-success-page{
+    padding:42px 0 76px;
+}
+
+.success-card{
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:8px;
+    background:white;
+    box-shadow:0 22px 52px rgba(16,24,40,0.12);
+    padding:32px;
+}
+
+.success-icon{
+    width:64px;
+    height:64px;
+    display:grid;
+    place-items:center;
+    border-radius:999px;
+    background:#ecfdf3;
+    color:var(--green);
+    font-size:28px;
+    margin-bottom:18px;
+}
+
+.success-card h1{
+    color:var(--navy);
+    font-size:42px;
+    line-height:1.05;
+    margin-bottom:10px;
+}
+
+.success-card > p:not(.eyebrow){
+    max-width:680px;
+    color:var(--muted);
+    font-size:17px;
+    line-height:1.55;
+    margin-bottom:24px;
+}
+
+.success-summary{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+    margin-bottom:18px;
+}
+
+.success-summary div{
+    border:1px solid rgba(27,59,143,0.1);
+    border-radius:8px;
+    background:#f8fbff;
+    padding:16px;
+}
+
+.success-summary span{
+    display:block;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:900;
+    text-transform:uppercase;
+    margin-bottom:6px;
+}
+
+.success-summary strong{
+    color:var(--navy);
+    font-size:18px;
+    line-height:1.2;
+}
+
+.success-route{
+    margin-bottom:18px;
+}
+
+.success-actions{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:12px;
+    margin-top:22px;
+}
+
 .site-footer{
     background:#0b1238;
     color:white;
@@ -2116,6 +2196,7 @@ button{
     .miles-section,
     .flight-results-grid,
     .detail-summary-grid,
+    .success-summary,
     .flight-meta,
     .footer-grid{
         grid-template-columns:1fr;

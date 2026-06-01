@@ -7,6 +7,7 @@ from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from .forms import (
     BuscaVooForm,
@@ -298,6 +299,54 @@ def selecionar_voo(request, voo_id):
         detalhe_url = f'{detalhe_url}?{query_string}'
 
     return redirect(detalhe_url)
+
+
+@login_required
+@require_POST
+def criar_reserva(request, voo_id):
+    voo = get_object_or_404(Voo.objects.select_related('aeronave', 'portao'), pk=voo_id)
+    form = SelecionarVooForm(request.POST)
+    classe = ''
+    passageiros = 1
+
+    if form.is_valid():
+        classe = form.cleaned_data.get('classe') or ''
+        passageiros = form.cleaned_data.get('passageiros') or 1
+
+    passageiro = getattr(request.user, 'passageiro', None)
+    if not passageiro:
+        messages.error(request, 'Complete seu cadastro de passageiro antes de reservar um voo.')
+        return redirect(_detalhe_voo_url(voo.id, classe, passageiros))
+
+    reserva = Reserva.objects.create(
+        passageiro=passageiro,
+        voo=voo,
+        assento=_gerar_assento_simples(voo),
+        status='confirmada',
+    )
+    messages.success(request, 'Reserva criada com sucesso.')
+
+    return redirect('reserva_sucesso', reserva_id=reserva.id)
+
+
+@login_required
+def reserva_sucesso(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao'),
+        pk=reserva_id,
+    )
+
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'reserva': reserva,
+    }
+    _add_account_context(request, context)
+
+    return render(request, 'reserva_sucesso.html', context)
 
 
 def auth_home(request):
@@ -595,6 +644,35 @@ def _tarifa_preferida(voo, classe=None):
             tarifas = tarifas_classe
 
     return min(tarifas, key=lambda tarifa: tarifa.preco_base + tarifa.taxas, default=None)
+
+
+def _detalhe_voo_url(voo_id, classe='', passageiros=1):
+    parametros = []
+    if classe:
+        parametros.append(f'classe={classe}')
+    if passageiros:
+        parametros.append(f'passageiros={passageiros}')
+
+    url = reverse('detalhe_voo', args=[voo_id])
+    if parametros:
+        url = f'{url}?{"&".join(parametros)}'
+
+    return url
+
+
+def _gerar_assento_simples(voo):
+    letras = 'ABCDEF'
+    capacidade = max(voo.aeronave.capacidade or 180, 1)
+    total_fileiras = max(1, (capacidade + len(letras) - 1) // len(letras))
+    assentos_ocupados = set(Reserva.objects.filter(voo=voo).values_list('assento', flat=True))
+
+    for fileira in range(1, total_fileiras + 1):
+        for letra in letras:
+            assento = f'{fileira}{letra}'
+            if assento not in assentos_ocupados:
+                return assento
+
+    return f'{total_fileiras + 1}A'
 
 
 def _codigo_rota(valor):

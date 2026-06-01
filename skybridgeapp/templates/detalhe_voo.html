@@ -98,6 +98,29 @@
     </div>
 </header>
 
+{% if messages %}
+    <div class="toast-container position-fixed top-0 end-0 p-3 sky-toast-container" aria-label="Mensagens do sistema">
+        {% for message in messages %}
+            <div class="toast sky-toast {{ message.tags }}"
+                 role="status"
+                 aria-live="polite"
+                 aria-atomic="true"
+                 data-bs-delay="4200">
+                <div class="toast-header sky-toast-header">
+                    <span class="toast-icon" aria-hidden="true">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </span>
+                    <strong class="me-auto">Sky Bridge</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button>
+                </div>
+                <div class="toast-body">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
 <main id="conteudo" class="results-page flight-detail-page">
     <section class="results-hero detail-hero" aria-labelledby="detail-title">
         <p class="eyebrow">Confirmacao do voo</p>
@@ -209,11 +232,16 @@
             </div>
 
             {% if user.is_authenticated %}
-                <button class="primary-button detail-reserve-button" type="button" data-noop>
-                    Continuar para reserva
-                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                </button>
-                <p class="detail-next-step">A criacao real da reserva sera implementada na proxima etapa do PRD.</p>
+                <form method="post" action="{% url 'criar_reserva' voo.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="classe" value="{{ classe_selecionada }}">
+                    <input type="hidden" name="passageiros" value="{{ passageiros }}">
+                    <button class="primary-button detail-reserve-button" type="submit">
+                        Continuar para reserva
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </button>
+                </form>
+                <p class="detail-next-step">Sua reserva sera criada com um assento gerado automaticamente.</p>
             {% else %}
                 <a class="primary-button detail-reserve-button"
                    href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">

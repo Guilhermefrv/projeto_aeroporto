@@ -9,7 +9,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Funcionario, Passageiro, PortaoEmbarque, Tarifa, Voo
+from .models import Aeroporto, Aeronave, Funcionario, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -878,6 +878,113 @@ class BuscaVoosTests(TestCase):
         response = self.client.get(f'{selecionar_url}?classe=economy&passageiros=2')
 
         self.assertRedirects(response, f'{detalhe_url}?classe=economy&passageiros=2')
+
+    def test_passageiro_logado_cria_reserva_real(self):
+        user = get_user_model().objects.create_user(
+            username='comprador',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP123456',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('criar_reserva', args=[self.voo_gru_rec.pk]), {
+            'classe': 'economy',
+            'passageiros': 1,
+        })
+
+        reserva = Reserva.objects.get()
+        self.assertRedirects(response, reverse('reserva_sucesso', args=[reserva.pk]))
+        self.assertEqual(reserva.passageiro, passageiro)
+        self.assertEqual(reserva.voo, self.voo_gru_rec)
+        self.assertEqual(reserva.status, 'confirmada')
+        self.assertRegex(reserva.assento, r'^[0-9]{1,2}[A-F]$')
+
+    def test_tela_sucesso_reserva_exibe_assento_e_status(self):
+        user = get_user_model().objects.create_user(
+            username='comprador',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP123456',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            assento='12A',
+            status='confirmada',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('reserva_sucesso', args=[reserva.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'Reserva #{reserva.pk}')
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, '12A')
+        self.assertContains(response, 'Confirmada')
+        self.assertContains(response, reverse('dashboard_passageiro'))
+
+    def test_reserva_aparece_no_painel_do_passageiro(self):
+        user = get_user_model().objects.create_user(
+            username='comprador',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP123456',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        self.client.force_login(user)
+
+        self.client.post(reverse('criar_reserva', args=[self.voo_gru_rec.pk]), {
+            'classe': 'economy',
+            'passageiros': 1,
+        })
+        reserva = Reserva.objects.get(passageiro=passageiro)
+        response = self.client.get(reverse('dashboard_passageiro'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, reserva.assento)
+        self.assertContains(response, 'Confirmada')
+
+    def test_usuario_sem_perfil_passageiro_nao_cria_reserva(self):
+        user = get_user_model().objects.create_user(
+            username='usuario_sem_perfil',
+            password='senha-segura-123',
+            first_name='Usuario',
+            tipo='passageiro',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('criar_reserva', args=[self.voo_gru_rec.pk]), {
+            'classe': 'economy',
+            'passageiros': 1,
+        }, follow=True)
+
+        self.assertFalse(Reserva.objects.exists())
+        self.assertContains(response, 'Complete seu cadastro de passageiro antes de reservar um voo.')
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])

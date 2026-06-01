@@ -243,9 +243,19 @@ Estado atual:
 - Preco exibido usa a tarifa ativa da classe selecionada ou a menor tarifa ativa disponivel.
 - Total estimado e calculado com base na quantidade de passageiros.
 
-Ponto pendente: o botao "Continuar para reserva" ainda nao cria `Reserva`; isso pertence a etapa "Reserva Real".
+## 10. Reserva Real
 
-## 10. Populacao do Banco
+- Botao "Continuar para reserva" no detalhe do voo cria uma `Reserva` real.
+- Reserva e associada ao `Passageiro` logado.
+- Assento simples e gerado automaticamente em formato como `1A`, `1B`, `2A`.
+- Status inicial da reserva e `confirmada`.
+- Tela de sucesso exibe numero da reserva, passageiro, voo, assento, status, origem, destino, partida, chegada, aeronave e portao.
+- Reserva criada aparece no painel do passageiro em "Minhas viagens".
+- Usuarios autenticados sem perfil de passageiro recebem mensagem amigavel e nao criam reserva.
+
+Ponto pendente: pagamento ainda nao e criado; isso pertence a etapa "Pagamento Simulado".
+
+## 11. Populacao do Banco
 
 - Comando principal: `python manage.py popular_banco`.
 - Comando delega para `seed`.
@@ -267,7 +277,7 @@ Aeroportos principais:
 - POA - Porto Alegre
 - CGB - Cuiaba
 
-## 11. Testes
+## 12. Testes
 
 O arquivo `skybridgeapp/tests.py` cobre:
 
@@ -284,8 +294,12 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - detalhe de voo;
 - selecao de voo com login obrigatorio e `next`;
 - exibicao de tarifa real no detalhe.
+- criacao real de reserva;
+- tela de sucesso da reserva;
+- exibicao de reserva no painel do passageiro;
+- bloqueio amigavel para usuario sem perfil de passageiro.
 
-## 12. Frontend e UX
+## 13. Frontend e UX
 
 - CSS proprio em `home.css`, `cadastro.css`, `login.css`, `paineis.css`, `auth_home.css` e `theme.css`.
 - Bootstrap usado em modais, dropdown e toasts.
@@ -296,40 +310,18 @@ O arquivo `skybridgeapp/tests.py` cobre:
 
 ## Prioridade Recomendada
 
-1. Reserva real.
-2. Pagamento simulado.
-3. Bilhete/comprovante.
-4. Minha conta/minhas viagens.
-5. Check-in online.
-6. Status de voo publico.
-7. Painel do funcionario real.
-8. Painel administrativo mais apresentavel.
-9. Promocoes vindas do banco.
-10. Milhas.
-11. Melhorias tecnicas finais.
+1. Pagamento simulado.
+2. Bilhete/comprovante.
+3. Minha conta/minhas viagens.
+4. Check-in online.
+5. Status de voo publico.
+6. Painel do funcionario real.
+7. Painel administrativo mais apresentavel.
+8. Promocoes vindas do banco.
+9. Milhas.
+10. Melhorias tecnicas finais.
 
-## 1. Reserva Real
-
-Prioridade: alta.
-
-Estado atual: a model `Reserva` existe e o painel do passageiro ja lista reservas, mas falta criar reserva pela interface.
-
-Implementar:
-
-- Criar `Reserva` ao confirmar voo.
-- Associar ao `Passageiro` logado.
-- Gerar assento simples, mantendo `assento` como `CharField`.
-- Status inicial: `confirmada` ou `pendente`.
-- Tela de sucesso da reserva.
-
-Criterios de aceite:
-
-- Passageiro logado consegue criar uma reserva.
-- Reserva aparece no painel do passageiro.
-- Assento e status aparecem corretamente.
-- Usuarios sem perfil de passageiro recebem mensagem amigavel.
-
-## 2. Pagamento Simulado
+## 1. Pagamento Simulado
 
 Prioridade: alta.
 
@@ -350,7 +342,7 @@ Criterios de aceite:
 - Pagamento e criado com valor correto.
 - Confirmacao simulada altera status para `aprovado`.
 
-## 3. Bilhete / Comprovante
+## 2. Bilhete / Comprovante
 
 Prioridade: alta.
 
@@ -369,7 +361,7 @@ Criterios de aceite:
 - Bilhete pode ser consultado pelo passageiro dono da reserva.
 - Codigo do bilhete e unico.
 
-## 4. Minha Conta / Minhas Viagens
+## 3. Minha Conta / Minhas Viagens
 
 Prioridade: alta.
 
@@ -392,7 +384,7 @@ Criterios de aceite:
 - Cancelamento altera status da reserva.
 - Links do dropdown "Minha conta", "Minhas viagens" e "Notificacoes" apontam para areas coerentes.
 
-## 5. Check-in Online
+## 4. Check-in Online
 
 Prioridade: media/alta.
 
@@ -412,7 +404,7 @@ Criterios de aceite:
 - Check-in duplicado e evitado.
 - Cartao de embarque exibe passageiro, voo, horario, portao e assento.
 
-## 6. Status de Voo Publico
+## 5. Status de Voo Publico
 
 Prioridade: media.
 
@@ -431,7 +423,7 @@ Criterios de aceite:
 - Voos inexistentes exibem mensagem amigavel.
 - Alteracao de status feita por funcionario/admin aparece na consulta publica.
 
-## 7. Painel do Funcionario Real
+## 6. Painel do Funcionario Real
 
 Prioridade: media.
 
@@ -451,7 +443,7 @@ Criterios de aceite:
 - Passageiros com reserva no voo recebem notificacao.
 - Funcionario nao acessa painel administrativo.
 
-## 8. Painel Administrativo Mais Apresentavel
+## 7. Painel Administrativo Mais Apresentavel
 
 Prioridade: media.
 
@@ -470,7 +462,7 @@ Criterios de aceite:
 - Links levam para rotas/admin corretos.
 - Receita usa pagamentos aprovados.
 
-## 9. Promocoes Vindas do Banco
+## 8. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -489,7 +481,7 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 10. Milhas
+## 9. Milhas
 
 Prioridade: baixa/media.
 
@@ -508,7 +500,7 @@ Criterios de aceite:
 - Pagamento aprovado registra transacao de acumulo.
 - Saldo aparece no painel do passageiro.
 
-## 11. Melhorias Tecnicas Importantes
+## 10. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -584,15 +576,15 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Comecar pela etapa "Reserva Real", porque o fluxo "Selecionar voo" ja leva o usuario ate a confirmacao do voo.
+Comecar pela etapa "Pagamento Simulado", porque a busca, selecao de voo e criacao de reserva ja estao funcionais.
 
 Sugestao de primeira entrega:
 
-1. Transformar o botao "Continuar para reserva" em acao real.
-2. Criar reserva simples para passageiro logado.
-3. Gerar assento simples.
-4. Definir status inicial da reserva.
-5. Mostrar tela de sucesso.
-6. Fazer a reserva aparecer em "Minhas viagens".
+1. Criar pagina de pagamento para uma reserva.
+2. Exibir resumo da reserva e valor estimado.
+3. Permitir escolher Pix, cartao, boleto ou milhas.
+4. Criar `Pagamento` com status aprovado apos confirmacao simulada.
+5. Mostrar mensagem de sucesso.
+6. Preparar o caminho para emissao de bilhete.
 
 Essa entrega ja faria o projeto parecer muito mais completo sem adicionar complexidade excessiva.
