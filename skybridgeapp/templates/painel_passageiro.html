@@ -161,6 +161,7 @@
                                     <th>Partida</th>
                                     <th>Assento</th>
                                     <th>Status</th>
+                                    <th>Ação</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -175,6 +176,15 @@
                                             <span class="badge-status status-{{ reserva.status }}">
                                                 {{ reserva.get_status_display }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            {% if reserva.status == 'pendente' %}
+                                                <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
+                                                    Finalizar pagamento
+                                                </a>
+                                            {% else %}
+                                                <span style="color: var(--muted); font-size: 13px;">Concluída</span>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}

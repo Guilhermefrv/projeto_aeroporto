@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
 
-from .models import Aeroporto, Funcionario, Passageiro, Tarifa, UsuarioCustomizado, Voo
+from .models import Aeroporto, Funcionario, Passageiro, Pagamento, Tarifa, UsuarioCustomizado, Voo
 
 
 NACIONALIDADES_CHOICES = [
@@ -123,6 +123,13 @@ class SelecionarVooForm(forms.Form):
         required=False,
         choices=[('', 'Menor tarifa disponivel')] + Tarifa.CLASSES,
         widget=forms.Select(attrs={'class': 'detail-input'}),
+    )
+
+
+class PagamentoForm(forms.Form):
+    metodo = forms.ChoiceField(
+        label='Metodo de pagamento',
+        choices=Pagamento.METODOS,
     )
 
 

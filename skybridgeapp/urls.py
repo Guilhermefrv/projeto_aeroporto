@@ -8,6 +8,7 @@ urlpatterns = [
     path('voos/<int:voo_id>/', views.detalhe_voo, name='detalhe_voo'),
     path('voos/<int:voo_id>/selecionar/', views.selecionar_voo, name='selecionar_voo'),
     path('voos/<int:voo_id>/reservar/', views.criar_reserva, name='criar_reserva'),
+    path('reservas/<int:reserva_id>/pagamento/', views.pagamento_reserva, name='pagamento_reserva'),
     path('reservas/<int:reserva_id>/sucesso/', views.reserva_sucesso, name='reserva_sucesso'),
     path('cadastro/', views.cadastro, name='cadastro'),
     path('login/', views.SkyBridgeLoginView.as_view(), name='login'),

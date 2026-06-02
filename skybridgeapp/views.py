@@ -1,8 +1,10 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -14,9 +16,10 @@ from .forms import (
     CadastroAdministradorForm,
     CadastroFuncionarioForm,
     CadastroPassageiroForm,
+    PagamentoForm,
     SelecionarVooForm,
 )
-from .models import Bagagem, Funcionario, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Bagagem, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 LANDING_CONTEXT = {
@@ -194,6 +197,33 @@ LANDING_CONTEXT = {
     ],
 }
 
+PAYMENT_METHODS = [
+    {
+        'value': 'pix',
+        'label': 'Pix',
+        'icon': 'fa-solid fa-qrcode',
+        'description': 'Confirmação imediata para liberar a reserva.',
+    },
+    {
+        'value': 'cartao',
+        'label': 'Cartão',
+        'icon': 'fa-solid fa-credit-card',
+        'description': 'Pagamento por cartão de crédito ou débito.',
+    },
+    {
+        'value': 'boleto',
+        'label': 'Boleto',
+        'icon': 'fa-solid fa-receipt',
+        'description': 'Geração simulada com aprovação na confirmação.',
+    },
+    {
+        'value': 'milhas',
+        'label': 'Milhas',
+        'icon': 'fa-solid fa-star',
+        'description': 'Use seu saldo de fidelidade para a compra.',
+    },
+]
+
 
 def home(request):
     context = {
@@ -321,16 +351,18 @@ def criar_reserva(request, voo_id):
     reserva = Reserva.objects.create(
         passageiro=passageiro,
         voo=voo,
+        classe_tarifa=classe,
+        quantidade_passageiros=passageiros,
         assento=_gerar_assento_simples(voo),
-        status='confirmada',
+        status='pendente',
     )
-    messages.success(request, 'Reserva criada com sucesso.')
+    messages.success(request, 'Reserva criada com sucesso. Finalize o pagamento para confirmar a viagem.')
 
-    return redirect('reserva_sucesso', reserva_id=reserva.id)
+    return redirect('pagamento_reserva', reserva_id=reserva.id)
 
 
 @login_required
-def reserva_sucesso(request, reserva_id):
+def pagamento_reserva(request, reserva_id):
     reserva = get_object_or_404(
         Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao'),
         pk=reserva_id,
@@ -339,14 +371,94 @@ def reserva_sucesso(request, reserva_id):
     if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
         return _redirect_to_user_dashboard(request.user)
 
+    pagamento_existente = getattr(reserva, 'pagamento', None)
+    if _pagamento_aprovado(pagamento_existente):
+        return redirect('reserva_sucesso', reserva_id=reserva.id)
+
+    valor_total = _valor_total_reserva(reserva)
+
+    if request.method == 'POST':
+        form = PagamentoForm(request.POST)
+        if form.is_valid():
+            if valor_total is None:
+                messages.error(request, 'Nao foi possivel calcular o valor total desta reserva.')
+                return redirect(_detalhe_voo_url(reserva.voo_id, reserva.classe_tarifa, reserva.quantidade_passageiros))
+
+            _aprovar_pagamento(reserva, form.cleaned_data['metodo'], valor_total)
+            messages.success(request, 'Pagamento aprovado com sucesso.')
+            return redirect('reserva_sucesso', reserva_id=reserva.id)
+    else:
+        metodo_inicial = pagamento_existente.metodo if pagamento_existente and pagamento_existente.metodo else PAYMENT_METHODS[0]['value']
+        form = PagamentoForm(initial={'metodo': metodo_inicial})
+
     context = {
         'asset_version': LANDING_CONTEXT['asset_version'],
         'nav_items': LANDING_CONTEXT['nav_items'],
         'reserva': reserva,
+        'pagamento_form': form,
+        'metodos_pagamento': PAYMENT_METHODS,
+        'valor_total': _formatar_moeda(valor_total) if valor_total is not None else None,
+        'tarifa_label': dict(Tarifa.CLASSES).get(reserva.classe_tarifa, 'Menor tarifa disponivel'),
+    }
+    if pagamento_existente:
+        context['pagamento_existente'] = pagamento_existente
+
+    _add_account_context(request, context)
+
+    return render(request, 'pagamento.html', context)
+
+
+@login_required
+def reserva_sucesso(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento'),
+        pk=reserva_id,
+    )
+
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    pagamento = getattr(reserva, 'pagamento', None)
+    if not pagamento or pagamento.status != 'aprovado':
+        return redirect('pagamento_reserva', reserva_id=reserva.id)
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'reserva': reserva,
+        'pagamento': pagamento,
+        'valor_total': _formatar_moeda(pagamento.valor_total),
     }
     _add_account_context(request, context)
 
     return render(request, 'reserva_sucesso.html', context)
+
+
+def _pagamento_aprovado(pagamento):
+    return bool(pagamento and pagamento.status == 'aprovado')
+
+
+def _valor_total_reserva(reserva):
+    tarifa = _tarifa_preferida(reserva.voo, reserva.classe_tarifa or None)
+    if not tarifa:
+        return None
+
+    quantidade = max(1, reserva.quantidade_passageiros or 1)
+    return (tarifa.preco_base + tarifa.taxas) * quantidade
+
+
+def _aprovar_pagamento(reserva, metodo, valor_total):
+    Pagamento.objects.update_or_create(
+        reserva=reserva,
+        defaults={
+            'valor_total': valor_total,
+            'metodo': metodo,
+            'status': 'aprovado',
+            'data_pagamento': timezone.now(),
+        },
+    )
+    reserva.status = 'confirmada'
+    reserva.save(update_fields=['status'])
 
 
 def auth_home(request):
@@ -749,7 +861,7 @@ def dashboard_passageiro(request):
     notificacoes = []
 
     if passageiro:
-        reservas = passageiro.reserva_set.select_related('voo').all().order_by('-id')[:5]
+        reservas = passageiro.reserva_set.select_related('voo', 'pagamento').all().order_by('-id')[:5]
         notificacoes = passageiro.notificacao_set.all()[:5]
 
     return render(request, 'painel_passageiro.html', {

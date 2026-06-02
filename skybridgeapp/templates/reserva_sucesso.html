@@ -119,9 +119,9 @@
         <span class="success-icon" aria-hidden="true">
             <i class="fa-solid fa-circle-check"></i>
         </span>
-        <p class="eyebrow">Reserva confirmada</p>
+        <p class="eyebrow">Pagamento aprovado</p>
         <h1 id="success-title">Reserva #{{ reserva.id }}</h1>
-        <p>Sua reserva foi criada com sucesso. O pagamento simulado sera implementado na proxima etapa.</p>
+        <p>O pagamento simulado foi aprovado e sua reserva foi confirmada com sucesso.</p>
 
         <div class="success-summary">
             <div>
@@ -139,6 +139,10 @@
             <div>
                 <span>Status</span>
                 <strong>{{ reserva.get_status_display }}</strong>
+            </div>
+            <div>
+                <span>Pagamento</span>
+                <strong>{{ pagamento.get_metodo_display }}</strong>
             </div>
         </div>
 
@@ -170,6 +174,10 @@
             <div>
                 <dt>Portao</dt>
                 <dd>{{ reserva.voo.portao.numero_portao|default:"A definir" }}</dd>
+            </div>
+            <div>
+                <dt>Valor total</dt>
+                <dd>{{ valor_total }}</dd>
             </div>
         </dl>
 

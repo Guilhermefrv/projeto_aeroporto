@@ -1,0 +1,251 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Bridge | Pagamento</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+<a class="skip-link" href="#conteudo">Ir para o conteudo</a>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="{% url 'home' %}" aria-label="Sky Bridge - pagina inicial">
+            <span class="brand-mark" aria-hidden="true">
+                <i class="fa-solid fa-plane"></i>
+            </span>
+            <span class="brand-copy">
+                <strong>Sky Bridge</strong>
+                <small>Viagens e ofertas</small>
+            </span>
+        </a>
+
+        <nav class="main-nav" aria-label="Navegacao principal">
+            {% for item in nav_items %}
+                <a href="#" data-noop>{{ item }}</a>
+            {% endfor %}
+        </nav>
+
+        <div class="header-actions">
+            {% if user.is_authenticated %}
+                <div class="dropdown account-menu">
+                    <button class="btn account-trigger dropdown-toggle"
+                            type="button"
+                            id="accountMenuButton"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            aria-expanded="false">
+                        <span class="account-trigger-icon" aria-hidden="true">
+                            <i class="fa-regular fa-user"></i>
+                        </span>
+                        <span class="account-greeting">{{ account_label }}</span>
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end account-dropdown" aria-labelledby="accountMenuButton">
+                        <div class="account-user-summary">
+                            <span class="account-avatar" aria-hidden="true">{{ account_initials }}</span>
+                            <span class="account-user-copy">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <span>{{ user.get_tipo_display }}</span>
+                            </span>
+                        </div>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-regular fa-user"></i>
+                            </span>
+                            Minha conta
+                        </a>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-solid fa-suitcase-rolling"></i>
+                            </span>
+                            Minhas viagens
+                        </a>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-regular fa-bell"></i>
+                            </span>
+                            Notificacoes
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <form class="account-menu-form" method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button class="dropdown-item account-dropdown-item account-logout-item" type="submit">
+                                <span class="account-item-icon" aria-hidden="true">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </span>
+                                Sair
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+            <button class="icon-button" type="button" aria-label="Abrir menu">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+{% if messages %}
+    <div class="toast-container position-fixed top-0 end-0 p-3 sky-toast-container" aria-label="Mensagens do sistema">
+        {% for message in messages %}
+            <div class="toast sky-toast {{ message.tags }}"
+                 role="status"
+                 aria-live="polite"
+                 aria-atomic="true"
+                 data-bs-delay="4200">
+                <div class="toast-header sky-toast-header">
+                    <span class="toast-icon" aria-hidden="true">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </span>
+                    <strong class="me-auto">Sky Bridge</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button>
+                </div>
+                <div class="toast-body">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<main id="conteudo" class="results-page payment-page">
+    <section class="results-hero detail-hero" aria-labelledby="payment-title">
+        <p class="eyebrow">Pagamento</p>
+        <h1 id="payment-title">Reserve o voo {{ reserva.voo.numero_voo }}</h1>
+        <p>Escolha um metodo visualmente e confirme o pagamento simulado para aprovar a reserva.</p>
+    </section>
+
+    <section class="payment-layout" aria-label="Pagamento da reserva">
+        <article class="payment-card" aria-labelledby="payment-method-title">
+            <p class="eyebrow">Metodo de pagamento</p>
+            <h2 id="payment-method-title">Escolha como deseja pagar</h2>
+            <p class="payment-description">
+                A reserva permanece pendente ate a confirmacao. Depois do envio, o sistema altera o status para aprovado.
+            </p>
+
+            <form method="post" class="payment-form">
+                {% csrf_token %}
+
+                {% if pagamento_form.non_field_errors %}
+                    <div class="payment-form-errors" role="alert">
+                        {{ pagamento_form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                {% with pagamento_form.metodo.value|default:metodos_pagamento.0.value as metodo_selecionado %}
+                    <div class="payment-method-grid" role="radiogroup" aria-label="Metodos de pagamento">
+                        {% for metodo in metodos_pagamento %}
+                            <label class="payment-method-option{% if metodo.value == metodo_selecionado %} is-selected{% endif %}">
+                                <input type="radio"
+                                       name="{{ pagamento_form.metodo.name }}"
+                                       value="{{ metodo.value }}"
+                                       {% if metodo.value == metodo_selecionado %}checked{% endif %}>
+                                <span class="payment-method-icon" aria-hidden="true">
+                                    <i class="{{ metodo.icon }}"></i>
+                                </span>
+                                <span class="payment-method-copy">
+                                    <strong>{{ metodo.label }}</strong>
+                                    <small>{{ metodo.description }}</small>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                {% endwith %}
+
+                {% if pagamento_form.metodo.errors %}
+                    <div class="payment-form-errors" role="alert">
+                        {{ pagamento_form.metodo.errors }}
+                    </div>
+                {% endif %}
+
+                <button class="primary-button payment-submit-button" type="submit">
+                    Confirmar pagamento
+                    <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                </button>
+            </form>
+        </article>
+
+        <aside class="payment-summary-card" aria-labelledby="summary-title">
+            <p class="eyebrow">Resumo</p>
+            <h2 id="summary-title">Detalhes da reserva</h2>
+
+            <div class="payment-summary-list">
+                <div class="payment-summary-item">
+                    <span>Reserva</span>
+                    <strong>#{{ reserva.id }}</strong>
+                </div>
+                <div class="payment-summary-item">
+                    <span>Voo</span>
+                    <strong>{{ reserva.voo.numero_voo }}</strong>
+                </div>
+                <div class="payment-summary-item">
+                    <span>Passageiro</span>
+                    <strong>{{ reserva.passageiro.nome }}</strong>
+                </div>
+                <div class="payment-summary-item">
+                    <span>Cabine</span>
+                    <strong>{{ tarifa_label }}</strong>
+                </div>
+                <div class="payment-summary-item">
+                    <span>Passageiros</span>
+                    <strong>{{ reserva.quantidade_passageiros }}</strong>
+                </div>
+                <div class="payment-summary-item">
+                    <span>Status</span>
+                    <strong>{{ reserva.get_status_display }}</strong>
+                </div>
+                <div class="payment-summary-item payment-summary-total">
+                    <span>Valor total</span>
+                    <strong>{{ valor_total|default:"A calcular" }}</strong>
+                </div>
+            </div>
+
+            <div class="payment-flight-box">
+                <div>
+                    <span>Origem</span>
+                    <strong>{{ reserva.voo.origem }}</strong>
+                </div>
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                <div>
+                    <span>Destino</span>
+                    <strong>{{ reserva.voo.destino }}</strong>
+                </div>
+            </div>
+
+            <dl class="payment-meta">
+                <div>
+                    <dt>Partida</dt>
+                    <dd>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</dd>
+                </div>
+                <div>
+                    <dt>Assento</dt>
+                    <dd>{{ reserva.assento }}</dd>
+                </div>
+            </dl>
+
+            <p class="payment-note">
+                A confirmação simula a aprovação imediata e libera a página final da reserva.
+            </p>
+        </aside>
+    </section>
+</main>
+
+<script>
+    document.querySelectorAll('[data-noop]').forEach((element) => {
+        element.addEventListener('click', (event) => {
+            event.preventDefault();
+        });
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/main.js' %}?v={{ asset_version }}"></script>
+</body>
+</html>

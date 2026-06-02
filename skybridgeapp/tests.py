@@ -9,7 +9,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Funcionario, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Aeroporto, Aeronave, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -26,7 +26,7 @@ class AirportDomainModelMetadataTests(SimpleTestCase):
         self.assertEqual(str(CompanhiaAerea(nome='Sky Bridge Air', codigo_iata='SBA', pais='Brasil')), 'Sky Bridge Air (SBA)')
 
     def test_commercial_models_have_simple_choices_and_relations(self):
-        from .models import Pagamento, Promocao, Tarifa
+        from .models import Pagamento, Promocao, Reserva, Tarifa
 
         self.assertEqual(Tarifa._meta.get_field('voo').remote_field.model.__name__, 'Voo')
         self.assertIn(('economy', 'Economy'), Tarifa.CLASSES)
@@ -40,6 +40,8 @@ class AirportDomainModelMetadataTests(SimpleTestCase):
         self.assertEqual(Pagamento._meta.get_field('reserva').remote_field.model.__name__, 'Reserva')
         self.assertIn(('pix', 'Pix'), Pagamento.METODOS)
         self.assertIn(('aprovado', 'Aprovado'), Pagamento.STATUS)
+        self.assertIn(('pendente', 'Pendente'), Reserva.STATUS)
+        self.assertEqual(Reserva._meta.get_field('quantidade_passageiros').default, 1)
 
     def test_mileage_models_have_account_and_transaction_fields(self):
         from .models import ContaMilhas, TransacaoMilhas
@@ -907,11 +909,85 @@ class BuscaVoosTests(TestCase):
         })
 
         reserva = Reserva.objects.get()
-        self.assertRedirects(response, reverse('reserva_sucesso', args=[reserva.pk]))
+        self.assertRedirects(response, reverse('pagamento_reserva', args=[reserva.pk]))
         self.assertEqual(reserva.passageiro, passageiro)
         self.assertEqual(reserva.voo, self.voo_gru_rec)
-        self.assertEqual(reserva.status, 'confirmada')
+        self.assertEqual(reserva.status, 'pendente')
+        self.assertEqual(reserva.classe_tarifa, 'economy')
+        self.assertEqual(reserva.quantidade_passageiros, 1)
         self.assertRegex(reserva.assento, r'^[0-9]{1,2}[A-F]$')
+
+    def test_pagina_pagamento_exibe_resumo_e_metodos(self):
+        user = get_user_model().objects.create_user(
+            username='comprador',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP123456',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=2,
+            assento='12A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('pagamento_reserva', args=[reserva.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Pix')
+        self.assertContains(response, 'Cartão')
+        self.assertContains(response, 'Boleto')
+        self.assertContains(response, 'Milhas')
+        self.assertContains(response, 'R$ 540,00')
+
+    def test_pagamento_simulado_aprova_reserva(self):
+        user = get_user_model().objects.create_user(
+            username='comprador',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP123456',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='12A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('pagamento_reserva', args=[reserva.pk]), {
+            'metodo': 'pix',
+        }, follow=True)
+
+        reserva.refresh_from_db()
+        pagamento = Pagamento.objects.get(reserva=reserva)
+
+        self.assertEqual(pagamento.status, 'aprovado')
+        self.assertEqual(pagamento.metodo, 'pix')
+        self.assertEqual(pagamento.valor_total, Decimal('270.00'))
+        self.assertEqual(reserva.status, 'confirmada')
+        self.assertContains(response, 'Pagamento aprovado')
 
     def test_tela_sucesso_reserva_exibe_assento_e_status(self):
         user = get_user_model().objects.create_user(
@@ -931,8 +1007,17 @@ class BuscaVoosTests(TestCase):
         reserva = Reserva.objects.create(
             passageiro=passageiro,
             voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
             assento='12A',
             status='confirmada',
+        )
+        Pagamento.objects.create(
+            reserva=reserva,
+            valor_total=Decimal('270.00'),
+            metodo='pix',
+            status='aprovado',
+            data_pagamento=timezone.now(),
         )
         self.client.force_login(user)
 
@@ -943,6 +1028,8 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'SB123')
         self.assertContains(response, '12A')
         self.assertContains(response, 'Confirmada')
+        self.assertContains(response, 'Pix')
+        self.assertContains(response, 'R$ 270,00')
         self.assertContains(response, reverse('dashboard_passageiro'))
 
     def test_reserva_aparece_no_painel_do_passageiro(self):
@@ -972,7 +1059,8 @@ class BuscaVoosTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SB123')
         self.assertContains(response, reserva.assento)
-        self.assertContains(response, 'Confirmada')
+        self.assertContains(response, 'Pendente')
+        self.assertContains(response, 'Finalizar pagamento')
 
     def test_usuario_sem_perfil_passageiro_nao_cria_reserva(self):
         user = get_user_model().objects.create_user(

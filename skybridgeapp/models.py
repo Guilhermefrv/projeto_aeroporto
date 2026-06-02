@@ -315,6 +315,7 @@ class Promocao(models.Model):
 
 class Reserva(models.Model):
     STATUS = [
+        ('pendente', 'Pendente'),
         ('confirmada', 'Confirmada'),
         ('cancelada', 'Cancelada'),
     ]
@@ -327,6 +328,17 @@ class Reserva(models.Model):
         Voo,
         on_delete=models.CASCADE,
         verbose_name='Voo',
+    )
+    classe_tarifa = models.CharField(
+        max_length=20,
+        choices=Tarifa.CLASSES,
+        blank=True,
+        default='',
+        verbose_name='Classe da tarifa',
+    )
+    quantidade_passageiros = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Quantidade de passageiros',
     )
     assento = models.CharField(max_length=10, verbose_name='Assento')
     status = models.CharField(max_length=20, choices=STATUS, verbose_name='Status')
