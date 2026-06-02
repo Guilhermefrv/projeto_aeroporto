@@ -2,7 +2,7 @@
 
 Documento de estado atual e planejamento funcional do projeto Sky Bridge.
 
-Data de referencia: 2026-06-01
+Data de referencia: 2026-06-02
 
 ## Visao Geral
 
@@ -51,6 +51,7 @@ projeto_aeroporto/
     migrations/
       0001_initial.py
       0002_aeroporto_companhiaaerea_contamilhas_pagamento_and_more.py
+      0003_reserva_pagamento.py
     templates/
       auth_home.html
       buscar_voos.html
@@ -58,9 +59,11 @@ projeto_aeroporto/
       dashboard.html
       home.html
       login.html
+      pagamento.html
       painel_admin.html
       painel_funcionario.html
       painel_passageiro.html
+      reserva_sucesso.html
     static/
       css/
         auth_home.css
@@ -95,6 +98,11 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | `/` | `home` | `home.html` | Landing page principal funcional |
 | `/acesso/` | `auth_home` | `auth_home.html` | Pagina intermediaria para login/cadastro |
 | `/voos/buscar/` | `buscar_voos` | `buscar_voos.html` | Busca/listagem real de voos nacionais |
+| `/voos/<int:voo_id>/` | `detalhe_voo` | `detalhe_voo.html` | Detalhe real do voo selecionado |
+| `/voos/<int:voo_id>/selecionar/` | `selecionar_voo` | - | Exige login e volta ao detalhe do voo |
+| `/voos/<int:voo_id>/reservar/` | `criar_reserva` | - | Cria reserva real e redireciona para pagamento |
+| `/reservas/<int:reserva_id>/pagamento/` | `pagamento_reserva` | `pagamento.html` | Pagamento simulado de reserva |
+| `/reservas/<int:reserva_id>/sucesso/` | `reserva_sucesso` | `reserva_sucesso.html` | Tela final da reserva confirmada |
 | `/cadastro/` | `cadastro` | `cadastro.html` | Cadastro real com modais Bootstrap |
 | `/login/` | `SkyBridgeLoginView` | `login.html` | Login real usando Django |
 | `/logout/` | `SkyBridgeLogoutView` | - | Logout real usando Django |
@@ -139,7 +147,7 @@ Models existentes:
 - `ContaMilhas`
 - `TransacaoMilhas`
 
-Observacao: algumas models ja existem para etapas futuras, mas ainda nao possuem fluxo completo de interface. Isso inclui `Reserva`, `Pagamento`, `Bilhete`, `CheckIn`, `Bagagem`, `ContaMilhas` e `TransacaoMilhas`.
+Observacao: algumas models ja existem para etapas futuras, mas ainda nao possuem fluxo completo de interface. `Reserva`, `Pagamento`, `Bilhete`, `ContaMilhas` e `TransacaoMilhas` ja participam do fluxo basico de reserva/pagamento. `CheckIn` e `Bagagem` ainda nao possuem fluxo completo pela interface.
 
 ## 3. Admin Django
 
@@ -248,14 +256,45 @@ Estado atual:
 - Botao "Continuar para reserva" no detalhe do voo cria uma `Reserva` real.
 - Reserva e associada ao `Passageiro` logado.
 - Assento simples e gerado automaticamente em formato como `1A`, `1B`, `2A`.
-- Status inicial da reserva e `confirmada`.
-- Tela de sucesso exibe numero da reserva, passageiro, voo, assento, status, origem, destino, partida, chegada, aeronave e portao.
+- Status inicial da reserva e `pendente`, pois a confirmacao final depende do pagamento simulado.
+- Apos criar a reserva, o usuario e redirecionado para a pagina de pagamento.
 - Reserva criada aparece no painel do passageiro em "Minhas viagens".
 - Usuarios autenticados sem perfil de passageiro recebem mensagem amigavel e nao criam reserva.
 
-Ponto pendente: pagamento ainda nao e criado; isso pertence a etapa "Pagamento Simulado".
+## 11. Pagamento Simulado
 
-## 11. Populacao do Banco
+- Pagina de pagamento em `/reservas/<int:reserva_id>/pagamento/`.
+- Acesso protegido por login.
+- Apenas o passageiro dono da reserva ou staff pode acessar o pagamento.
+- Exibe resumo da reserva, voo, passageiro, cabine, quantidade, assento e valor total.
+- Metodos visuais disponiveis:
+  - Pix;
+  - Cartao;
+  - Boleto;
+  - Milhas.
+- Confirmacao do formulario cria ou atualiza `Pagamento`.
+- Pagamento aprovado altera a reserva para `confirmada`.
+- Reserva sem pagamento aprovado nao acessa a tela final de sucesso.
+- Valor total usa a tarifa ativa da classe escolhida ou a menor tarifa ativa disponivel.
+
+## 12. Bilhete Automatico Inicial
+
+- Apos pagamento aprovado, o sistema cria automaticamente um `Bilhete`.
+- Codigo do bilhete segue formato simples como `TKT-<reserva>-XXXXXX`.
+- A tela de sucesso da reserva mostra o codigo do bilhete quando existir.
+
+Ponto pendente: ainda falta uma tela dedicada de bilhete/comprovante para consulta posterior.
+
+## 13. Milhas Basicas
+
+- Passageiro criado pelo cadastro recebe uma `ContaMilhas` automaticamente.
+- Pagamento por Pix, cartao ou boleto acumula milhas ficticias.
+- Pagamento por milhas verifica saldo, debita milhas e registra transacao de resgate.
+- Dashboard do passageiro exibe saldo e numero do programa quando ha conta de milhas.
+
+Ponto pendente: a experiencia de milhas ainda e simples e pode ser refinada em etapas futuras.
+
+## 14. Populacao do Banco
 
 - Comando principal: `python manage.py popular_banco`.
 - Comando delega para `seed`.
@@ -277,7 +316,7 @@ Aeroportos principais:
 - POA - Porto Alegre
 - CGB - Cuiaba
 
-## 12. Testes
+## 15. Testes
 
 O arquivo `skybridgeapp/tests.py` cobre:
 
@@ -295,11 +334,16 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - selecao de voo com login obrigatorio e `next`;
 - exibicao de tarifa real no detalhe.
 - criacao real de reserva;
-- tela de sucesso da reserva;
+- pagamento simulado por Pix;
+- pagamento com milhas;
+- bloqueio de pagamento com saldo insuficiente;
+- acumulo de milhas em pagamento comum;
+- geracao automatica de bilhete;
+- tela de sucesso da reserva apos pagamento aprovado;
 - exibicao de reserva no painel do passageiro;
 - bloqueio amigavel para usuario sem perfil de passageiro.
 
-## 13. Frontend e UX
+## 16. Frontend e UX
 
 - CSS proprio em `home.css`, `cadastro.css`, `login.css`, `paineis.css`, `auth_home.css` e `theme.css`.
 - Bootstrap usado em modais, dropdown e toasts.
@@ -310,58 +354,34 @@ O arquivo `skybridgeapp/tests.py` cobre:
 
 ## Prioridade Recomendada
 
-1. Pagamento simulado.
-2. Bilhete/comprovante.
-3. Minha conta/minhas viagens.
-4. Check-in online.
-5. Status de voo publico.
-6. Painel do funcionario real.
-7. Painel administrativo mais apresentavel.
-8. Promocoes vindas do banco.
-9. Milhas.
-10. Melhorias tecnicas finais.
+1. Bilhete/comprovante dedicado.
+2. Minha conta/minhas viagens.
+3. Check-in online.
+4. Status de voo publico.
+5. Painel do funcionario real.
+6. Painel administrativo mais apresentavel.
+7. Promocoes vindas do banco.
+8. Milhas refinadas.
+9. Melhorias tecnicas finais.
 
-## 1. Pagamento Simulado
-
-Prioridade: alta.
-
-Estado atual: a model `Pagamento` existe, mas nao ha fluxo de pagamento pela interface.
-
-Implementar:
-
-- Pagina "Pagamento".
-- Escolha visual: Pix, cartao, boleto ou milhas.
-- Criar `Pagamento`.
-- Marcar como aprovado apos confirmacao simulada.
-- Mostrar resumo do valor total.
-
-Criterios de aceite:
-
-- Reserva pendente leva para pagamento.
-- Usuario escolhe metodo.
-- Pagamento e criado com valor correto.
-- Confirmacao simulada altera status para `aprovado`.
-
-## 2. Bilhete / Comprovante
+## 1. Bilhete / Comprovante
 
 Prioridade: alta.
 
-Estado atual: a model `Bilhete` existe, mas nao e gerada pelo fluxo do usuario.
+Estado atual: a model `Bilhete` ja e gerada automaticamente apos pagamento aprovado, e o codigo aparece na tela de sucesso da reserva. Ainda falta uma tela propria de bilhete/recibo.
 
 Implementar:
 
-- Criar `Bilhete` com codigo unico apos pagamento aprovado.
 - Tela de bilhete/recibo.
 - Mostrar passageiro, voo, assento, codigo da reserva e status.
 - Botao para voltar para "Minhas viagens".
 
 Criterios de aceite:
 
-- Pagamento aprovado gera bilhete.
 - Bilhete pode ser consultado pelo passageiro dono da reserva.
 - Codigo do bilhete e unico.
 
-## 3. Minha Conta / Minhas Viagens
+## 2. Minha Conta / Minhas Viagens
 
 Prioridade: alta.
 
@@ -384,7 +404,7 @@ Criterios de aceite:
 - Cancelamento altera status da reserva.
 - Links do dropdown "Minha conta", "Minhas viagens" e "Notificacoes" apontam para areas coerentes.
 
-## 4. Check-in Online
+## 3. Check-in Online
 
 Prioridade: media/alta.
 
@@ -404,7 +424,7 @@ Criterios de aceite:
 - Check-in duplicado e evitado.
 - Cartao de embarque exibe passageiro, voo, horario, portao e assento.
 
-## 5. Status de Voo Publico
+## 4. Status de Voo Publico
 
 Prioridade: media.
 
@@ -423,7 +443,7 @@ Criterios de aceite:
 - Voos inexistentes exibem mensagem amigavel.
 - Alteracao de status feita por funcionario/admin aparece na consulta publica.
 
-## 6. Painel do Funcionario Real
+## 5. Painel do Funcionario Real
 
 Prioridade: media.
 
@@ -443,7 +463,7 @@ Criterios de aceite:
 - Passageiros com reserva no voo recebem notificacao.
 - Funcionario nao acessa painel administrativo.
 
-## 7. Painel Administrativo Mais Apresentavel
+## 6. Painel Administrativo Mais Apresentavel
 
 Prioridade: media.
 
@@ -462,7 +482,7 @@ Criterios de aceite:
 - Links levam para rotas/admin corretos.
 - Receita usa pagamentos aprovados.
 
-## 8. Promocoes Vindas do Banco
+## 7. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -481,26 +501,26 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 9. Milhas
+## 8. Milhas Refinadas
 
 Prioridade: baixa/media.
 
-Estado atual: models de milhas existem, mas ainda nao sao usadas no fluxo real.
+Estado atual: conta de milhas, acumulo e resgate ja existem de forma simples no fluxo de cadastro/pagamento.
 
 Implementar simples:
 
-- Criar `ContaMilhas` automaticamente para passageiro.
-- Ao pagar reserva, acumular milhas ficticias.
-- Mostrar saldo no dashboard.
-- Permitir pagamento com milhas como simulacao.
+- Melhorar mensagens e visual do uso de milhas.
+- Mostrar historico de transacoes no dashboard.
+- Definir regra academica clara de conversao entre reais e milhas.
+- Manter feedback amigavel quando o saldo for insuficiente.
 
 Criterios de aceite:
 
-- Passageiro novo possui conta de milhas.
-- Pagamento aprovado registra transacao de acumulo.
-- Saldo aparece no painel do passageiro.
+- Passageiro entende saldo, historico e impacto do pagamento com milhas.
+- Transacoes aparecem no painel.
+- Regras ficam simples e demonstraveis.
 
-## 10. Melhorias Tecnicas Importantes
+## 9. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -576,15 +596,12 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Comecar pela etapa "Pagamento Simulado", porque a busca, selecao de voo e criacao de reserva ja estao funcionais.
+Implementar a tela dedicada de bilhete/comprovante, porque pagamento e bilhete automatico ja existem, mas o usuario ainda nao tem uma pagina propria para consultar o comprovante depois.
 
 Sugestao de primeira entrega:
 
-1. Criar pagina de pagamento para uma reserva.
-2. Exibir resumo da reserva e valor estimado.
-3. Permitir escolher Pix, cartao, boleto ou milhas.
-4. Criar `Pagamento` com status aprovado apos confirmacao simulada.
-5. Mostrar mensagem de sucesso.
-6. Preparar o caminho para emissao de bilhete.
-
-Essa entrega ja faria o projeto parecer muito mais completo sem adicionar complexidade excessiva.
+1. Criar rota para visualizar bilhete por reserva ou por codigo.
+2. Exigir login e garantir que apenas o dono da reserva ou staff acesse.
+3. Mostrar dados do passageiro, voo, assento, status, pagamento e codigo do bilhete.
+4. Adicionar link "Ver bilhete" no painel do passageiro e na tela de sucesso.
+5. Manter o layout simples e apresentavel para demonstracao.
