@@ -1,3 +1,5 @@
+import random
+import uuid
 from datetime import timedelta
 from decimal import Decimal
 
@@ -19,7 +21,7 @@ from .forms import (
     PagamentoForm,
     SelecionarVooForm,
 )
-from .models import Bagagem, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Bagagem, Bilhete, ContaMilhas, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, TransacaoMilhas, Voo
 
 
 LANDING_CONTEXT = {
@@ -384,9 +386,47 @@ def pagamento_reserva(request, reserva_id):
                 messages.error(request, 'Nao foi possivel calcular o valor total desta reserva.')
                 return redirect(_detalhe_voo_url(reserva.voo_id, reserva.classe_tarifa, reserva.quantidade_passageiros))
 
-            _aprovar_pagamento(reserva, form.cleaned_data['metodo'], valor_total)
-            messages.success(request, 'Pagamento aprovado com sucesso.')
-            return redirect('reserva_sucesso', reserva_id=reserva.id)
+            metodo = form.cleaned_data['metodo']
+            if metodo == 'milhas':
+                conta = _obter_ou_criar_conta_milhas(reserva.passageiro)
+                milhas_necessarias = int(valor_total * 10)
+                if conta.saldo < milhas_necessarias:
+                    form.add_error('metodo', f"Saldo de milhas insuficiente. Necessário: {milhas_necessarias} milhas. Seu saldo: {conta.saldo} milhas.")
+                else:
+                    with transaction.atomic():
+                        # Deduz milhas
+                        conta.saldo -= milhas_necessarias
+                        conta.save(update_fields=['saldo'])
+                        
+                        # Cria transação de resgate
+                        TransacaoMilhas.objects.create(
+                            conta=conta,
+                            tipo='resgate',
+                            quantidade=-milhas_necessarias,
+                            descricao=f"Resgate para voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
+                        )
+                        
+                        _aprovar_pagamento(reserva, metodo, valor_total)
+                    messages.success(request, 'Pagamento em milhas aprovado com sucesso.')
+                    return redirect('reserva_sucesso', reserva_id=reserva.id)
+            else:
+                with transaction.atomic():
+                    # Para outros métodos, acumula milhas fictícias (1 milha por R$ 1,00 gasto)
+                    conta = _obter_ou_criar_conta_milhas(reserva.passageiro)
+                    milhas_acumuladas = int(valor_total)
+                    conta.saldo += milhas_acumuladas
+                    conta.save(update_fields=['saldo'])
+                    
+                    TransacaoMilhas.objects.create(
+                        conta=conta,
+                        tipo='acumulo',
+                        quantidade=milhas_acumuladas,
+                        descricao=f"Acúmulo por voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
+                    )
+                    
+                    _aprovar_pagamento(reserva, metodo, valor_total)
+                messages.success(request, 'Pagamento aprovado com sucesso.')
+                return redirect('reserva_sucesso', reserva_id=reserva.id)
     else:
         metodo_inicial = pagamento_existente.metodo if pagamento_existente and pagamento_existente.metodo else PAYMENT_METHODS[0]['value']
         form = PagamentoForm(initial={'metodo': metodo_inicial})
@@ -459,6 +499,30 @@ def _aprovar_pagamento(reserva, metodo, valor_total):
     )
     reserva.status = 'confirmada'
     reserva.save(update_fields=['status'])
+
+    # Gerar Bilhete automaticamente ao aprovar o pagamento
+    codigo_bilhete = f"TKT-{reserva.id}-{uuid.uuid4().hex[:6].upper()}"
+    Bilhete.objects.get_or_create(
+        reserva=reserva,
+        defaults={
+            'codigo': codigo_bilhete
+        }
+    )
+
+
+def _obter_ou_criar_conta_milhas(passageiro):
+    try:
+        return passageiro.conta_milhas
+    except ContaMilhas.DoesNotExist:
+        while True:
+            num_programa = f"SB-{random.randint(100000, 999999)}"
+            if not ContaMilhas.objects.filter(numero_programa=num_programa).exists():
+                break
+        return ContaMilhas.objects.create(
+            passageiro=passageiro,
+            saldo=10000,  # 10.000 de saldo padrão para passageiros herdados ou sem conta
+            numero_programa=num_programa
+        )
 
 
 def auth_home(request):

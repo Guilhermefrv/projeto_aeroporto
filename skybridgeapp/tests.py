@@ -1079,6 +1079,179 @@ class BuscaVoosTests(TestCase):
         self.assertFalse(Reserva.objects.exists())
         self.assertContains(response, 'Complete seu cadastro de passageiro antes de reservar um voo.')
 
+    def test_pagamento_milhas_sucesso(self):
+        from .models import ContaMilhas, TransacaoMilhas
+        user = get_user_model().objects.create_user(
+            username='comprador_milhas',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP1234567',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        # Cria conta de milhas com saldo de 5000 milhas
+        conta = ContaMilhas.objects.create(
+            passageiro=passageiro,
+            saldo=5000,
+            numero_programa='SB-123456'
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1, # Custa R$ 270,00 -> 2700 milhas
+            assento='12A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('pagamento_reserva', args=[reserva.pk]), {
+            'metodo': 'milhas',
+        }, follow=True)
+
+        reserva.refresh_from_db()
+        conta.refresh_from_db()
+        pagamento = Pagamento.objects.get(reserva=reserva)
+
+        self.assertEqual(pagamento.status, 'aprovado')
+        self.assertEqual(pagamento.metodo, 'milhas')
+        self.assertEqual(reserva.status, 'confirmada')
+        self.assertEqual(conta.saldo, 5000 - 2700) # Saldo restante: 2300
+        
+        # Verifica se gerou transação de resgate
+        transacao = TransacaoMilhas.objects.filter(conta=conta, tipo='resgate').first()
+        self.assertIsNotNone(transacao)
+        self.assertEqual(transacao.quantidade, -2700)
+
+    def test_pagamento_milhas_saldo_insuficiente(self):
+        from .models import ContaMilhas
+        user = get_user_model().objects.create_user(
+            username='comprador_liso',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP1234568',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        # Cria conta de milhas com saldo insuficiente (ex: 500 milhas)
+        conta = ContaMilhas.objects.create(
+            passageiro=passageiro,
+            saldo=500,
+            numero_programa='SB-123457'
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1, # Custa R$ 270,00 -> 2700 milhas
+            assento='12A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('pagamento_reserva', args=[reserva.pk]), {
+            'metodo': 'milhas',
+        })
+
+        reserva.refresh_from_db()
+        conta.refresh_from_db()
+        self.assertEqual(reserva.status, 'pendente') # Permanece pendente
+        self.assertEqual(conta.saldo, 500) # Não altera saldo
+        self.assertFormError(response.context['pagamento_form'], 'metodo', 'Saldo de milhas insuficiente. Necessário: 2700 milhas. Seu saldo: 500 milhas.')
+
+    def test_pagamento_pix_acumula_milhas(self):
+        from .models import ContaMilhas, TransacaoMilhas
+        user = get_user_model().objects.create_user(
+            username='comprador_rico',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP1234569',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        conta = ContaMilhas.objects.create(
+            passageiro=passageiro,
+            saldo=1000,
+            numero_programa='SB-123458'
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1, # Custa R$ 270,00
+            assento='12A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        self.client.post(reverse('pagamento_reserva', args=[reserva.pk]), {
+            'metodo': 'pix',
+        })
+
+        conta.refresh_from_db()
+        self.assertEqual(conta.saldo, 1000 + 270) # Acumula 270 milhas (1 por real)
+        
+        # Verifica se gerou transação de acumulo
+        transacao = TransacaoMilhas.objects.filter(conta=conta, tipo='acumulo').first()
+        self.assertIsNotNone(transacao)
+        self.assertEqual(transacao.quantidade, 270)
+
+    def test_pagamento_gera_bilhete_automatico(self):
+        from .models import Bilhete
+        user = get_user_model().objects.create_user(
+            username='comprador_tkt',
+            password='senha-segura-123',
+            first_name='Comprador',
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome='Comprador Teste',
+            cpf_passaporte='COMP1234570',
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='12A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        self.client.post(reverse('pagamento_reserva', args=[reserva.pk]), {
+            'metodo': 'pix',
+        })
+
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.status, 'confirmada')
+        
+        # Verifica se o bilhete foi criado
+        bilhete = Bilhete.objects.filter(reserva=reserva).first()
+        self.assertIsNotNone(bilhete)
+        self.assertTrue(bilhete.codigo.startswith('TKT-'))
+
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
 class CadastroUsuarioTests(TestCase):
@@ -1227,3 +1400,15 @@ class CadastroUsuarioTests(TestCase):
         })
 
         self.assertRedirects(response, reverse('dashboard_funcionario'))
+
+    def test_cadastro_passageiro_cria_conta_milhas_com_saldo_inicial(self):
+        from .models import ContaMilhas
+        response = self.client.post(self.cadastro_url, self.dados_passageiro())
+        self.assertRedirects(response, self.login_url)
+
+        usuario = get_user_model().objects.get(username='maria.silva')
+        passageiro = Passageiro.objects.get(usuario=usuario)
+        conta = ContaMilhas.objects.get(passageiro=passageiro)
+        
+        self.assertEqual(conta.saldo, 10000)
+        self.assertTrue(conta.numero_programa.startswith('SB-'))

@@ -1,8 +1,9 @@
+import random
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
 
-from .models import Aeroporto, Funcionario, Passageiro, Pagamento, Tarifa, UsuarioCustomizado, Voo
+from .models import Aeroporto, ContaMilhas, Funcionario, Passageiro, Pagamento, Tarifa, UsuarioCustomizado, Voo
 
 
 NACIONALIDADES_CHOICES = [
@@ -183,13 +184,25 @@ class CadastroPassageiroForm(CadastroBaseForm):
         if commit:
             with transaction.atomic():
                 user.save()
-                Passageiro.objects.create(
+                passageiro = Passageiro.objects.create(
                     usuario=user,
                     nome=self.cleaned_data['nome'],
                     cpf_passaporte=self.cleaned_data['cpf_passaporte'],
                     data_nascimento=self.cleaned_data['data_nascimento'],
                     contato=self.cleaned_data['contato'],
                     nacionalidade=self.cleaned_data['nacionalidade'],
+                )
+                
+                # Criar automaticamente uma ContaMilhas para o novo passageiro com saldo inicial de 10.000 milhas
+                while True:
+                    num_programa = f"SB-{random.randint(100000, 999999)}"
+                    if not ContaMilhas.objects.filter(numero_programa=num_programa).exists():
+                        break
+                
+                ContaMilhas.objects.create(
+                    passageiro=passageiro,
+                    saldo=10000,  # 10.000 milhas iniciais de saldo
+                    numero_programa=num_programa
                 )
 
         return user

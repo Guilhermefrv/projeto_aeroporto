@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupRouteAwareFlightSearch();
     setupAirportSelectionControls();
     setupBootstrapToasts();
+    setupPaymentMethodSelection();
 });
 
 function setupBootstrapToasts() {
@@ -192,4 +193,24 @@ function updateAirportOptionSelection(select) {
             button.classList.toggle('is-selected', isSelected);
             button.setAttribute('aria-pressed', String(isSelected));
         });
+}
+
+function setupPaymentMethodSelection() {
+    const paymentGrid = document.querySelector('.payment-method-grid');
+    if (!paymentGrid) {
+        return;
+    }
+
+    paymentGrid.addEventListener('change', (event) => {
+        const radio = event.target;
+        if (radio && radio.name === 'metodo') {
+            paymentGrid.querySelectorAll('.payment-method-option').forEach((option) => {
+                option.classList.remove('is-selected');
+            });
+            const label = radio.closest('.payment-method-option');
+            if (label) {
+                label.classList.add('is-selected');
+            }
+        }
+    });
 }

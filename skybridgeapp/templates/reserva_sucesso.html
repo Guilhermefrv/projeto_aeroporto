@@ -144,6 +144,12 @@
                 <span>Pagamento</span>
                 <strong>{{ pagamento.get_metodo_display }}</strong>
             </div>
+            {% if reserva.bilhete %}
+            <div>
+                <span>Bilhete</span>
+                <strong style="color: var(--blue);">{{ reserva.bilhete.codigo }}</strong>
+            </div>
+            {% endif %}
         </div>
 
         <div class="flight-route success-route">
