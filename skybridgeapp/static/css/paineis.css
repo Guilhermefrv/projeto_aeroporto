@@ -351,6 +351,63 @@ body {
     background-color: var(--soft);
 }
 
+/* Tabela de Minhas Viagens */
+.trips-card {
+    overflow: hidden;
+}
+
+.trips-table {
+    table-layout: fixed;
+    min-width: 860px;
+}
+
+.trips-table th,
+.trips-table td {
+    vertical-align: middle;
+}
+
+.trips-table th {
+    white-space: nowrap;
+}
+
+.trips-table th:nth-child(1) { width: 14%; }
+.trips-table th:nth-child(2) { width: 12%; }
+.trips-table th:nth-child(3) { width: 24%; }
+.trips-table th:nth-child(4) { width: 13%; }
+.trips-table th:nth-child(5) { width: 11%; }
+.trips-table th:nth-child(6) { width: 13%; }
+.trips-table th:nth-child(7) { width: 13%; }
+.trips-table th:nth-child(8) { width: 18%; }
+
+.trips-route-cell {
+    text-align: center;
+    line-height: 1.2;
+}
+
+.trips-actions-cell {
+    text-align: center;
+}
+
+.trip-actions {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.trip-actions .btn-action {
+    width: 118px;
+    justify-content: center;
+    padding: 8px 14px;
+    white-space: nowrap;
+}
+
+.trip-ticket-code {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.2;
+}
+
 /* Status Badges */
 .badge-status {
     display: inline-flex;

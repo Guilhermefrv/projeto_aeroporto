@@ -104,7 +104,7 @@
                 </div>
             </section>
 
-            <section class="section-card">
+            <section class="section-card trips-card">
                 <div class="section-header">
                     <h3><i class="fa-solid fa-plane-departure"></i> Reservas da conta</h3>
                     <a href="{% url 'dashboard_passageiro' %}" class="btn-action secondary">
@@ -114,12 +114,12 @@
 
                 {% if reservas %}
                     <div class="table-responsive">
-                        <table class="custom-table">
+                        <table class="custom-table trips-table">
                             <thead>
                                 <tr>
                                     <th>Reserva</th>
                                     <th>Voo</th>
-                                    <th>Origem / Destino</th>
+                                    <th class="trips-route-heading">Origem / Destino</th>
                                     <th>Partida</th>
                                     <th>Assento</th>
                                     <th>Status</th>
@@ -132,7 +132,7 @@
                                     <tr>
                                         <td><strong>Reserva #{{ reserva.id }}</strong></td>
                                         <td>{{ reserva.voo.numero_voo }}</td>
-                                        <td>{{ reserva.voo.origem }} → {{ reserva.voo.destino }}</td>
+                                        <td class="trips-route-cell">{{ reserva.voo.origem }} → {{ reserva.voo.destino }}</td>
                                         <td>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</td>
                                         <td>{{ reserva.assento }}</td>
                                         <td>
@@ -141,21 +141,23 @@
                                             </span>
                                         </td>
                                         <td>{{ reserva.pagamento_status_label }}</td>
-                                        <td>
-                                            <a href="{% url 'detalhe_reserva' reserva.id %}" class="btn-action secondary">
-                                                Ver detalhes
-                                            </a>
-                                            {% if reserva.status == 'pendente' %}
-                                                <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
-                                                    Finalizar pagamento
+                                        <td class="trips-actions-cell">
+                                            <div class="trip-actions">
+                                                <a href="{% url 'detalhe_reserva' reserva.id %}" class="btn-action secondary">
+                                                    Ver detalhes
                                                 </a>
-                                            {% endif %}
-                                            {% if reserva.bilhete_jornada %}
-                                                <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
-                                                    Ver bilhete
-                                                </a>
-                                                <span style="display: block; color: var(--muted); font-size: 12px; margin-top: 6px;">{{ reserva.bilhete_jornada.codigo }}</span>
-                                            {% endif %}
+                                                {% if reserva.status == 'pendente' %}
+                                                    <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
+                                                        Finalizar pagamento
+                                                    </a>
+                                                {% endif %}
+                                                {% if reserva.bilhete_jornada %}
+                                                    <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
+                                                        Ver bilhete
+                                                    </a>
+                                                    <span class="trip-ticket-code">{{ reserva.bilhete_jornada.codigo }}</span>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                 {% endfor %}
