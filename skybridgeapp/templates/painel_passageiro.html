@@ -125,7 +125,7 @@
                     </div>
                     <div class="widget-info">
                         <h3>Minhas Reservas</h3>
-                        <p>{{ reservas.count|default:0 }} ativas</p>
+                        <p>{{ reservas|length }} ativas</p>
                     </div>
                 </div>
             </section>
@@ -139,7 +139,7 @@
                     <a href="{% url 'home' %}" class="btn-action primary">
                         <i class="fa-solid fa-magnifying-glass"></i> Buscar e Comprar Voos
                     </a>
-                    <a href="#" class="btn-action secondary" onclick="alert('Funcionalidade de check-in estará disponível no início do período de embarque.'); return false;">
+                    <a href="{% url 'minhas_viagens' %}" class="btn-action secondary">
                         <i class="fa-solid fa-qrcode"></i> Realizar Check-in
                     </a>
                 </div>
@@ -190,6 +190,18 @@
                                                     Ver bilhete
                                                 </a>
                                                 <span style="display: block; color: var(--muted); font-size: 12px; margin-top: 6px;">{{ reserva.bilhete.codigo }}</span>
+                                                {% if reserva.checkin_jornada %}
+                                                    <a href="{% url 'cartao_embarque' reserva.id %}" class="btn-action secondary" style="margin-top: 6px;">
+                                                        Ver cartao
+                                                    </a>
+                                                {% elif reserva.pode_checkin %}
+                                                    <form method="post" action="{% url 'realizar_checkin' reserva.id %}" style="margin-top: 6px;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn-action secondary">
+                                                            Fazer check-in
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
                                             {% else %}
                                                 <span style="color: var(--muted); font-size: 13px;">Concluída</span>
                                             {% endif %}

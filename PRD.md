@@ -57,6 +57,7 @@ projeto_aeroporto/
       bilhete.html
       buscar_voos.html
       cadastro.html
+      cartao_embarque.html
       dashboard.html
       detalhe_reserva.html
       home.html
@@ -108,6 +109,8 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | `/reservas/<int:reserva_id>/pagamento/` | `pagamento_reserva` | `pagamento.html` | Pagamento simulado de reserva |
 | `/reservas/<int:reserva_id>/sucesso/` | `reserva_sucesso` | `reserva_sucesso.html` | Tela final da reserva confirmada |
 | `/reservas/<int:reserva_id>/bilhete/` | `bilhete_reserva` | `bilhete.html` | Tela dedicada de bilhete/comprovante |
+| `/reservas/<int:reserva_id>/check-in/` | `realizar_checkin` | - | Cria check-in por POST para reserva confirmada futura |
+| `/reservas/<int:reserva_id>/cartao-embarque/` | `cartao_embarque` | `cartao_embarque.html` | Cartao de embarque simples |
 | `/minhas-viagens/` | `minhas_viagens` | `minhas_viagens.html` | Lista completa de reservas do passageiro |
 | `/reservas/<int:reserva_id>/` | `detalhe_reserva` | `detalhe_reserva.html` | Detalhe protegido da reserva |
 | `/reservas/<int:reserva_id>/cancelar/` | `cancelar_reserva` | - | Cancela reserva do passageiro por POST |
@@ -156,7 +159,7 @@ Models existentes:
 - `ContaMilhas`
 - `TransacaoMilhas`
 
-Observacao: algumas models ja existem para etapas futuras, mas ainda nao possuem fluxo completo de interface. `Reserva`, `Pagamento`, `Bilhete`, `ContaMilhas` e `TransacaoMilhas` ja participam do fluxo basico de reserva/pagamento. `CheckIn` e `Bagagem` ainda nao possuem fluxo completo pela interface.
+Observacao: algumas models ja existem para etapas futuras, mas ainda nao possuem fluxo completo de interface. `Reserva`, `Pagamento`, `Bilhete`, `CheckIn`, `ContaMilhas` e `TransacaoMilhas` ja participam do fluxo basico de reserva/pagamento/check-in. `Bagagem` ainda nao possui fluxo completo pela interface.
 
 ## 3. Admin Django
 
@@ -304,7 +307,18 @@ Estado atual:
 - A tela possui botao para voltar para "Minhas viagens".
 - A tela de sucesso e o painel do passageiro exibem link "Ver bilhete" quando a reserva possui bilhete emitido.
 
-## 13. Milhas Basicas
+## 13. Check-in Online
+
+- Passageiro consegue realizar check-in por uma reserva confirmada de voo futuro.
+- O sistema cria `CheckIn` com status `realizado`.
+- Check-in duplicado e evitado por verificacao de passageiro e voo.
+- Reserva pendente, cancelada ou de voo passado nao permite check-in.
+- Ha cartao de embarque simples em `/reservas/<int:reserva_id>/cartao-embarque/`.
+- O cartao mostra passageiro, documento, voo, origem, destino, partida, chegada, portao, aeronave e assento.
+- "Minhas viagens", detalhe da reserva e painel do passageiro exibem acoes de "Fazer check-in" ou "Ver cartao".
+- Passageiro nao consegue fazer check-in ou ver cartao de reserva de outro usuario.
+
+## 14. Milhas Basicas
 
 - Passageiro criado pelo cadastro recebe uma `ContaMilhas` automaticamente.
 - Pagamento por Pix, cartao ou boleto acumula milhas ficticias.
@@ -313,7 +327,7 @@ Estado atual:
 
 Ponto pendente: a experiencia de milhas ainda e simples e pode ser refinada em etapas futuras.
 
-## 14. Populacao do Banco
+## 15. Populacao do Banco
 
 - Comando principal: `python manage.py popular_banco`.
 - Comando delega para `seed`.
@@ -335,7 +349,7 @@ Aeroportos principais:
 - POA - Porto Alegre
 - CGB - Cuiaba
 
-## 15. Testes
+## 16. Testes
 
 O arquivo `skybridgeapp/tests.py` cobre:
 
@@ -367,12 +381,17 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - bloqueio de acesso a reserva de outro passageiro;
 - cancelamento simples de reserva;
 - pagina dedicada de notificacoes do passageiro;
+- check-in online para reserva confirmada futura;
+- bloqueio de check-in duplicado;
+- bloqueio de check-in para reserva pendente ou voo passado;
+- cartao de embarque simples;
+- protecao contra check-in em reserva de outro passageiro;
 - links coerentes no dropdown de conta;
 - tela de sucesso da reserva apos pagamento aprovado;
 - exibicao de reserva no painel do passageiro;
 - bloqueio amigavel para usuario sem perfil de passageiro.
 
-## 16. Frontend e UX
+## 17. Frontend e UX
 
 - CSS proprio em `home.css`, `cadastro.css`, `login.css`, `paineis.css`, `auth_home.css` e `theme.css`.
 - Bootstrap usado em modais, dropdown e toasts.
@@ -383,35 +402,14 @@ O arquivo `skybridgeapp/tests.py` cobre:
 
 ## Prioridade Recomendada
 
-1. Check-in online.
-2. Status de voo publico.
-3. Painel do funcionario real.
-4. Painel administrativo mais apresentavel.
-5. Promocoes vindas do banco.
-6. Milhas refinadas.
-7. Melhorias tecnicas finais.
+1. Status de voo publico.
+2. Painel do funcionario real.
+3. Painel administrativo mais apresentavel.
+4. Promocoes vindas do banco.
+5. Milhas refinadas.
+6. Melhorias tecnicas finais.
 
-## 1. Check-in Online
-
-Prioridade: media/alta.
-
-Estado atual: a model `CheckIn` existe e ha botao visual no painel, mas sem fluxo real.
-
-Implementar:
-
-- Botao "Fazer check-in" em reserva confirmada.
-- Permitir check-in apenas para voo futuro.
-- Criar `CheckIn`.
-- Gerar cartao de embarque simples.
-- Atualizar dashboard do passageiro.
-
-Criterios de aceite:
-
-- Reserva confirmada de voo futuro permite check-in.
-- Check-in duplicado e evitado.
-- Cartao de embarque exibe passageiro, voo, horario, portao e assento.
-
-## 2. Status de Voo Publico
+## 1. Status de Voo Publico
 
 Prioridade: media.
 
@@ -430,7 +428,7 @@ Criterios de aceite:
 - Voos inexistentes exibem mensagem amigavel.
 - Alteracao de status feita por funcionario/admin aparece na consulta publica.
 
-## 3. Painel do Funcionario Real
+## 2. Painel do Funcionario Real
 
 Prioridade: media.
 
@@ -450,7 +448,7 @@ Criterios de aceite:
 - Passageiros com reserva no voo recebem notificacao.
 - Funcionario nao acessa painel administrativo.
 
-## 4. Painel Administrativo Mais Apresentavel
+## 3. Painel Administrativo Mais Apresentavel
 
 Prioridade: media.
 
@@ -469,7 +467,7 @@ Criterios de aceite:
 - Links levam para rotas/admin corretos.
 - Receita usa pagamentos aprovados.
 
-## 5. Promocoes Vindas do Banco
+## 4. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -488,7 +486,7 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 6. Milhas Refinadas
+## 5. Milhas Refinadas
 
 Prioridade: baixa/media.
 
@@ -507,7 +505,7 @@ Criterios de aceite:
 - Transacoes aparecem no painel.
 - Regras ficam simples e demonstraveis.
 
-## 7. Melhorias Tecnicas Importantes
+## 6. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -583,12 +581,12 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Implementar Check-in Online, porque o passageiro ja consegue consultar reservas, pagamentos e bilhetes, mas ainda nao consegue transformar uma reserva confirmada em cartao de embarque.
+Implementar Status de Voo Publico, porque o passageiro ja consegue consultar reservas, pagamentos, bilhetes e cartao de embarque, mas o link "Status de voo" do header ainda nao fecha uma consulta real.
 
 Sugestao de primeira entrega:
 
-1. Permitir check-in apenas para reserva confirmada de voo futuro.
-2. Criar `CheckIn` sem duplicar registros para a mesma viagem.
-3. Exibir cartao de embarque simples com passageiro, voo, horario, portao e assento.
-4. Adicionar acao "Fazer check-in" em "Minhas viagens" ou no detalhe da reserva.
-5. Manter a protecao para impedir check-in de reserva de outro passageiro.
+1. Criar pagina publica `/status-voo/`.
+2. Permitir busca por numero do voo.
+3. Mostrar origem, destino, horarios, portao e status.
+4. Permitir que funcionario/admin atualizem status e portao em etapa seguinte.
+5. Manter mensagens amigaveis para voos inexistentes.

@@ -21,7 +21,7 @@ from .forms import (
     PagamentoForm,
     SelecionarVooForm,
 )
-from .models import Bagagem, Bilhete, ContaMilhas, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, TransacaoMilhas, Voo
+from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, TransacaoMilhas, Voo
 
 
 LANDING_CONTEXT = {
@@ -547,6 +547,59 @@ def detalhe_reserva(request, reserva_id):
 
 @login_required
 @require_POST
+def realizar_checkin(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao'),
+        pk=reserva_id,
+    )
+
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    if not _reserva_pode_checkin(reserva):
+        messages.error(request, 'Check-in disponivel apenas para reservas confirmadas de voos futuros.')
+        return redirect('detalhe_reserva', reserva_id=reserva.id)
+
+    checkin = _checkin_da_reserva(reserva)
+    if checkin:
+        messages.info(request, 'Check-in ja realizado para esta reserva.')
+    else:
+        CheckIn.objects.create(
+            passageiro=reserva.passageiro,
+            voo=reserva.voo,
+            status='realizado',
+        )
+        messages.success(request, 'Check-in realizado com sucesso.')
+
+    return redirect('cartao_embarque', reserva_id=reserva.id)
+
+
+@login_required
+def cartao_embarque(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'bilhete'),
+        pk=reserva_id,
+    )
+
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    checkin = _checkin_da_reserva(reserva)
+    if not checkin:
+        messages.error(request, 'Realize o check-in antes de acessar o cartao de embarque.')
+        return redirect('detalhe_reserva', reserva_id=reserva.id)
+
+    _preparar_reserva_jornada(reserva)
+
+    return render(request, 'cartao_embarque.html', {
+        'reserva': reserva,
+        'passageiro': reserva.passageiro,
+        'checkin': checkin,
+    })
+
+
+@login_required
+@require_POST
 def cancelar_reserva(request, reserva_id):
     reserva = get_object_or_404(
         Reserva.objects.select_related('passageiro__usuario'),
@@ -594,15 +647,30 @@ def _preparar_reservas_jornada(reservas):
 def _preparar_reserva_jornada(reserva):
     pagamento = getattr(reserva, 'pagamento', None)
     bilhete = getattr(reserva, 'bilhete', None)
+    checkin = _checkin_da_reserva(reserva)
 
     reserva.pagamento_jornada = pagamento
     reserva.bilhete_jornada = bilhete
+    reserva.checkin_jornada = checkin
+    reserva.pode_checkin = _reserva_pode_checkin(reserva) and not checkin
     reserva.pagamento_status_label = pagamento.get_status_display() if pagamento else 'Pendente'
     reserva.pagamento_status_texto = f'Pagamento {reserva.pagamento_status_label.lower()}'
     reserva.metodo_pagamento_label = pagamento.get_metodo_display() if pagamento else 'Aguardando pagamento'
     reserva.valor_total_formatado = _formatar_moeda(pagamento.valor_total) if pagamento else None
 
     return reserva
+
+
+def _reserva_pode_checkin(reserva):
+    return reserva.status == 'confirmada' and reserva.voo.partida > timezone.now()
+
+
+def _checkin_da_reserva(reserva):
+    return CheckIn.objects.filter(
+        passageiro=reserva.passageiro,
+        voo=reserva.voo,
+        status='realizado',
+    ).order_by('-data_hora').first()
 
 
 def _valor_total_reserva(reserva):
@@ -1054,7 +1122,9 @@ def dashboard_passageiro(request):
     notificacoes = []
 
     if passageiro:
-        reservas = passageiro.reserva_set.select_related('voo', 'pagamento', 'bilhete').all().order_by('-id')[:5]
+        reservas = _preparar_reservas_jornada(
+            passageiro.reserva_set.select_related('voo', 'pagamento', 'bilhete').all().order_by('-id')[:5]
+        )
         notificacoes = passageiro.notificacao_set.all()[:5]
 
     return render(request, 'painel_passageiro.html', {

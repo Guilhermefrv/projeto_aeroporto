@@ -9,7 +9,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Bilhete, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Aeroporto, Aeronave, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -1243,6 +1243,136 @@ class BuscaVoosTests(TestCase):
         reserva.refresh_from_db()
         self.assertEqual(reserva.status, 'cancelada')
         self.assertRedirects(response, reverse('detalhe_reserva', args=[reserva.pk]))
+
+    def test_reserva_confirmada_futura_permite_checkin_e_cria_cartao(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_checkin',
+            cpf_passaporte='CHECKIN123',
+        )
+        reserva, _ = self.criar_reserva_confirmada_com_bilhete(
+            passageiro,
+            codigo='TKT-CHECKIN-001',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('realizar_checkin', args=[reserva.pk]), follow=True)
+
+        checkin = CheckIn.objects.get(passageiro=passageiro, voo=reserva.voo)
+        self.assertEqual(checkin.status, 'realizado')
+        self.assertRedirects(response, reverse('cartao_embarque', args=[reserva.pk]))
+        self.assertContains(response, 'Cartao de embarque')
+        self.assertContains(response, passageiro.nome)
+        self.assertContains(response, reserva.voo.numero_voo)
+        self.assertContains(response, reserva.voo.partida.strftime('%d/%m/%Y'))
+        self.assertContains(response, reserva.assento)
+        self.assertContains(response, reserva.voo.portao.numero_portao)
+
+    def test_checkin_duplicado_reaproveita_registro_existente(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_checkin_dup',
+            cpf_passaporte='CHECKINDUP',
+        )
+        reserva, _ = self.criar_reserva_confirmada_com_bilhete(
+            passageiro,
+            codigo='TKT-CHECKIN-DUP',
+        )
+        CheckIn.objects.create(
+            passageiro=passageiro,
+            voo=reserva.voo,
+            status='realizado',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('realizar_checkin', args=[reserva.pk]))
+
+        self.assertEqual(CheckIn.objects.filter(passageiro=passageiro, voo=reserva.voo).count(), 1)
+        self.assertRedirects(response, reverse('cartao_embarque', args=[reserva.pk]))
+
+    def test_reserva_de_voo_passado_nao_permite_checkin(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_checkin_passado',
+            cpf_passaporte='CHECKPASS',
+        )
+        voo_passado = Voo.objects.create(
+            numero_voo='SB-PASS',
+            origem='GRU - Sao Paulo',
+            destino='REC - Recife',
+            partida=timezone.now() - timedelta(days=1),
+            chegada=timezone.now() - timedelta(days=1, hours=-3),
+            status='programado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=voo_passado,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='18A',
+            status='confirmada',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('realizar_checkin', args=[reserva.pk]), follow=True)
+
+        self.assertFalse(CheckIn.objects.filter(passageiro=passageiro, voo=voo_passado).exists())
+        self.assertContains(response, 'Check-in disponivel apenas para reservas confirmadas de voos futuros.')
+
+    def test_reserva_pendente_nao_permite_checkin(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_checkin_pendente',
+            cpf_passaporte='CHECKPEND',
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='17A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('realizar_checkin', args=[reserva.pk]), follow=True)
+
+        self.assertFalse(CheckIn.objects.filter(passageiro=passageiro, voo=reserva.voo).exists())
+        self.assertContains(response, 'Check-in disponivel apenas para reservas confirmadas de voos futuros.')
+
+    def test_painel_exibe_acao_de_checkin_para_reserva_confirmada_futura(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_checkin_link',
+            cpf_passaporte='CHECKLINK',
+        )
+        reserva, _ = self.criar_reserva_confirmada_com_bilhete(
+            passageiro,
+            codigo='TKT-CHECKIN-LINK',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('minhas_viagens'))
+
+        self.assertContains(response, 'Fazer check-in')
+        self.assertContains(response, reverse('realizar_checkin', args=[reserva.pk]))
+
+    def test_passageiro_nao_faz_checkin_em_reserva_de_outro_usuario(self):
+        _, passageiro_dono = self.criar_usuario_passageiro_com_perfil(
+            username='dono_checkin',
+            cpf_passaporte='DONOCHECK',
+        )
+        reserva, _ = self.criar_reserva_confirmada_com_bilhete(
+            passageiro_dono,
+            codigo='TKT-DONO-CHECK',
+        )
+        outro_usuario, _ = self.criar_usuario_passageiro_com_perfil(
+            username='intruso_checkin',
+            cpf_passaporte='INTRCHECK',
+        )
+        self.client.force_login(outro_usuario)
+
+        response = self.client.post(reverse('realizar_checkin', args=[reserva.pk]))
+
+        self.assertFalse(CheckIn.objects.filter(passageiro=passageiro_dono, voo=reserva.voo).exists())
+        self.assertRedirects(response, reverse('dashboard_passageiro'))
 
     def test_notificacoes_passageiro_lista_apenas_do_usuario(self):
         user, passageiro = self.criar_usuario_passageiro_com_perfil(

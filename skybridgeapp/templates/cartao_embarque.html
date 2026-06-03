@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reserva #{{ reserva.id }} | Sky Bridge</title>
+    <title>Cartao de embarque | Sky Bridge</title>
     <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
                 </div>
                 <div class="brand-text">
                     <h1>Sky Bridge</h1>
-                    <span>Área do Cliente</span>
+                    <span>Check-in Online</span>
                 </div>
             </a>
             <div class="user-menu">
@@ -39,27 +39,22 @@
         <aside class="dashboard-sidebar">
             <div class="profile-card">
                 <div class="profile-avatar">
-                    {{ reserva.passageiro.nome|slice:":2"|upper }}
+                    {{ passageiro.nome|slice:":2"|upper }}
                 </div>
-                <h2>{{ reserva.passageiro.nome }}</h2>
-                <div class="user-type">Passageiro da reserva</div>
-
+                <h2>{{ passageiro.nome }}</h2>
+                <div class="user-type">Cartao de embarque</div>
                 <div class="profile-details">
                     <div class="profile-item">
                         <strong>Reserva</strong>
                         <span>#{{ reserva.id }}</span>
                     </div>
                     <div class="profile-item">
-                        <strong>Status</strong>
-                        <span>{{ reserva.get_status_display }}</span>
+                        <strong>Status do check-in</strong>
+                        <span>{{ checkin.get_status_display }}</span>
                     </div>
                     <div class="profile-item">
-                        <strong>Pagamento</strong>
-                        <span>{{ reserva.pagamento_status_texto }}</span>
-                    </div>
-                    <div class="profile-item">
-                        <strong>Valor</strong>
-                        <span>{{ reserva.valor_total_formatado|default:"A calcular" }}</span>
+                        <strong>Realizado em</strong>
+                        <span>{{ checkin.data_hora|date:"d/m/Y H:i" }}</span>
                     </div>
                 </div>
             </div>
@@ -75,8 +70,8 @@
             {% endif %}
 
             <section class="welcome-header">
-                <h2>Reserva #{{ reserva.id }}</h2>
-                <p>Veja os dados da viagem, acompanhe o pagamento e acesse o bilhete quando ele estiver emitido.</p>
+                <h2>Cartao de embarque</h2>
+                <p>Apresente este comprovante simples no embarque da sua viagem Sky Bridge.</p>
             </section>
 
             <section class="widgets-grid">
@@ -100,27 +95,33 @@
                 </div>
                 <div class="widget-card">
                     <div class="widget-icon" style="background: #fef3c7; color: #d97706;">
-                        <i class="fa-solid fa-credit-card"></i>
+                        <i class="fa-solid fa-door-open"></i>
                     </div>
                     <div class="widget-info">
-                        <h3>Pagamento</h3>
-                        <p>{{ reserva.pagamento_status_label }}</p>
+                        <h3>Portao</h3>
+                        <p>{{ reserva.voo.portao.numero_portao|default:"A definir" }}</p>
                     </div>
                 </div>
             </section>
 
             <section class="section-card">
                 <div class="section-header">
-                    <h3><i class="fa-solid fa-route"></i> Dados da viagem</h3>
+                    <h3><i class="fa-solid fa-qrcode"></i> Dados do embarque</h3>
+                    <span class="badge-status status-realizado">Check-in realizado</span>
                 </div>
+
                 <div class="profile-details">
                     <div class="profile-item">
                         <strong>Passageiro</strong>
-                        <span>{{ reserva.passageiro.nome }}</span>
+                        <span>{{ passageiro.nome }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Documento</strong>
+                        <span>{{ passageiro.cpf_passaporte }}</span>
                     </div>
                     <div class="profile-item">
                         <strong>Origem / Destino</strong>
-                        <span>{{ reserva.voo.origem }} → {{ reserva.voo.destino }}</span>
+                        <span>{{ reserva.voo.origem }} -> {{ reserva.voo.destino }}</span>
                     </div>
                     <div class="profile-item">
                         <strong>Partida</strong>
@@ -134,14 +135,6 @@
                         <strong>Aeronave</strong>
                         <span>{{ reserva.voo.aeronave.modelo }}</span>
                     </div>
-                    <div class="profile-item">
-                        <strong>Portão</strong>
-                        <span>{{ reserva.voo.portao.numero_portao|default:"A definir" }}</span>
-                    </div>
-                    <div class="profile-item">
-                        <strong>{{ reserva.pagamento_status_texto }}</strong>
-                        <span>{{ reserva.metodo_pagamento_label }}</span>
-                    </div>
                     {% if reserva.bilhete_jornada %}
                         <div class="profile-item">
                             <strong>Bilhete</strong>
@@ -151,35 +144,13 @@
                 </div>
 
                 <div class="quick-actions" style="margin-top: 20px;">
-                    {% if reserva.status == 'pendente' %}
-                        <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
-                            <i class="fa-solid fa-credit-card"></i> Finalizar pagamento
-                        </a>
-                    {% endif %}
+                    <a href="{% url 'detalhe_reserva' reserva.id %}" class="btn-action secondary">
+                        <i class="fa-solid fa-ticket"></i> Ver reserva
+                    </a>
                     {% if reserva.bilhete_jornada %}
                         <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
                             <i class="fa-solid fa-receipt"></i> Ver bilhete
                         </a>
-                    {% endif %}
-                    {% if reserva.checkin_jornada %}
-                        <a href="{% url 'cartao_embarque' reserva.id %}" class="btn-action primary">
-                            <i class="fa-solid fa-qrcode"></i> Ver cartao de embarque
-                        </a>
-                    {% elif reserva.pode_checkin %}
-                        <form method="post" action="{% url 'realizar_checkin' reserva.id %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-action primary">
-                                <i class="fa-solid fa-qrcode"></i> Fazer check-in
-                            </button>
-                        </form>
-                    {% endif %}
-                    {% if reserva.status != 'cancelada' %}
-                        <form method="post" action="{% url 'cancelar_reserva' reserva.id %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-action secondary">
-                                <i class="fa-solid fa-ban"></i> Cancelar reserva
-                            </button>
-                        </form>
                     {% endif %}
                 </div>
             </section>
