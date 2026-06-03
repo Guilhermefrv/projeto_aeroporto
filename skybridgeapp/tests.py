@@ -204,6 +204,11 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, f'href="{reverse("notificacoes_passageiro")}"')
         self.assertNotContains(response, 'Fazer login')
 
+        html = response.content.decode()
+        self.assertRegex(html, rf'href="{reverse("dashboard_passageiro")}"[\s\S]*?Minha conta')
+        self.assertRegex(html, rf'href="{reverse("minhas_viagens")}"[\s\S]*?Minhas viagens')
+        self.assertRegex(html, rf'href="{reverse("notificacoes_passageiro")}"[\s\S]*?Notifica')
+
     def test_home_account_menu_falls_back_to_generic_label(self):
         user = get_user_model().objects.create_user(
             username='guilherme',
