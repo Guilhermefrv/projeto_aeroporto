@@ -190,6 +190,43 @@ label {
     text-decoration: underline;
 }
 
+.signup-prompt {
+    margin: 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.signup-prompt a {
+    color: var(--blue);
+    font-weight: 900;
+    text-decoration: none;
+}
+
+.signup-prompt a:hover,
+.signup-prompt a:focus-visible {
+    color: var(--navy);
+    outline: none;
+    text-decoration: underline;
+}
+
+.auth-submit {
+    margin-top: 30px;
+}
+
+.auth-card-actions {
+    display: grid;
+    gap: 12px;
+}
+
+.auth-link-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
 .btn-primary {
     width: 100%;
     min-height: 50px;

@@ -75,7 +75,7 @@
 
         <p class="login-copy">
             Ja tem uma conta?
-            <a href="{% url 'login' %}">Fazer login</a>
+            <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Fazer login</a>
         </p>
     </section>
 </main>
@@ -86,6 +86,9 @@
             <form class="modal-form" action="{% url 'cadastro' %}" method="post" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="tipo_usuario" value="passageiro">
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
 
                 <div class="modal-header">
                     <div>
@@ -250,6 +253,9 @@
             <form class="modal-form" action="{% url 'cadastro' %}" method="post" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="tipo_usuario" value="funcionario">
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
 
                 <div class="modal-header">
                     <div>
@@ -400,6 +406,9 @@
             <form class="modal-form" action="{% url 'cadastro' %}" method="post" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="tipo_usuario" value="administrador">
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
 
                 <div class="modal-header">
                     <div>

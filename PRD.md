@@ -68,6 +68,14 @@ projeto_aeroporto/
       painel_admin.html
       painel_funcionario.html
       painel_passageiro.html
+      password_change_done.html
+      password_change_form.html
+      password_reset_complete.html
+      password_reset_confirm.html
+      password_reset_done.html
+      password_reset_email.html
+      password_reset_form.html
+      password_reset_subject.txt
       reserva_sucesso.html
     static/
       css/
@@ -118,6 +126,12 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | `/cadastro/` | `cadastro` | `cadastro.html` | Cadastro real com modais Bootstrap |
 | `/login/` | `SkyBridgeLoginView` | `login.html` | Login real usando Django |
 | `/logout/` | `SkyBridgeLogoutView` | - | Logout real usando Django |
+| `/senha/redefinir/` | `SkyBridgePasswordResetView` | `password_reset_form.html` | Solicita link de redefinicao de senha |
+| `/senha/redefinir/enviado/` | `SkyBridgePasswordResetDoneView` | `password_reset_done.html` | Confirma envio das instrucoes |
+| `/senha/redefinir/<uidb64>/<token>/` | `SkyBridgePasswordResetConfirmView` | `password_reset_confirm.html` | Define nova senha com token |
+| `/senha/redefinir/concluido/` | `SkyBridgePasswordResetCompleteView` | `password_reset_complete.html` | Confirma senha redefinida |
+| `/senha/alterar/` | `SkyBridgePasswordChangeView` | `password_change_form.html` | Altera senha de usuario autenticado |
+| `/senha/alterar/concluido/` | `SkyBridgePasswordChangeDoneView` | `password_change_done.html` | Confirma troca de senha |
 | `/dashboard/` | `dashboard_router` | - | Redireciona conforme tipo de usuario |
 | `/dashboard/passageiro/` | `dashboard_passageiro` | `painel_passageiro.html` | Painel protegido do passageiro |
 | `/dashboard/funcionario/` | `dashboard_funcionario` | `painel_funcionario.html` | Painel protegido do funcionario |
@@ -186,6 +200,11 @@ Ponto pendente: parte das ofertas ainda vem de `LANDING_CONTEXT` em `views.py`, 
 
 - Login real com `LoginView`.
 - Logout real com `LogoutView`.
+- Login exibe link para cadastro quando o usuario ainda nao tem conta.
+- Cadastro iniciado a partir do login preserva o parametro `next` para retomar o fluxo protegido.
+- Recuperacao de senha usa views nativas do Django com envio de link por e-mail.
+- Em desenvolvimento, e-mails de redefinicao sao exibidos no terminal pelo backend console.
+- Usuario autenticado consegue alterar senha informando senha atual e nova senha.
 - Mensagens de login/logout exibidas como Bootstrap Toast.
 - Redirecionamento por tipo:
   - passageiro vai para `/`;
@@ -357,6 +376,8 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - comando `popular_banco`;
 - home e header;
 - login/logout;
+- cadastro a partir do login;
+- redefinicao e alteracao de senha;
 - cadastro por tipo;
 - dashboards protegidos;
 - busca de voos;

@@ -1,12 +1,16 @@
 from datetime import date, timedelta
 from decimal import Decimal
 from io import StringIO
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.core import mail
 from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 
 from .models import Aeroporto, Aeronave, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
@@ -202,6 +206,8 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, f'href="{reverse("dashboard_passageiro")}"')
         self.assertContains(response, f'href="{reverse("minhas_viagens")}"')
         self.assertContains(response, f'href="{reverse("notificacoes_passageiro")}"')
+        self.assertContains(response, f'href="{reverse("password_change")}"')
+        self.assertContains(response, 'Alterar senha')
         self.assertNotContains(response, 'Fazer login')
 
         html = response.content.decode()
@@ -301,12 +307,73 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'name="username"')
         self.assertContains(response, 'name="password"')
+        self.assertContains(response, f'href="{reverse("cadastro")}"')
+        self.assertContains(response, 'Nao tem uma conta?')
+        self.assertContains(response, f'href="{reverse("password_reset")}"')
+        self.assertContains(response, 'Esqueceu a senha?')
+        self.assertNotContains(response, 'data-noop')
 
     def test_login_page_preserves_next_parameter(self):
         response = self.client.get(f'{reverse("login")}?next={reverse("dashboard")}')
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'name="next" value="{reverse("dashboard")}"')
+        self.assertContains(response, f'href="{reverse("cadastro")}?next={quote(reverse("dashboard"), safe="/")}"')
+
+    def test_password_reset_page_renders(self):
+        response = self.client.get(reverse('password_reset'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="email"')
+        self.assertContains(response, 'Enviar instrucoes')
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_password_reset_sends_email_for_existing_user(self):
+        user = self.criar_usuario_passageiro()
+        user.email = 'usuario@example.com'
+        user.save(update_fields=['email'])
+
+        response = self.client.post(reverse('password_reset'), {'email': user.email})
+
+        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Sky Bridge', mail.outbox[0].subject)
+        self.assertIn('/senha/redefinir/', mail.outbox[0].body)
+
+    def test_password_reset_confirm_changes_password(self):
+        user = self.criar_usuario_passageiro()
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        response = self.client.get(reverse('password_reset_confirm', args=[uidb64, token]))
+        reset_url = response['Location']
+
+        response = self.client.post(reset_url, {
+            'new_password1': 'NovaSenhaForte123',
+            'new_password2': 'NovaSenhaForte123',
+        })
+
+        user.refresh_from_db()
+        self.assertRedirects(response, reverse('password_reset_complete'))
+        self.assertTrue(user.check_password('NovaSenhaForte123'))
+
+    def test_authenticated_user_can_change_password(self):
+        user = self.criar_usuario_passageiro()
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('password_change'), {
+            'old_password': 'senha-segura-123',
+            'new_password1': 'SenhaAlterada123',
+            'new_password2': 'SenhaAlterada123',
+        })
+
+        user.refresh_from_db()
+        self.assertRedirects(response, reverse('password_change_done'))
+        self.assertTrue(user.check_password('SenhaAlterada123'))
+
+    def test_anonymous_password_change_redirects_to_login(self):
+        response = self.client.get(reverse('password_change'))
+
+        self.assertRedirects(response, f'{reverse("login")}?next={reverse("password_change")}')
 
     def test_passenger_login_redirects_to_home(self):
         self.criar_usuario_passageiro()
@@ -1676,6 +1743,16 @@ class CadastroUsuarioTests(TestCase):
         self.assertEqual(usuario.tipo, 'passageiro')
         self.assertEqual(usuario.email, 'maria@example.com')
         self.assertEqual(usuario.first_name, 'Maria Silva')
+
+    def test_cadastro_preserva_next_ao_voltar_para_login(self):
+        next_url = '/voos/10/selecionar/?classe=economy'
+        data = self.dados_passageiro()
+        data['next'] = next_url
+
+        response = self.client.post(self.cadastro_url, data)
+
+        expected_url = f'{self.login_url}?next={quote(next_url, safe="")}'
+        self.assertRedirects(response, expected_url)
 
     def test_cadastro_cria_perfil_passageiro_vinculado(self):
         data = self.form_data.copy()

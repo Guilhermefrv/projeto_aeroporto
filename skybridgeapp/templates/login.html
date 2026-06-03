@@ -94,7 +94,7 @@
             </div>
         {% endif %}
 
-        <a href="#" class="forgot-password" data-noop>
+        <a href="{% url 'password_reset' %}" class="forgot-password">
             Esqueceu a senha?
         </a>
 
@@ -106,14 +106,11 @@
 
     <hr>
 
-</div>
+    <p class="signup-prompt">
+        Nao tem uma conta?
+        <a href="{% url 'cadastro' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Cadastre-se</a>
+    </p>
 
-<script>
-    document.querySelectorAll('[data-noop]').forEach((element) => {
-        element.addEventListener('click', (event) => {
-            event.preventDefault();
-        });
-    });
-</script>
+</div>
 </body>
 </html>

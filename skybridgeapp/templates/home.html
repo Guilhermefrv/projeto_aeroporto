@@ -81,6 +81,12 @@
                             </span>
                             Notificações
                         </a>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_password_url }}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-solid fa-key"></i>
+                            </span>
+                            Alterar senha
+                        </a>
                         <div class="dropdown-divider"></div>
                         <form class="account-menu-form" method="post" action="{% url 'logout' %}">
                             {% csrf_token %}

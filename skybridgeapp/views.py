@@ -2,14 +2,25 @@ import random
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import (
+    LoginView,
+    LogoutView,
+    PasswordChangeDoneView,
+    PasswordChangeView,
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -736,6 +747,7 @@ CADASTRO_FORMS = {
 
 def cadastro(request):
     tipo_enviado = request.POST.get('tipo_usuario') if request.method == 'POST' else None
+    next_url = _safe_next_url(request)
     forms = {
         tipo: form_class(request.POST if tipo == tipo_enviado else None)
         for tipo, form_class in CADASTRO_FORMS.items()
@@ -747,7 +759,7 @@ def cadastro(request):
         if form and form.is_valid():
             form.save()
             messages.success(request, 'Conta criada com sucesso. Faca login para continuar.')
-            return redirect('login')
+            return redirect(_login_url_with_next(next_url))
 
         if form:
             modal_aberto = tipo_enviado
@@ -759,6 +771,7 @@ def cadastro(request):
         'funcionario_form': forms['funcionario'],
         'administrador_form': forms['administrador'],
         'modal_aberto': modal_aberto,
+        'next': next_url,
     })
 
 
@@ -767,6 +780,7 @@ def _add_account_context(request, context):
         context['account_dashboard_url'] = reverse(_dashboard_route_for_user(request.user))
         context['account_trips_url'] = reverse('minhas_viagens') if request.user.tipo == 'passageiro' else context['account_dashboard_url']
         context['account_notifications_url'] = reverse('notificacoes_passageiro') if request.user.tipo == 'passageiro' else context['account_dashboard_url']
+        context['account_password_url'] = reverse('password_change')
         context['account_label'] = _account_label_for_user(request.user)
         context['account_initials'] = _account_initials_for_user(request.user)
 
@@ -1107,6 +1121,23 @@ def _redirect_to_user_dashboard(user):
     return redirect(_dashboard_route_for_user(user))
 
 
+def _safe_next_url(request):
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
+    if url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return ''
+
+
+def _login_url_with_next(next_url):
+    if next_url:
+        return f'{reverse("login")}?{urlencode({"next": next_url})}'
+    return reverse('login')
+
+
 @login_required
 def dashboard_router(request):
     return _redirect_to_user_dashboard(request.user)
@@ -1186,3 +1217,36 @@ class SkyBridgeLogoutView(LogoutView):
         response = super().post(request, *args, **kwargs)
         messages.success(request, 'Logout realizado com sucesso.')
         return response
+
+
+class SkyBridgePasswordResetView(PasswordResetView):
+    template_name = 'password_reset_form.html'
+    email_template_name = 'password_reset_email.html'
+    subject_template_name = 'password_reset_subject.txt'
+    success_url = reverse_lazy('password_reset_done')
+
+
+class SkyBridgePasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'password_reset_done.html'
+
+
+class SkyBridgePasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'password_reset_confirm.html'
+    success_url = reverse_lazy('password_reset_complete')
+
+
+class SkyBridgePasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = 'password_reset_complete.html'
+
+
+class SkyBridgePasswordChangeView(PasswordChangeView):
+    template_name = 'password_change_form.html'
+    success_url = reverse_lazy('password_change_done')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Senha alterada com sucesso.')
+        return super().form_valid(form)
+
+
+class SkyBridgePasswordChangeDoneView(PasswordChangeDoneView):
+    template_name = 'password_change_done.html'
