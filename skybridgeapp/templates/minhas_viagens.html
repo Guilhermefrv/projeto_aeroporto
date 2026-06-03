@@ -1,0 +1,172 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas viagens | Sky Bridge</title>
+    <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-plane"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Sky Bridge</h1>
+                    <span>Área do Cliente</span>
+                </div>
+            </a>
+            <div class="user-menu">
+                <span class="user-badge">
+                    <i class="fa-solid fa-suitcase-rolling"></i> Minhas viagens
+                </span>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <aside class="dashboard-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    {{ user.username|slice:":2"|upper }}
+                </div>
+                <h2>{{ user.get_full_name|default:user.username }}</h2>
+                <div class="user-type">Passageiro Oficial</div>
+
+                <div class="profile-details">
+                    {% if passageiro %}
+                        <div class="profile-item">
+                            <strong>Nome Completo</strong>
+                            <span>{{ passageiro.nome }}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>CPF / Passaporte</strong>
+                            <span>{{ passageiro.cpf_passaporte }}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>Programa de milhas</strong>
+                            {% if conta_milhas %}
+                                <span>{{ conta_milhas.saldo }} milhas</span>
+                                <span>{{ conta_milhas.numero_programa }}</span>
+                            {% else %}
+                                <span>Nenhum programa ativo</span>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="profile-item">
+                            <strong>Aviso</strong>
+                            <span>Complete seu perfil de passageiro.</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <main class="dashboard-content">
+            <section class="welcome-header">
+                <h2>Minhas viagens</h2>
+                <p>Acompanhe suas reservas, pagamentos, bilhetes emitidos e próximos passos da sua jornada.</p>
+            </section>
+
+            <section class="widgets-grid">
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--green-soft); color: var(--green);">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Reservas</h3>
+                        <p>{{ reservas|length }}</p>
+                    </div>
+                </div>
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: #fef3c7; color: #d97706;">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Saldo de Milhas</h3>
+                        {% if conta_milhas %}
+                            <p>{{ conta_milhas.saldo }} milhas</p>
+                        {% else %}
+                            <p>0 milhas</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-plane-departure"></i> Reservas da conta</h3>
+                    <a href="{% url 'dashboard_passageiro' %}" class="btn-action secondary">
+                        <i class="fa-solid fa-user"></i> Minha conta
+                    </a>
+                </div>
+
+                {% if reservas %}
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Reserva</th>
+                                    <th>Voo</th>
+                                    <th>Origem / Destino</th>
+                                    <th>Partida</th>
+                                    <th>Assento</th>
+                                    <th>Status</th>
+                                    <th>Pagamento</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reserva in reservas %}
+                                    <tr>
+                                        <td><strong>Reserva #{{ reserva.id }}</strong></td>
+                                        <td>{{ reserva.voo.numero_voo }}</td>
+                                        <td>{{ reserva.voo.origem }} → {{ reserva.voo.destino }}</td>
+                                        <td>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ reserva.assento }}</td>
+                                        <td>
+                                            <span class="badge-status status-{{ reserva.status }}">
+                                                {{ reserva.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ reserva.pagamento_status_label }}</td>
+                                        <td>
+                                            <a href="{% url 'detalhe_reserva' reserva.id %}" class="btn-action secondary">
+                                                Ver detalhes
+                                            </a>
+                                            {% if reserva.status == 'pendente' %}
+                                                <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
+                                                    Finalizar pagamento
+                                                </a>
+                                            {% endif %}
+                                            {% if reserva.bilhete_jornada %}
+                                                <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
+                                                    Ver bilhete
+                                                </a>
+                                                <span style="display: block; color: var(--muted); font-size: 12px; margin-top: 6px;">{{ reserva.bilhete_jornada.codigo }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Você ainda não possui nenhuma reserva de voo.</p>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+</body>
+</html>

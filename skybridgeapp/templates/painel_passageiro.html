@@ -149,6 +149,9 @@
             <section class="section-card">
                 <div class="section-header">
                     <h3><i class="fa-solid fa-plane-departure"></i> Reservas Recentes</h3>
+                    <a href="{% url 'minhas_viagens' %}" class="btn-action secondary">
+                        Ver todas
+                    </a>
                 </div>
                 {% if reservas %}
                     <div class="table-responsive">

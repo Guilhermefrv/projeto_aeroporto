@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva #{{ reserva.id }} | Sky Bridge</title>
+    <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-plane"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Sky Bridge</h1>
+                    <span>Área do Cliente</span>
+                </div>
+            </a>
+            <div class="user-menu">
+                <a href="{% url 'minhas_viagens' %}" class="btn-action secondary">
+                    <i class="fa-solid fa-arrow-left"></i> Minhas viagens
+                </a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <aside class="dashboard-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    {{ reserva.passageiro.nome|slice:":2"|upper }}
+                </div>
+                <h2>{{ reserva.passageiro.nome }}</h2>
+                <div class="user-type">Passageiro da reserva</div>
+
+                <div class="profile-details">
+                    <div class="profile-item">
+                        <strong>Reserva</strong>
+                        <span>#{{ reserva.id }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Status</strong>
+                        <span>{{ reserva.get_status_display }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Pagamento</strong>
+                        <span>{{ reserva.pagamento_status_texto }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Valor</strong>
+                        <span>{{ reserva.valor_total_formatado|default:"A calcular" }}</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="dashboard-content">
+            {% if messages %}
+                <section class="section-card">
+                    {% for message in messages %}
+                        <p style="color: var(--green); font-weight: 700;">{{ message }}</p>
+                    {% endfor %}
+                </section>
+            {% endif %}
+
+            <section class="welcome-header">
+                <h2>Reserva #{{ reserva.id }}</h2>
+                <p>Veja os dados da viagem, acompanhe o pagamento e acesse o bilhete quando ele estiver emitido.</p>
+            </section>
+
+            <section class="widgets-grid">
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--blue-soft); color: var(--blue);">
+                        <i class="fa-solid fa-plane"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Voo</h3>
+                        <p>{{ reserva.voo.numero_voo }}</p>
+                    </div>
+                </div>
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--green-soft); color: var(--green);">
+                        <i class="fa-solid fa-chair"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Assento</h3>
+                        <p>{{ reserva.assento }}</p>
+                    </div>
+                </div>
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: #fef3c7; color: #d97706;">
+                        <i class="fa-solid fa-credit-card"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Pagamento</h3>
+                        <p>{{ reserva.pagamento_status_label }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-route"></i> Dados da viagem</h3>
+                </div>
+                <div class="profile-details">
+                    <div class="profile-item">
+                        <strong>Passageiro</strong>
+                        <span>{{ reserva.passageiro.nome }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Origem / Destino</strong>
+                        <span>{{ reserva.voo.origem }} → {{ reserva.voo.destino }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Partida</strong>
+                        <span>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Chegada</strong>
+                        <span>{{ reserva.voo.chegada|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Aeronave</strong>
+                        <span>{{ reserva.voo.aeronave.modelo }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Portão</strong>
+                        <span>{{ reserva.voo.portao.numero_portao|default:"A definir" }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>{{ reserva.pagamento_status_texto }}</strong>
+                        <span>{{ reserva.metodo_pagamento_label }}</span>
+                    </div>
+                    {% if reserva.bilhete_jornada %}
+                        <div class="profile-item">
+                            <strong>Bilhete</strong>
+                            <span>{{ reserva.bilhete_jornada.codigo }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="quick-actions" style="margin-top: 20px;">
+                    {% if reserva.status == 'pendente' %}
+                        <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
+                            <i class="fa-solid fa-credit-card"></i> Finalizar pagamento
+                        </a>
+                    {% endif %}
+                    {% if reserva.bilhete_jornada %}
+                        <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
+                            <i class="fa-solid fa-receipt"></i> Ver bilhete
+                        </a>
+                    {% endif %}
+                    {% if reserva.status != 'cancelada' %}
+                        <form method="post" action="{% url 'cancelar_reserva' reserva.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action secondary">
+                                <i class="fa-solid fa-ban"></i> Cancelar reserva
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

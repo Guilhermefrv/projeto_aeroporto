@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificações | Sky Bridge</title>
+    <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-plane"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Sky Bridge</h1>
+                    <span>Área do Cliente</span>
+                </div>
+            </a>
+            <div class="user-menu">
+                <a href="{% url 'minhas_viagens' %}" class="btn-action secondary">
+                    <i class="fa-solid fa-suitcase-rolling"></i> Minhas viagens
+                </a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <aside class="dashboard-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    {{ user.username|slice:":2"|upper }}
+                </div>
+                <h2>{{ user.get_full_name|default:user.username }}</h2>
+                <div class="user-type">Central de avisos</div>
+                <div class="profile-details">
+                    {% if passageiro %}
+                        <div class="profile-item">
+                            <strong>Passageiro</strong>
+                            <span>{{ passageiro.nome }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="profile-item">
+                        <strong>Não lidas</strong>
+                        <span>{{ notificacoes_nao_lidas }}</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="dashboard-content">
+            <section class="welcome-header">
+                <h2>Notificações</h2>
+                <p>Acompanhe avisos importantes sobre reservas, voos e atualizações da sua jornada.</p>
+            </section>
+
+            <section class="section-card">
+                <div class="section-header">
+                    <h3><i class="fa-solid fa-bell"></i> Mensagens e alertas</h3>
+                    <a href="{% url 'dashboard_passageiro' %}" class="btn-action secondary">
+                        <i class="fa-solid fa-user"></i> Minha conta
+                    </a>
+                </div>
+
+                {% if notificacoes %}
+                    <div class="notification-list">
+                        {% for notif in notificacoes %}
+                            <div class="notification-item alert-{{ notif.tipo }}">
+                                <div class="notification-icon">
+                                    {% if notif.tipo == 'atraso' %}
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+                                    {% elif notif.tipo == 'mudanca_portao' %}
+                                        <i class="fa-solid fa-right-left"></i>
+                                    {% elif notif.tipo == 'cancelamento' %}
+                                        <i class="fa-solid fa-ban"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-info-circle"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="notification-body">
+                                    <p>{{ notif.mensagem }}</p>
+                                    <div class="notification-meta">
+                                        {{ notif.data_hora|date:"d M Y, H:i" }} • {{ notif.get_tipo_display }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Nenhuma notificação importante para exibir no momento.</p>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+</body>
+</html>

@@ -9,7 +9,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Bilhete, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Aeroporto, Aeronave, Bilhete, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -200,6 +200,8 @@ class AuthFlowTests(TestCase):
         self.assertContains(response, 'Notificações')
         self.assertContains(response, 'action="{0}"'.format(reverse('logout')))
         self.assertContains(response, f'href="{reverse("dashboard_passageiro")}"')
+        self.assertContains(response, f'href="{reverse("minhas_viagens")}"')
+        self.assertContains(response, f'href="{reverse("notificacoes_passageiro")}"')
         self.assertNotContains(response, 'Fazer login')
 
     def test_home_account_menu_falls_back_to_generic_label(self):
@@ -1122,6 +1124,148 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'Ver bilhete')
         self.assertContains(response, bilhete.codigo)
         self.assertContains(response, reverse('bilhete_reserva', args=[reserva.pk]))
+
+    def test_minhas_viagens_lista_todas_reservas_do_passageiro(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_viagens',
+            cpf_passaporte='VIAG123456',
+        )
+        ContaMilhas.objects.create(
+            passageiro=passageiro,
+            saldo=12345,
+            numero_programa='SB-654321',
+        )
+        reserva_confirmada, bilhete = self.criar_reserva_confirmada_com_bilhete(
+            passageiro,
+            codigo='TKT-VIAGENS-001',
+        )
+        reserva_pendente = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_cwb,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='14C',
+            status='pendente',
+        )
+        _, outro_passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='outro_viagens',
+            cpf_passaporte='OUTVIAG123',
+        )
+        Reserva.objects.create(
+            passageiro=outro_passageiro,
+            voo=self.voo_rec_gru,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='20A',
+            status='confirmada',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('minhas_viagens'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Minhas viagens')
+        self.assertContains(response, f'Reserva #{reserva_confirmada.pk}')
+        self.assertContains(response, f'Reserva #{reserva_pendente.pk}')
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, 'SB124')
+        self.assertNotContains(response, 'SB125')
+        self.assertContains(response, 'Aprovado')
+        self.assertContains(response, 'Pendente')
+        self.assertContains(response, 'Ver detalhes')
+        self.assertContains(response, 'Finalizar pagamento')
+        self.assertContains(response, 'Ver bilhete')
+        self.assertContains(response, bilhete.codigo)
+        self.assertContains(response, '12345 milhas')
+
+    def test_detalhe_reserva_mostra_status_pagamento_e_bilhete(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_detalhe',
+            cpf_passaporte='DET123456',
+        )
+        reserva, bilhete = self.criar_reserva_confirmada_com_bilhete(
+            passageiro,
+            codigo='TKT-DETALHE-001',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('detalhe_reserva', args=[reserva.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'Reserva #{reserva.pk}')
+        self.assertContains(response, passageiro.nome)
+        self.assertContains(response, self.voo_gru_rec.numero_voo)
+        self.assertContains(response, reserva.assento)
+        self.assertContains(response, 'Confirmada')
+        self.assertContains(response, 'Pagamento aprovado')
+        self.assertContains(response, 'Pix')
+        self.assertContains(response, 'R$ 270,00')
+        self.assertContains(response, bilhete.codigo)
+        self.assertContains(response, reverse('bilhete_reserva', args=[reserva.pk]))
+
+    def test_passageiro_nao_acessa_detalhe_reserva_de_outro_usuario(self):
+        _, passageiro_dono = self.criar_usuario_passageiro_com_perfil(
+            username='dono_reserva',
+            cpf_passaporte='DONORES123',
+        )
+        reserva, _ = self.criar_reserva_confirmada_com_bilhete(
+            passageiro_dono,
+            codigo='TKT-DONO-001',
+        )
+        outro_usuario, _ = self.criar_usuario_passageiro_com_perfil(
+            username='intruso_reserva',
+            cpf_passaporte='INTRUSO123',
+        )
+        self.client.force_login(outro_usuario)
+
+        response = self.client.get(reverse('detalhe_reserva', args=[reserva.pk]))
+
+        self.assertRedirects(response, reverse('dashboard_passageiro'))
+
+    def test_cancelar_reserva_altera_status_para_cancelada(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_cancelamento',
+            cpf_passaporte='CANC123456',
+        )
+        reserva, _ = self.criar_reserva_confirmada_com_bilhete(
+            passageiro,
+            codigo='TKT-CANCEL-001',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('cancelar_reserva', args=[reserva.pk]))
+
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.status, 'cancelada')
+        self.assertRedirects(response, reverse('detalhe_reserva', args=[reserva.pk]))
+
+    def test_notificacoes_passageiro_lista_apenas_do_usuario(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_notificacoes',
+            cpf_passaporte='NOTIF123',
+        )
+        _, outro_passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='outro_notificacoes',
+            cpf_passaporte='NOTIFOUT123',
+        )
+        Notificacao.objects.create(
+            passageiro=passageiro,
+            mensagem='Seu voo teve o portao alterado.',
+            tipo='mudanca_portao',
+        )
+        Notificacao.objects.create(
+            passageiro=outro_passageiro,
+            mensagem='Mensagem de outro passageiro.',
+            tipo='geral',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('notificacoes_passageiro'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Notificações')
+        self.assertContains(response, 'Seu voo teve o portao alterado.')
+        self.assertNotContains(response, 'Mensagem de outro passageiro.')
 
     def test_reserva_aparece_no_painel_do_passageiro(self):
         user = get_user_model().objects.create_user(

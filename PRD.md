@@ -58,8 +58,11 @@ projeto_aeroporto/
       buscar_voos.html
       cadastro.html
       dashboard.html
+      detalhe_reserva.html
       home.html
       login.html
+      minhas_viagens.html
+      notificacoes_passageiro.html
       pagamento.html
       painel_admin.html
       painel_funcionario.html
@@ -105,6 +108,10 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | `/reservas/<int:reserva_id>/pagamento/` | `pagamento_reserva` | `pagamento.html` | Pagamento simulado de reserva |
 | `/reservas/<int:reserva_id>/sucesso/` | `reserva_sucesso` | `reserva_sucesso.html` | Tela final da reserva confirmada |
 | `/reservas/<int:reserva_id>/bilhete/` | `bilhete_reserva` | `bilhete.html` | Tela dedicada de bilhete/comprovante |
+| `/minhas-viagens/` | `minhas_viagens` | `minhas_viagens.html` | Lista completa de reservas do passageiro |
+| `/reservas/<int:reserva_id>/` | `detalhe_reserva` | `detalhe_reserva.html` | Detalhe protegido da reserva |
+| `/reservas/<int:reserva_id>/cancelar/` | `cancelar_reserva` | - | Cancela reserva do passageiro por POST |
+| `/notificacoes/` | `notificacoes_passageiro` | `notificacoes_passageiro.html` | Central de notificacoes do passageiro |
 | `/cadastro/` | `cadastro` | `cadastro.html` | Cadastro real com modais Bootstrap |
 | `/login/` | `SkyBridgeLoginView` | `login.html` | Login real usando Django |
 | `/logout/` | `SkyBridgeLogoutView` | - | Logout real usando Django |
@@ -213,6 +220,13 @@ Ponto pendente: parte das ofertas ainda vem de `LANDING_CONTEXT` em `views.py`, 
 Estado atual:
 
 - Passageiro ve dados basicos, reservas recentes, notificacoes e atalhos.
+- Passageiro possui area "Minhas viagens" com todas as reservas reais da conta.
+- Passageiro consegue abrir o detalhe protegido de uma reserva.
+- Detalhe da reserva mostra voo, assento, passageiro, status da reserva, status do pagamento, valor e bilhete quando existir.
+- Passageiro consegue cancelar reserva de forma simples; o status passa para `cancelada`.
+- Passageiro possui pagina dedicada de notificacoes.
+- Links do dropdown apontam para areas coerentes: "Minha conta", "Minhas viagens" e "Notificacoes".
+- Area de viagens mostra saldo de milhas quando existe conta vinculada.
 - Funcionario ve voos, portoes e bagagens em formato inicial.
 - Administrador ve cards de contagem basica.
 
@@ -348,6 +362,12 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - protecao do bilhete por dono da reserva;
 - link "Ver bilhete" no painel do passageiro;
 - unicidade do codigo do bilhete;
+- lista completa de reservas em "Minhas viagens";
+- detalhe protegido da reserva;
+- bloqueio de acesso a reserva de outro passageiro;
+- cancelamento simples de reserva;
+- pagina dedicada de notificacoes do passageiro;
+- links coerentes no dropdown de conta;
 - tela de sucesso da reserva apos pagamento aprovado;
 - exibicao de reserva no painel do passageiro;
 - bloqueio amigavel para usuario sem perfil de passageiro.
@@ -363,39 +383,15 @@ O arquivo `skybridgeapp/tests.py` cobre:
 
 ## Prioridade Recomendada
 
-1. Minha conta/minhas viagens.
-2. Check-in online.
-3. Status de voo publico.
-4. Painel do funcionario real.
-5. Painel administrativo mais apresentavel.
-6. Promocoes vindas do banco.
-7. Milhas refinadas.
-8. Melhorias tecnicas finais.
+1. Check-in online.
+2. Status de voo publico.
+3. Painel do funcionario real.
+4. Painel administrativo mais apresentavel.
+5. Promocoes vindas do banco.
+6. Milhas refinadas.
+7. Melhorias tecnicas finais.
 
-## 1. Minha Conta / Minhas Viagens
-
-Prioridade: alta.
-
-Estado atual: o passageiro ja possui dashboard, mas ele ainda precisa virar uma area util de jornada.
-
-Implementar:
-
-- Listar reservas do passageiro.
-- Ver detalhe da reserva.
-- Ver bilhete.
-- Ver status do pagamento.
-- Cancelar reserva de forma simples.
-- Mostrar notificacoes.
-- Mostrar saldo de milhas, se existir.
-
-Criterios de aceite:
-
-- Passageiro visualiza suas reservas reais.
-- Passageiro nao acessa reservas de outro usuario.
-- Cancelamento altera status da reserva.
-- Links do dropdown "Minha conta", "Minhas viagens" e "Notificacoes" apontam para areas coerentes.
-
-## 2. Check-in Online
+## 1. Check-in Online
 
 Prioridade: media/alta.
 
@@ -415,7 +411,7 @@ Criterios de aceite:
 - Check-in duplicado e evitado.
 - Cartao de embarque exibe passageiro, voo, horario, portao e assento.
 
-## 3. Status de Voo Publico
+## 2. Status de Voo Publico
 
 Prioridade: media.
 
@@ -434,7 +430,7 @@ Criterios de aceite:
 - Voos inexistentes exibem mensagem amigavel.
 - Alteracao de status feita por funcionario/admin aparece na consulta publica.
 
-## 4. Painel do Funcionario Real
+## 3. Painel do Funcionario Real
 
 Prioridade: media.
 
@@ -454,7 +450,7 @@ Criterios de aceite:
 - Passageiros com reserva no voo recebem notificacao.
 - Funcionario nao acessa painel administrativo.
 
-## 5. Painel Administrativo Mais Apresentavel
+## 4. Painel Administrativo Mais Apresentavel
 
 Prioridade: media.
 
@@ -473,7 +469,7 @@ Criterios de aceite:
 - Links levam para rotas/admin corretos.
 - Receita usa pagamentos aprovados.
 
-## 6. Promocoes Vindas do Banco
+## 5. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -492,7 +488,7 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 7. Milhas Refinadas
+## 6. Milhas Refinadas
 
 Prioridade: baixa/media.
 
@@ -511,7 +507,7 @@ Criterios de aceite:
 - Transacoes aparecem no painel.
 - Regras ficam simples e demonstraveis.
 
-## 8. Melhorias Tecnicas Importantes
+## 7. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -587,12 +583,12 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Evoluir "Minha conta / Minhas viagens", porque o passageiro ja visualiza reservas recentes e bilhetes emitidos, mas ainda falta uma area mais completa para acompanhar a jornada.
+Implementar Check-in Online, porque o passageiro ja consegue consultar reservas, pagamentos e bilhetes, mas ainda nao consegue transformar uma reserva confirmada em cartao de embarque.
 
 Sugestao de primeira entrega:
 
-1. Listar todas as reservas do passageiro, nao apenas as recentes.
-2. Criar detalhe simples da reserva.
-3. Mostrar status do pagamento e link para bilhete quando existir.
-4. Permitir cancelamento simples de reserva pendente ou confirmada, se fizer sentido para o MVP.
-5. Manter a protecao para impedir acesso a reservas de outro passageiro.
+1. Permitir check-in apenas para reserva confirmada de voo futuro.
+2. Criar `CheckIn` sem duplicar registros para a mesma viagem.
+3. Exibir cartao de embarque simples com passageiro, voo, horario, portao e assento.
+4. Adicionar acao "Fazer check-in" em "Minhas viagens" ou no detalhe da reserva.
+5. Manter a protecao para impedir check-in de reserva de outro passageiro.

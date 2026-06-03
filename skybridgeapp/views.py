@@ -500,8 +500,109 @@ def bilhete_reserva(request, reserva_id):
     return render(request, 'bilhete.html', context)
 
 
+@login_required
+def minhas_viagens(request):
+    if not _can_access_dashboard(request.user, 'passageiro'):
+        return _redirect_to_user_dashboard(request.user)
+
+    passageiro = getattr(request.user, 'passageiro', None)
+    reservas = []
+    conta_milhas = None
+
+    if passageiro:
+        reservas = _preparar_reservas_jornada(
+            passageiro.reserva_set
+            .select_related('voo__aeronave', 'voo__portao', 'pagamento', 'bilhete')
+            .all()
+            .order_by('-id')
+        )
+        conta_milhas = getattr(passageiro, 'conta_milhas', None)
+
+    context = {
+        'passageiro': passageiro,
+        'reservas': reservas,
+        'conta_milhas': conta_milhas,
+    }
+
+    return render(request, 'minhas_viagens.html', context)
+
+
+@login_required
+def detalhe_reserva(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'bilhete'),
+        pk=reserva_id,
+    )
+
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    _preparar_reserva_jornada(reserva)
+
+    return render(request, 'detalhe_reserva.html', {
+        'reserva': reserva,
+        'passageiro': reserva.passageiro,
+    })
+
+
+@login_required
+@require_POST
+def cancelar_reserva(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario'),
+        pk=reserva_id,
+    )
+
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    if reserva.status != 'cancelada':
+        reserva.status = 'cancelada'
+        reserva.save(update_fields=['status'])
+        messages.success(request, 'Reserva cancelada com sucesso.')
+    else:
+        messages.info(request, 'Esta reserva ja estava cancelada.')
+
+    return redirect('detalhe_reserva', reserva_id=reserva.id)
+
+
+@login_required
+def notificacoes_passageiro(request):
+    if not _can_access_dashboard(request.user, 'passageiro'):
+        return _redirect_to_user_dashboard(request.user)
+
+    passageiro = getattr(request.user, 'passageiro', None)
+    notificacoes = []
+
+    if passageiro:
+        notificacoes = passageiro.notificacao_set.all()
+
+    return render(request, 'notificacoes_passageiro.html', {
+        'passageiro': passageiro,
+        'notificacoes': notificacoes,
+    })
+
+
 def _pagamento_aprovado(pagamento):
     return bool(pagamento and pagamento.status == 'aprovado')
+
+
+def _preparar_reservas_jornada(reservas):
+    return [_preparar_reserva_jornada(reserva) for reserva in reservas]
+
+
+def _preparar_reserva_jornada(reserva):
+    pagamento = getattr(reserva, 'pagamento', None)
+    bilhete = getattr(reserva, 'bilhete', None)
+
+    reserva.pagamento_jornada = pagamento
+    reserva.bilhete_jornada = bilhete
+    reserva.pagamento_status_label = pagamento.get_status_display() if pagamento else 'Pendente'
+    reserva.pagamento_status_texto = f'Pagamento {reserva.pagamento_status_label.lower()}'
+    reserva.metodo_pagamento_label = pagamento.get_metodo_display() if pagamento else 'Aguardando pagamento'
+    reserva.valor_total_formatado = _formatar_moeda(pagamento.valor_total) if pagamento else None
+
+    return reserva
 
 
 def _valor_total_reserva(reserva):
@@ -596,6 +697,8 @@ def cadastro(request):
 def _add_account_context(request, context):
     if request.user.is_authenticated:
         context['account_dashboard_url'] = reverse(_dashboard_route_for_user(request.user))
+        context['account_trips_url'] = reverse('minhas_viagens') if request.user.tipo == 'passageiro' else context['account_dashboard_url']
+        context['account_notifications_url'] = reverse('notificacoes_passageiro') if request.user.tipo == 'passageiro' else context['account_dashboard_url']
         context['account_label'] = _account_label_for_user(request.user)
         context['account_initials'] = _account_initials_for_user(request.user)
 
