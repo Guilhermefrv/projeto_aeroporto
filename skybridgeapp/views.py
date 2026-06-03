@@ -474,6 +474,32 @@ def reserva_sucesso(request, reserva_id):
     return render(request, 'reserva_sucesso.html', context)
 
 
+@login_required
+def bilhete_reserva(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'bilhete'),
+        pk=reserva_id,
+    )
+
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    bilhete = get_object_or_404(Bilhete, reserva=reserva)
+    pagamento = getattr(reserva, 'pagamento', None)
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'reserva': reserva,
+        'bilhete': bilhete,
+        'pagamento': pagamento,
+        'valor_total': _formatar_moeda(pagamento.valor_total) if pagamento else None,
+    }
+    _add_account_context(request, context)
+
+    return render(request, 'bilhete.html', context)
+
+
 def _pagamento_aprovado(pagamento):
     return bool(pagamento and pagamento.status == 'aprovado')
 
@@ -925,7 +951,7 @@ def dashboard_passageiro(request):
     notificacoes = []
 
     if passageiro:
-        reservas = passageiro.reserva_set.select_related('voo', 'pagamento').all().order_by('-id')[:5]
+        reservas = passageiro.reserva_set.select_related('voo', 'pagamento', 'bilhete').all().order_by('-id')[:5]
         notificacoes = passageiro.notificacao_set.all()[:5]
 
     return render(request, 'painel_passageiro.html', {

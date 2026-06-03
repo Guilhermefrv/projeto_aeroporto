@@ -2,7 +2,7 @@
 
 Documento de estado atual e planejamento funcional do projeto Sky Bridge.
 
-Data de referencia: 2026-06-02
+Data de referencia: 2026-06-03
 
 ## Visao Geral
 
@@ -54,6 +54,7 @@ projeto_aeroporto/
       0003_reserva_pagamento.py
     templates/
       auth_home.html
+      bilhete.html
       buscar_voos.html
       cadastro.html
       dashboard.html
@@ -103,6 +104,7 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | `/voos/<int:voo_id>/reservar/` | `criar_reserva` | - | Cria reserva real e redireciona para pagamento |
 | `/reservas/<int:reserva_id>/pagamento/` | `pagamento_reserva` | `pagamento.html` | Pagamento simulado de reserva |
 | `/reservas/<int:reserva_id>/sucesso/` | `reserva_sucesso` | `reserva_sucesso.html` | Tela final da reserva confirmada |
+| `/reservas/<int:reserva_id>/bilhete/` | `bilhete_reserva` | `bilhete.html` | Tela dedicada de bilhete/comprovante |
 | `/cadastro/` | `cadastro` | `cadastro.html` | Cadastro real com modais Bootstrap |
 | `/login/` | `SkyBridgeLoginView` | `login.html` | Login real usando Django |
 | `/logout/` | `SkyBridgeLogoutView` | - | Logout real usando Django |
@@ -277,13 +279,16 @@ Estado atual:
 - Reserva sem pagamento aprovado nao acessa a tela final de sucesso.
 - Valor total usa a tarifa ativa da classe escolhida ou a menor tarifa ativa disponivel.
 
-## 12. Bilhete Automatico Inicial
+## 12. Bilhete / Comprovante
 
 - Apos pagamento aprovado, o sistema cria automaticamente um `Bilhete`.
-- Codigo do bilhete segue formato simples como `TKT-<reserva>-XXXXXX`.
+- Codigo do bilhete segue formato simples como `TKT-<reserva>-XXXXXX` e permanece unico pelo campo `Bilhete.codigo`.
 - A tela de sucesso da reserva mostra o codigo do bilhete quando existir.
-
-Ponto pendente: ainda falta uma tela dedicada de bilhete/comprovante para consulta posterior.
+- Ha tela dedicada em `/reservas/<int:reserva_id>/bilhete/`.
+- A tela dedicada mostra passageiro, voo, assento, codigo da reserva, status, codigo do bilhete, pagamento, valor e dados do trajeto.
+- Apenas o passageiro dono da reserva ou staff consegue consultar o bilhete.
+- A tela possui botao para voltar para "Minhas viagens".
+- A tela de sucesso e o painel do passageiro exibem link "Ver bilhete" quando a reserva possui bilhete emitido.
 
 ## 13. Milhas Basicas
 
@@ -339,6 +344,10 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - bloqueio de pagamento com saldo insuficiente;
 - acumulo de milhas em pagamento comum;
 - geracao automatica de bilhete;
+- tela dedicada de bilhete/comprovante;
+- protecao do bilhete por dono da reserva;
+- link "Ver bilhete" no painel do passageiro;
+- unicidade do codigo do bilhete;
 - tela de sucesso da reserva apos pagamento aprovado;
 - exibicao de reserva no painel do passageiro;
 - bloqueio amigavel para usuario sem perfil de passageiro.
@@ -354,34 +363,16 @@ O arquivo `skybridgeapp/tests.py` cobre:
 
 ## Prioridade Recomendada
 
-1. Bilhete/comprovante dedicado.
-2. Minha conta/minhas viagens.
-3. Check-in online.
-4. Status de voo publico.
-5. Painel do funcionario real.
-6. Painel administrativo mais apresentavel.
-7. Promocoes vindas do banco.
-8. Milhas refinadas.
-9. Melhorias tecnicas finais.
+1. Minha conta/minhas viagens.
+2. Check-in online.
+3. Status de voo publico.
+4. Painel do funcionario real.
+5. Painel administrativo mais apresentavel.
+6. Promocoes vindas do banco.
+7. Milhas refinadas.
+8. Melhorias tecnicas finais.
 
-## 1. Bilhete / Comprovante
-
-Prioridade: alta.
-
-Estado atual: a model `Bilhete` ja e gerada automaticamente apos pagamento aprovado, e o codigo aparece na tela de sucesso da reserva. Ainda falta uma tela propria de bilhete/recibo.
-
-Implementar:
-
-- Tela de bilhete/recibo.
-- Mostrar passageiro, voo, assento, codigo da reserva e status.
-- Botao para voltar para "Minhas viagens".
-
-Criterios de aceite:
-
-- Bilhete pode ser consultado pelo passageiro dono da reserva.
-- Codigo do bilhete e unico.
-
-## 2. Minha Conta / Minhas Viagens
+## 1. Minha Conta / Minhas Viagens
 
 Prioridade: alta.
 
@@ -404,7 +395,7 @@ Criterios de aceite:
 - Cancelamento altera status da reserva.
 - Links do dropdown "Minha conta", "Minhas viagens" e "Notificacoes" apontam para areas coerentes.
 
-## 3. Check-in Online
+## 2. Check-in Online
 
 Prioridade: media/alta.
 
@@ -424,7 +415,7 @@ Criterios de aceite:
 - Check-in duplicado e evitado.
 - Cartao de embarque exibe passageiro, voo, horario, portao e assento.
 
-## 4. Status de Voo Publico
+## 3. Status de Voo Publico
 
 Prioridade: media.
 
@@ -443,7 +434,7 @@ Criterios de aceite:
 - Voos inexistentes exibem mensagem amigavel.
 - Alteracao de status feita por funcionario/admin aparece na consulta publica.
 
-## 5. Painel do Funcionario Real
+## 4. Painel do Funcionario Real
 
 Prioridade: media.
 
@@ -463,7 +454,7 @@ Criterios de aceite:
 - Passageiros com reserva no voo recebem notificacao.
 - Funcionario nao acessa painel administrativo.
 
-## 6. Painel Administrativo Mais Apresentavel
+## 5. Painel Administrativo Mais Apresentavel
 
 Prioridade: media.
 
@@ -482,7 +473,7 @@ Criterios de aceite:
 - Links levam para rotas/admin corretos.
 - Receita usa pagamentos aprovados.
 
-## 7. Promocoes Vindas do Banco
+## 6. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -501,7 +492,7 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 8. Milhas Refinadas
+## 7. Milhas Refinadas
 
 Prioridade: baixa/media.
 
@@ -520,7 +511,7 @@ Criterios de aceite:
 - Transacoes aparecem no painel.
 - Regras ficam simples e demonstraveis.
 
-## 9. Melhorias Tecnicas Importantes
+## 8. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -596,12 +587,12 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Implementar a tela dedicada de bilhete/comprovante, porque pagamento e bilhete automatico ja existem, mas o usuario ainda nao tem uma pagina propria para consultar o comprovante depois.
+Evoluir "Minha conta / Minhas viagens", porque o passageiro ja visualiza reservas recentes e bilhetes emitidos, mas ainda falta uma area mais completa para acompanhar a jornada.
 
 Sugestao de primeira entrega:
 
-1. Criar rota para visualizar bilhete por reserva ou por codigo.
-2. Exigir login e garantir que apenas o dono da reserva ou staff acesse.
-3. Mostrar dados do passageiro, voo, assento, status, pagamento e codigo do bilhete.
-4. Adicionar link "Ver bilhete" no painel do passageiro e na tela de sucesso.
-5. Manter o layout simples e apresentavel para demonstracao.
+1. Listar todas as reservas do passageiro, nao apenas as recentes.
+2. Criar detalhe simples da reserva.
+3. Mostrar status do pagamento e link para bilhete quando existir.
+4. Permitir cancelamento simples de reserva pendente ou confirmada, se fizer sentido para o MVP.
+5. Manter a protecao para impedir acesso a reservas de outro passageiro.

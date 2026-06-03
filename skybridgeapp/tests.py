@@ -9,7 +9,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Aeroporto, Aeronave, Bilhete, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -593,6 +593,45 @@ class BuscaVoosTests(TestCase):
             ativa=True,
         )
 
+    def criar_usuario_passageiro_com_perfil(self, username='comprador', cpf_passaporte='COMP123456', nome='Comprador Teste'):
+        user = get_user_model().objects.create_user(
+            username=username,
+            password='senha-segura-123',
+            first_name=nome.split()[0],
+            tipo='passageiro',
+        )
+        passageiro = Passageiro.objects.create(
+            usuario=user,
+            nome=nome,
+            cpf_passaporte=cpf_passaporte,
+            data_nascimento='1990-01-01',
+            contato='(11) 90000-0000',
+            nacionalidade='Brasileira',
+        )
+        return user, passageiro
+
+    def criar_reserva_confirmada_com_bilhete(self, passageiro, codigo='TKT-TESTE-001'):
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='12A',
+            status='confirmada',
+        )
+        Pagamento.objects.create(
+            reserva=reserva,
+            valor_total=Decimal('270.00'),
+            metodo='pix',
+            status='aprovado',
+            data_pagamento=timezone.now(),
+        )
+        bilhete = Bilhete.objects.create(
+            reserva=reserva,
+            codigo=codigo,
+        )
+        return reserva, bilhete
+
     def test_home_renderiza_formulario_de_busca_real(self):
         response = self.client.get(reverse('home'))
 
@@ -1032,6 +1071,58 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'R$ 270,00')
         self.assertContains(response, reverse('dashboard_passageiro'))
 
+    def test_passageiro_dono_consulta_tela_de_bilhete(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_bilhete',
+            cpf_passaporte='BIL123456',
+        )
+        reserva, bilhete = self.criar_reserva_confirmada_com_bilhete(passageiro)
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('bilhete_reserva', args=[reserva.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Bilhete / Comprovante')
+        self.assertContains(response, passageiro.nome)
+        self.assertContains(response, self.voo_gru_rec.numero_voo)
+        self.assertContains(response, reserva.assento)
+        self.assertContains(response, f'Reserva #{reserva.pk}')
+        self.assertContains(response, reserva.get_status_display())
+        self.assertContains(response, bilhete.codigo)
+        self.assertContains(response, 'Voltar para Minhas viagens')
+        self.assertContains(response, reverse('dashboard_passageiro'))
+
+    def test_passageiro_nao_acessa_bilhete_de_outra_reserva(self):
+        _, passageiro_dono = self.criar_usuario_passageiro_com_perfil(
+            username='dono_bilhete',
+            cpf_passaporte='DONO123456',
+        )
+        reserva, _ = self.criar_reserva_confirmada_com_bilhete(passageiro_dono)
+        outro_usuario, _ = self.criar_usuario_passageiro_com_perfil(
+            username='outro_passageiro',
+            cpf_passaporte='OUTRO123456',
+        )
+        self.client.force_login(outro_usuario)
+
+        response = self.client.get(reverse('bilhete_reserva', args=[reserva.pk]))
+
+        self.assertRedirects(response, reverse('dashboard_passageiro'))
+
+    def test_painel_passageiro_exibe_link_para_bilhete_confirmado(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_link_bilhete',
+            cpf_passaporte='LINK123456',
+        )
+        reserva, bilhete = self.criar_reserva_confirmada_com_bilhete(passageiro)
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard_passageiro'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Ver bilhete')
+        self.assertContains(response, bilhete.codigo)
+        self.assertContains(response, reverse('bilhete_reserva', args=[reserva.pk]))
+
     def test_reserva_aparece_no_painel_do_passageiro(self):
         user = get_user_model().objects.create_user(
             username='comprador',
@@ -1215,7 +1306,6 @@ class BuscaVoosTests(TestCase):
         self.assertEqual(transacao.quantidade, 270)
 
     def test_pagamento_gera_bilhete_automatico(self):
-        from .models import Bilhete
         user = get_user_model().objects.create_user(
             username='comprador_tkt',
             password='senha-segura-123',
@@ -1251,6 +1341,7 @@ class BuscaVoosTests(TestCase):
         bilhete = Bilhete.objects.filter(reserva=reserva).first()
         self.assertIsNotNone(bilhete)
         self.assertTrue(bilhete.codigo.startswith('TKT-'))
+        self.assertTrue(Bilhete._meta.get_field('codigo').unique)
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])

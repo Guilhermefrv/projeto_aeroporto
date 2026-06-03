@@ -182,6 +182,11 @@
                                                 <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
                                                     Finalizar pagamento
                                                 </a>
+                                            {% elif reserva.bilhete %}
+                                                <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
+                                                    Ver bilhete
+                                                </a>
+                                                <span style="display: block; color: var(--muted); font-size: 12px; margin-top: 6px;">{{ reserva.bilhete.codigo }}</span>
                                             {% else %}
                                                 <span style="color: var(--muted); font-size: 13px;">Concluída</span>
                                             {% endif %}
