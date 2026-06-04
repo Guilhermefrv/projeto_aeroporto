@@ -110,6 +110,7 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | --- | --- | --- | --- |
 | `/` | `home` | `home.html` | Landing page principal funcional |
 | `/acesso/` | `auth_home` | `auth_home.html` | Pagina intermediaria para login/cadastro |
+| `/status-voo/` | `status_voo` | `status_voo.html` | Consulta pública de status de voo por código |
 | `/voos/buscar/` | `buscar_voos` | `buscar_voos.html` | Busca/listagem real de voos nacionais |
 | `/voos/<int:voo_id>/` | `detalhe_voo` | `detalhe_voo.html` | Detalhe real do voo selecionado |
 | `/voos/<int:voo_id>/selecionar/` | `selecionar_voo` | - | Exige login e volta ao detalhe do voo |
@@ -410,7 +411,8 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - links coerentes no dropdown de conta;
 - tela de sucesso da reserva apos pagamento aprovado;
 - exibicao de reserva no painel do passageiro;
-- bloqueio amigavel para usuario sem perfil de passageiro.
+- bloqueio amigavel para usuario sem perfil de passageiro;
+- busca pública de status de voo (acessibilidade, busca bem-sucedida normalizada e busca de voo inexistente).
 
 ## 17. Frontend e UX
 
@@ -419,35 +421,24 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - Font Awesome usado para icones.
 - JavaScript simples usado para Bootstrap Toast e apoio da busca.
 
+## 18. Status de Voo Público
+
+- Rota pública em `/status-voo/`.
+- Busca inteligente e robusta por número de voo (desconsiderando maiúsculas/minúsculas, espaços extras e hifens).
+- Exibição de origem, destino, horários, portão e status atual com design responsivo e badges coloridos para os diferentes status.
+- Mensagem amigável quando o voo não é encontrado.
+
+
 # [A Desenvolver]
 
 ## Prioridade Recomendada
 
-1. Status de voo publico.
-2. Painel do funcionario real.
-3. Painel administrativo mais apresentavel.
-4. Promocoes vindas do banco.
-5. Milhas refinadas.
-6. Melhorias tecnicas finais.
+1. Painel do funcionario real.
+2. Painel administrativo mais apresentavel.
+3. Promocoes vindas do banco.
+4. Milhas refinadas.
+5. Melhorias tecnicas finais.
 
-## 1. Status de Voo Publico
-
-Prioridade: media.
-
-Estado atual: o header possui "Status de voo", mas ainda e placeholder.
-
-Implementar:
-
-- Pagina publica `/status-voo/`.
-- Buscar por numero do voo.
-- Mostrar origem, destino, horarios, portao e status.
-- Funcionario/admin podem alterar status.
-
-Criterios de aceite:
-
-- Usuario anonimo consegue consultar status por numero de voo.
-- Voos inexistentes exibem mensagem amigavel.
-- Alteracao de status feita por funcionario/admin aparece na consulta publica.
 
 ## 2. Painel do Funcionario Real
 
@@ -602,12 +593,10 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Implementar Status de Voo Publico, porque o passageiro ja consegue consultar reservas, pagamentos, bilhetes e cartao de embarque, mas o link "Status de voo" do header ainda nao fecha uma consulta real.
+Implementar o **Painel do Funcionario Real**, permitindo que o funcionário visualize os voos do dia, altere o status (programado, atrasado, em andamento, cancelado) e altere o portão de embarque. Ao realizar essas alterações, os passageiros com reservas nesse voo devem receber notificações automaticamente no painel.
 
-Sugestao de primeira entrega:
+Sugestao de entrega:
 
-1. Criar pagina publica `/status-voo/`.
-2. Permitir busca por numero do voo.
-3. Mostrar origem, destino, horarios, portao e status.
-4. Permitir que funcionario/admin atualizem status e portao em etapa seguinte.
-5. Manter mensagens amigaveis para voos inexistentes.
+1. Listar os voos do dia no painel do funcionário.
+2. Permitir a alteração de status e portão pelo funcionário na interface.
+3. Disparar notificações e atualizar os status no banco.
