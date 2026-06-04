@@ -28,7 +28,11 @@
 
         <nav class="main-nav" aria-label="Navegacao principal">
             {% for item in nav_items %}
-                <a href="#" data-noop>{{ item }}</a>
+                {% if item == "Status de voo" %}
+                    <a href="{% url 'status_voo' %}">{{ item }}</a>
+                {% else %}
+                    <a href="#" data-noop>{{ item }}</a>
+                {% endif %}
             {% endfor %}
         </nav>
 

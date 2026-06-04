@@ -249,6 +249,37 @@ def home(request):
     return render(request, 'home.html', context)
 
 
+def status_voo(request):
+    numero_voo = request.GET.get('numero_voo', '').strip()
+    voo = None
+    erro_busca = False
+
+    if numero_voo:
+        clean_query = numero_voo.replace(' ', '').replace('-', '').upper()
+        # Direct lookup (case-insensitive)
+        qs = Voo.objects.select_related('aeronave', 'portao').filter(numero_voo__iexact=clean_query)
+        if qs.exists():
+            voo = qs.first()
+        else:
+            # Fallback scan of all flights (in case database values have hyphens or spaces)
+            for v in Voo.objects.select_related('aeronave', 'portao').all():
+                if v.numero_voo.replace(' ', '').replace('-', '').upper() == clean_query:
+                    voo = v
+                    break
+        if not voo:
+            erro_busca = True
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'voo': voo,
+        'numero_voo': numero_voo,
+        'erro_busca': erro_busca,
+    }
+    _add_account_context(request, context)
+    return render(request, 'status_voo.html', context)
+
+
 def buscar_voos(request):
     form = BuscaVooForm(request.GET or None)
     voos = []

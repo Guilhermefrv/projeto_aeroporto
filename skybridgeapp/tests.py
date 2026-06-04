@@ -1689,6 +1689,32 @@ class BuscaVoosTests(TestCase):
         self.assertTrue(bilhete.codigo.startswith('TKT-'))
         self.assertTrue(Bilhete._meta.get_field('codigo').unique)
 
+    def test_status_voo_pagina_publica_acessivel(self):
+        response = self.client.get(reverse('status_voo'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Status de Voo')
+
+    def test_status_voo_busca_com_sucesso(self):
+        # Test basic search
+        response = self.client.get(reverse('status_voo'), {'numero_voo': 'SB123'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, 'GRU - São Paulo')
+        self.assertContains(response, 'REC - Recife')
+        self.assertContains(response, 'Programado')
+        self.assertContains(response, 'Airbus A320')
+        self.assertContains(response, 'A1')
+
+        # Test robustness (lowercase, space, hyphen)
+        response_robust = self.client.get(reverse('status_voo'), {'numero_voo': '  sb-123  '})
+        self.assertEqual(response_robust.status_code, 200)
+        self.assertContains(response_robust, 'SB123')
+
+    def test_status_voo_busca_voo_inexistente(self):
+        response = self.client.get(reverse('status_voo'), {'numero_voo': 'SB888'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Voo não encontrado')
+
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
 class CadastroUsuarioTests(TestCase):
