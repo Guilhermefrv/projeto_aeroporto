@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
 
-from .models import Aeroporto, ContaMilhas, Funcionario, Passageiro, Pagamento, Tarifa, UsuarioCustomizado, Voo
+from .models import Aeroporto, ContaMilhas, Funcionario, Passageiro, Pagamento, PortaoEmbarque, Tarifa, UsuarioCustomizado, Voo
 
 
 NACIONALIDADES_CHOICES = [
@@ -132,6 +132,27 @@ class PagamentoForm(forms.Form):
         label='Metodo de pagamento',
         choices=Pagamento.METODOS,
     )
+
+
+class AtualizarVooOperacionalForm(forms.ModelForm):
+    portao = forms.ModelChoiceField(
+        label='Portao',
+        queryset=PortaoEmbarque.objects.none(),
+        required=False,
+        empty_label='A definir',
+        widget=forms.Select(attrs={'class': 'operation-select'}),
+    )
+
+    class Meta:
+        model = Voo
+        fields = ('status', 'portao')
+        widgets = {
+            'status': forms.Select(attrs={'class': 'operation-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['portao'].queryset = PortaoEmbarque.objects.all().order_by('numero_portao')
 
 
 class CadastroBaseForm(UserCreationForm):

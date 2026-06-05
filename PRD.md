@@ -136,6 +136,7 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | `/dashboard/` | `dashboard_router` | - | Redireciona conforme tipo de usuario |
 | `/dashboard/passageiro/` | `dashboard_passageiro` | `painel_passageiro.html` | Painel protegido do passageiro |
 | `/dashboard/funcionario/` | `dashboard_funcionario` | `painel_funcionario.html` | Painel protegido do funcionario |
+| `/dashboard/funcionario/voos/<int:voo_id>/atualizar/` | `atualizar_voo_operacional` | - | Atualiza status/portao de voo e notifica passageiros |
 | `/dashboard/administrador/` | `dashboard_administrador` | `painel_admin.html` | Painel protegido do administrador |
 | `/admin/` | Django Admin | Django Admin | Admin padrao do Django |
 
@@ -413,6 +414,7 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - exibicao de reserva no painel do passageiro;
 - bloqueio amigavel para usuario sem perfil de passageiro;
 - busca pública de status de voo (acessibilidade, busca bem-sucedida normalizada e busca de voo inexistente).
+- painel do funcionario real com voos do dia, atualizacao operacional, notificacoes e bloqueio para passageiro.
 
 ## 17. Frontend e UX
 
@@ -428,39 +430,28 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - Exibição de origem, destino, horários, portão e status atual com design responsivo e badges coloridos para os diferentes status.
 - Mensagem amigável quando o voo não é encontrado.
 
+## 19. Painel do Funcionario Real
+
+- Painel do funcionario lista os voos do dia em `/dashboard/funcionario/`.
+- Funcionario altera status do voo entre programado, atrasado, em andamento e cancelado.
+- Funcionario altera portao de embarque pela propria interface do painel.
+- Portao anterior e liberado e novo portao e marcado como ocupado quando ha troca.
+- Passageiros com reservas ativas no voo recebem notificacao automatica.
+- Bagagens recentes sao exibidas no painel operacional com passageiro, voo, peso e status.
+- Passageiros e outros tipos sem permissao nao conseguem executar a rota operacional.
+
 
 # [A Desenvolver]
 
 ## Prioridade Recomendada
 
-1. Painel do funcionario real.
-2. Painel administrativo mais apresentavel.
-3. Promocoes vindas do banco.
-4. Milhas refinadas.
-5. Melhorias tecnicas finais.
+1. Painel administrativo mais apresentavel.
+2. Promocoes vindas do banco.
+3. Milhas refinadas.
+4. Melhorias tecnicas finais.
 
 
-## 2. Painel do Funcionario Real
-
-Prioridade: media.
-
-Estado atual: o painel do funcionario mostra dados iniciais, mas ainda nao executa operacoes reais.
-
-Implementar:
-
-- Lista de voos do dia.
-- Alterar status: programado, atrasado, em andamento, cancelado.
-- Alterar portao.
-- Ver bagagens.
-- Criar notificacao para passageiros afetados.
-
-Criterios de aceite:
-
-- Funcionario altera status/portao de voo.
-- Passageiros com reserva no voo recebem notificacao.
-- Funcionario nao acessa painel administrativo.
-
-## 3. Painel Administrativo Mais Apresentavel
+## 2. Painel Administrativo Mais Apresentavel
 
 Prioridade: media.
 
@@ -479,7 +470,7 @@ Criterios de aceite:
 - Links levam para rotas/admin corretos.
 - Receita usa pagamentos aprovados.
 
-## 4. Promocoes Vindas do Banco
+## 3. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -498,7 +489,7 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 5. Milhas Refinadas
+## 4. Milhas Refinadas
 
 Prioridade: baixa/media.
 
@@ -517,7 +508,7 @@ Criterios de aceite:
 - Transacoes aparecem no painel.
 - Regras ficam simples e demonstraveis.
 
-## 6. Melhorias Tecnicas Importantes
+## 5. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -593,10 +584,10 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Implementar o **Painel do Funcionario Real**, permitindo que o funcionário visualize os voos do dia, altere o status (programado, atrasado, em andamento, cancelado) e altere o portão de embarque. Ao realizar essas alterações, os passageiros com reservas nesse voo devem receber notificações automaticamente no painel.
+Implementar o **Painel Administrativo Mais Apresentavel**, criando uma visao simples para a apresentacao do projeto com indicadores principais, links rapidos para o admin Django, ultimas reservas e receita simulada de pagamentos aprovados.
 
 Sugestao de entrega:
 
-1. Listar os voos do dia no painel do funcionário.
-2. Permitir a alteração de status e portão pelo funcionário na interface.
-3. Disparar notificações e atualizar os status no banco.
+1. Exibir cards com totais de voos, reservas, passageiros e pagamentos.
+2. Listar ultimas reservas e pagamentos aprovados.
+3. Manter links rapidos para operacoes no admin Django.

@@ -13,7 +13,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Aeroporto, Aeronave, Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -683,6 +683,22 @@ class BuscaVoosTests(TestCase):
             nacionalidade='Brasileira',
         )
         return user, passageiro
+
+    def criar_usuario_funcionario_com_perfil(self):
+        user = get_user_model().objects.create_user(
+            username='operador',
+            password='senha-segura-123',
+            first_name='Operador',
+            tipo='funcionario',
+        )
+        funcionario = Funcionario.objects.create(
+            usuario=user,
+            nome='Operador Teste',
+            cargo='atendente',
+            matricula='OP123',
+            contato='(11) 98888-0000',
+        )
+        return user, funcionario
 
     def criar_reserva_confirmada_com_bilhete(self, passageiro, codigo='TKT-TESTE-001'):
         reserva = Reserva.objects.create(
@@ -1714,6 +1730,148 @@ class BuscaVoosTests(TestCase):
         response = self.client.get(reverse('status_voo'), {'numero_voo': 'SB888'})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Voo não encontrado')
+
+    def test_painel_funcionario_lista_voos_do_dia_com_form_operacional(self):
+        user, _ = self.criar_usuario_funcionario_com_perfil()
+        voo_hoje = Voo.objects.create(
+            numero_voo='SBHOJE',
+            origem='GRU - SÃ£o Paulo',
+            destino='REC - Recife',
+            partida=timezone.localtime().replace(hour=14, minute=0, second=0, microsecond=0),
+            chegada=timezone.localtime().replace(hour=17, minute=0, second=0, microsecond=0),
+            status='programado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard_funcionario'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Voos de Hoje')
+        self.assertContains(response, voo_hoje.numero_voo)
+        self.assertContains(response, reverse('atualizar_voo_operacional', args=[voo_hoje.pk]))
+        self.assertContains(response, 'name="status"')
+        self.assertContains(response, 'name="portao"')
+        self.assertNotContains(response, self.voo_gru_rec.numero_voo)
+
+    def test_funcionario_altera_status_e_portao_do_voo(self):
+        user, _ = self.criar_usuario_funcionario_com_perfil()
+        novo_portao = PortaoEmbarque.objects.create(
+            numero_portao='B2',
+            localizacao='Terminal 2',
+            status='livre',
+        )
+        _, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='afetado_operacao',
+            cpf_passaporte='AFETADO123',
+        )
+        Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='9A',
+            status='confirmada',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('atualizar_voo_operacional', args=[self.voo_gru_rec.pk]), {
+            'status': 'atrasado',
+            'portao': novo_portao.pk,
+        })
+
+        self.voo_gru_rec.refresh_from_db()
+        self.assertRedirects(response, reverse('dashboard_funcionario'))
+        self.assertEqual(self.voo_gru_rec.status, 'atrasado')
+        self.assertEqual(self.voo_gru_rec.portao, novo_portao)
+
+        notificacao = Notificacao.objects.get(passageiro=passageiro)
+        self.assertEqual(notificacao.tipo, 'atraso')
+        self.assertIn(self.voo_gru_rec.numero_voo, notificacao.mensagem)
+        self.assertIn(novo_portao.numero_portao, notificacao.mensagem)
+
+    def test_funcionario_notifica_todos_os_passageiros_com_reserva_ativa(self):
+        user, _ = self.criar_usuario_funcionario_com_perfil()
+        _, passageiro_um = self.criar_usuario_passageiro_com_perfil(
+            username='afetado_um',
+            cpf_passaporte='AFETADO1',
+        )
+        _, passageiro_dois = self.criar_usuario_passageiro_com_perfil(
+            username='afetado_dois',
+            cpf_passaporte='AFETADO2',
+        )
+        Reserva.objects.create(
+            passageiro=passageiro_um,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='10A',
+            status='confirmada',
+        )
+        Reserva.objects.create(
+            passageiro=passageiro_dois,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='10B',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        self.client.post(reverse('atualizar_voo_operacional', args=[self.voo_gru_rec.pk]), {
+            'status': 'cancelado',
+            'portao': self.portao.pk,
+        })
+
+        self.assertEqual(Notificacao.objects.filter(tipo='cancelamento').count(), 2)
+        self.assertTrue(Notificacao.objects.filter(passageiro=passageiro_um).exists())
+        self.assertTrue(Notificacao.objects.filter(passageiro=passageiro_dois).exists())
+
+    def test_passageiro_nao_altera_status_operacional(self):
+        user, _ = self.criar_usuario_passageiro_com_perfil(
+            username='passageiro_operacao',
+            cpf_passaporte='PASSOP',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('atualizar_voo_operacional', args=[self.voo_gru_rec.pk]), {
+            'status': 'cancelado',
+            'portao': self.portao.pk,
+        })
+
+        self.voo_gru_rec.refresh_from_db()
+        self.assertRedirects(response, reverse('dashboard_passageiro'))
+        self.assertEqual(self.voo_gru_rec.status, 'programado')
+        self.assertFalse(Notificacao.objects.exists())
+
+    def test_painel_funcionario_exibe_bagagens_monitoradas(self):
+        user, _ = self.criar_usuario_funcionario_com_perfil()
+        _, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='bagagem_operacao',
+            cpf_passaporte='BAGOP',
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='11A',
+            status='confirmada',
+        )
+        Bagagem.objects.create(
+            reserva=reserva,
+            peso=Decimal('18.50'),
+            status='despachada',
+            numero_rastreio='BAG123',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard_funcionario'))
+
+        self.assertContains(response, 'BAG123')
+        self.assertContains(response, passageiro.nome)
+        self.assertContains(response, self.voo_gru_rec.numero_voo)
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])

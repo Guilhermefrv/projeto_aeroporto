@@ -4,14 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Funcionário | Sky Bridge</title>
+    <title>Painel do Funcionario | Sky Bridge</title>
     <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-
-    <!-- Navbar -->
     <nav class="dashboard-nav">
         <div class="nav-container">
             <a href="{% url 'home' %}" class="brand">
@@ -20,12 +18,12 @@
                 </div>
                 <div class="brand-text">
                     <h1>Sky Bridge</h1>
-                    <span>Área Operacional</span>
+                    <span>Area Operacional</span>
                 </div>
             </a>
             <div class="user-menu">
                 <span class="user-badge" style="background: #fef3c7; color: #d97706; border-color: rgba(217, 119, 6, 0.1);">
-                    <i class="fa-solid fa-briefcase"></i> Funcionário
+                    <i class="fa-solid fa-briefcase"></i> Funcionario
                 </span>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
@@ -37,10 +35,7 @@
         </div>
     </nav>
 
-    <!-- Layout -->
     <div class="dashboard-layout">
-        
-        <!-- Sidebar: Perfil -->
         <aside class="dashboard-sidebar">
             <div class="profile-card">
                 <div class="profile-avatar" style="background: linear-gradient(135deg, #fef3c7 0%, #ffeec1 100%); color: #d97706;">
@@ -48,7 +43,7 @@
                 </div>
                 <h2>{{ user.get_full_name|default:user.username }}</h2>
                 <div class="user-type" style="color: #d97706;">Equipe Operacional</div>
-                
+
                 <div class="profile-details">
                     {% if funcionario %}
                         <div class="profile-item">
@@ -60,7 +55,7 @@
                             <span style="font-weight: 600; color: var(--blue);">{{ funcionario.get_cargo_display }}</span>
                         </div>
                         <div class="profile-item">
-                            <strong>Matrícula</strong>
+                            <strong>Matricula</strong>
                             <span>{{ funcionario.matricula }}</span>
                         </div>
                         <div class="profile-item">
@@ -71,7 +66,7 @@
                         <div class="profile-item">
                             <strong>Aviso</strong>
                             <span style="color: var(--red); font-weight: 500;">
-                                <i class="fa-solid fa-circle-exclamation"></i> Perfil operacional não configurado.
+                                <i class="fa-solid fa-circle-exclamation"></i> Perfil operacional nao configurado.
                             </span>
                         </div>
                     {% endif %}
@@ -79,24 +74,28 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="dashboard-content">
-            
-            <!-- Boas-vindas -->
             <section class="welcome-header" style="background: linear-gradient(135deg, #0b1238 0%, var(--blue) 100%);">
-                <h2>Olá, {{ funcionario.nome|default:user.username }}!</h2>
-                <p>Status operacional ativo. Acompanhe os painéis de voos, controle de bagagens e portões de embarque em tempo real.</p>
+                <h2>Ola, {{ funcionario.nome|default:user.username }}!</h2>
+                <p>Status operacional ativo. Acompanhe os voos de hoje, atualize status e portoes, e monitore bagagens recentes.</p>
             </section>
 
-            <!-- Widgets Operacionais -->
+            {% if messages %}
+                <section class="section-card">
+                    {% for message in messages %}
+                        <p class="dashboard-message {{ message.tags }}">{{ message }}</p>
+                    {% endfor %}
+                </section>
+            {% endif %}
+
             <section class="widgets-grid">
                 <div class="widget-card">
                     <div class="widget-icon" style="background: var(--blue-soft); color: var(--blue);">
                         <i class="fa-solid fa-plane-departure"></i>
                     </div>
                     <div class="widget-info">
-                        <h3>Voos no Radar</h3>
-                        <p>{{ voos.count|default:0 }} listados</p>
+                        <h3>Voos do Dia</h3>
+                        <p>{{ voos.count|default:0 }} programados</p>
                     </div>
                 </div>
 
@@ -106,7 +105,7 @@
                     </div>
                     <div class="widget-info">
                         <h3>Bagagens Monitoradas</h3>
-                        <p>{{ bagagens.count|default:0 }} ativas</p>
+                        <p>{{ bagagens|length }} ativas</p>
                     </div>
                 </div>
 
@@ -115,53 +114,45 @@
                         <i class="fa-solid fa-door-open"></i>
                     </div>
                     <div class="widget-info">
-                        <h3>Portões Ativos</h3>
+                        <h3>Portoes Ativos</h3>
                         <p>{{ portoes.count|default:0 }} monitorados</p>
                     </div>
                 </div>
             </section>
 
-            <!-- Ações Rápidas de Operação -->
             <section class="section-card">
                 <div class="section-header">
-                    <h3><i class="fa-solid fa-screwdriver-wrench"></i> Painel de Ações Operacionais</h3>
+                    <h3><i class="fa-solid fa-screwdriver-wrench"></i> Painel de Acoes Operacionais</h3>
                 </div>
-                <div class="quick-actions">
-                    <a href="/admin/skybridgeapp/voo/" class="btn-action primary">
-                        <i class="fa-solid fa-pen-to-square"></i> Atualizar Status de Voos
-                    </a>
-                    <a href="/admin/skybridgeapp/bagagem/" class="btn-action secondary">
-                        <i class="fa-solid fa-tags"></i> Triagem e Despacho de Bagagens
-                    </a>
-                    <a href="/admin/skybridgeapp/portaoembarque/" class="btn-action secondary">
-                        <i class="fa-solid fa-door-closed"></i> Gerenciar Portões de Embarque
-                    </a>
-                </div>
+                <p style="color: var(--muted); line-height: 1.6; margin: 0;">
+                    Atualize status e portao diretamente na lista de voos de hoje. Passageiros com reservas ativas recebem notificacao automatica quando houver alteracao.
+                </p>
             </section>
 
-            <!-- Voos Ativos -->
             <section class="section-card">
                 <div class="section-header">
-                    <h3><i class="fa-solid fa-clock"></i> Escala de Voos Ativos</h3>
+                    <h3><i class="fa-solid fa-clock"></i> Voos de Hoje</h3>
                 </div>
                 {% if voos %}
                     <div class="table-responsive">
                         <table class="custom-table">
                             <thead>
                                 <tr>
-                                    <th>Número</th>
+                                    <th>Numero</th>
                                     <th>Rota</th>
                                     <th>Partida</th>
                                     <th>Chegada</th>
                                     <th>Aeronave</th>
                                     <th>Status</th>
+                                    <th>Portao</th>
+                                    <th>Atualizar</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for voo in voos %}
                                     <tr>
                                         <td><strong>{{ voo.numero_voo }}</strong></td>
-                                        <td>{{ voo.origem }} → {{ voo.destino }}</td>
+                                        <td>{{ voo.origem }} -> {{ voo.destino }}</td>
                                         <td>{{ voo.partida|date:"d/m/Y H:i" }}</td>
                                         <td>{{ voo.chegada|date:"d/m/Y H:i" }}</td>
                                         <td>{{ voo.aeronave.modelo }}</td>
@@ -170,35 +161,64 @@
                                                 {{ voo.get_status_display }}
                                             </span>
                                         </td>
+                                        <td>
+                                            {% if voo.portao %}
+                                                Portao {{ voo.portao.numero_portao }}
+                                            {% else %}
+                                                A definir
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <form class="operation-form" method="post" action="{% url 'atualizar_voo_operacional' voo.id %}">
+                                                {% csrf_token %}
+                                                <label class="sr-only" for="status-{{ voo.id }}">Status</label>
+                                                <select id="status-{{ voo.id }}" name="status" class="operation-select" aria-label="Status do voo {{ voo.numero_voo }}">
+                                                    {% for value, label in status_choices %}
+                                                        <option value="{{ value }}" {% if voo.status == value %}selected{% endif %}>{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <label class="sr-only" for="portao-{{ voo.id }}">Portao</label>
+                                                <select id="portao-{{ voo.id }}" name="portao" class="operation-select" aria-label="Portao do voo {{ voo.numero_voo }}">
+                                                    <option value="">A definir</option>
+                                                    {% for portao_opcao in portoes %}
+                                                        <option value="{{ portao_opcao.id }}" {% if voo.portao_id == portao_opcao.id %}selected{% endif %}>
+                                                            {{ portao_opcao.numero_portao }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                                <button type="submit" class="btn-action primary operation-submit">
+                                                    Salvar
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 {% else %}
-                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Não há voos ativos cadastrados no momento.</p>
+                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Nao ha voos programados para hoje.</p>
                 {% endif %}
             </section>
 
-            <!-- Portões de Embarque -->
             <section class="section-card">
                 <div class="section-header">
-                    <h3><i class="fa-solid fa-door-open"></i> Situação dos Portões de Embarque</h3>
+                    <h3><i class="fa-solid fa-door-open"></i> Situacao dos Portoes de Embarque</h3>
                 </div>
                 {% if portoes %}
                     <div class="table-responsive">
                         <table class="custom-table">
                             <thead>
                                 <tr>
-                                    <th>Portão</th>
-                                    <th>Localização</th>
-                                    <th>Situação</th>
+                                    <th>Portao</th>
+                                    <th>Localizacao</th>
+                                    <th>Situacao</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for portao in portoes %}
                                     <tr>
-                                        <td><strong>Portão {{ portao.numero_portao }}</strong></td>
+                                        <td><strong>Portao {{ portao.numero_portao }}</strong></td>
                                         <td>{{ portao.localizacao }}</td>
                                         <td>
                                             <span class="badge-status status-{{ portao.status }}">
@@ -211,11 +231,10 @@
                         </table>
                     </div>
                 {% else %}
-                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Nenhum portão de embarque registrado no sistema.</p>
+                    <p style="color: var(--muted); text-align: center; padding: 20px 0;">Nenhum portao de embarque registrado no sistema.</p>
                 {% endif %}
             </section>
 
-            <!-- Controle de Bagagem -->
             <section class="section-card">
                 <div class="section-header">
                     <h3><i class="fa-solid fa-suitcase-rolling"></i> Rastreamento de Bagagens Recentes</h3>
@@ -225,7 +244,7 @@
                         <table class="custom-table">
                             <thead>
                                 <tr>
-                                    <th>Cód. Rastreio</th>
+                                    <th>Cod. Rastreio</th>
                                     <th>Passageiro</th>
                                     <th>Voo</th>
                                     <th>Peso (kg)</th>
@@ -253,7 +272,6 @@
                     <p style="color: var(--muted); text-align: center; padding: 20px 0;">Nenhuma bagagem despachada recentemente.</p>
                 {% endif %}
             </section>
-
         </main>
     </div>
 </body>

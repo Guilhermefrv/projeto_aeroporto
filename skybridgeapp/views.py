@@ -25,6 +25,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
+    AtualizarVooOperacionalForm,
     BuscaVooForm,
     CadastroAdministradorForm,
     CadastroFuncionarioForm,
@@ -32,7 +33,7 @@ from .forms import (
     PagamentoForm,
     SelecionarVooForm,
 )
-from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, TransacaoMilhas, Voo
+from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, TransacaoMilhas, Voo
 
 
 LANDING_CONTEXT = {
@@ -1152,6 +1153,48 @@ def _redirect_to_user_dashboard(user):
     return redirect(_dashboard_route_for_user(user))
 
 
+def _voos_do_dia_operacional():
+    return Voo.objects.select_related('aeronave', 'portao').filter(
+        partida__date=timezone.localdate(),
+    ).order_by('partida')
+
+
+def _notificacao_tipo_operacional(status_alterado, portao_alterado, novo_status):
+    if status_alterado and novo_status == 'cancelado':
+        return 'cancelamento'
+    if status_alterado and novo_status == 'atrasado':
+        return 'atraso'
+    if portao_alterado:
+        return 'mudanca_portao'
+    return 'geral'
+
+
+def _mensagem_operacional_voo(voo, status_alterado, portao_alterado):
+    partes = [f'Atualizacao do voo {voo.numero_voo}.']
+    if status_alterado:
+        partes.append(f'Status: {voo.get_status_display()}.')
+    if portao_alterado:
+        numero_portao = voo.portao.numero_portao if voo.portao else 'A definir'
+        partes.append(f'Portao: {numero_portao}.')
+    return ' '.join(partes)
+
+
+def _notificar_passageiros_operacionais(voo, mensagem, tipo):
+    reservas = Reserva.objects.select_related('passageiro').filter(voo=voo).exclude(status='cancelada')
+    passageiros = {}
+    for reserva in reservas:
+        passageiros[reserva.passageiro_id] = reserva.passageiro
+
+    for passageiro in passageiros.values():
+        Notificacao.objects.create(
+            passageiro=passageiro,
+            mensagem=mensagem,
+            tipo=tipo,
+        )
+
+    return len(passageiros)
+
+
 def _safe_next_url(request):
     next_url = request.POST.get('next') or request.GET.get('next') or ''
     if url_has_allowed_host_and_scheme(
@@ -1197,20 +1240,63 @@ def dashboard_passageiro(request):
 
 
 @login_required
+@require_POST
+def atualizar_voo_operacional(request, voo_id):
+    if not _can_access_dashboard(request.user, 'funcionario'):
+        return _redirect_to_user_dashboard(request.user)
+
+    voo = get_object_or_404(Voo.objects.select_related('portao'), pk=voo_id)
+    status_anterior = voo.status
+    portao_anterior = voo.portao
+    form = AtualizarVooOperacionalForm(request.POST, instance=voo)
+
+    if not form.is_valid():
+        messages.error(request, 'Nao foi possivel atualizar o voo. Verifique os dados informados.')
+        return redirect('dashboard_funcionario')
+
+    with transaction.atomic():
+        voo = form.save()
+        status_alterado = status_anterior != voo.status
+        portao_alterado = (portao_anterior.id if portao_anterior else None) != voo.portao_id
+
+        if portao_alterado:
+            if portao_anterior:
+                portao_anterior.status = 'livre'
+                portao_anterior.save(update_fields=['status'])
+            if voo.portao:
+                voo.portao.status = 'ocupado'
+                voo.portao.save(update_fields=['status'])
+
+        if status_alterado or portao_alterado:
+            tipo = _notificacao_tipo_operacional(status_alterado, portao_alterado, voo.status)
+            mensagem = _mensagem_operacional_voo(voo, status_alterado, portao_alterado)
+            total_notificados = _notificar_passageiros_operacionais(voo, mensagem, tipo)
+            messages.success(
+                request,
+                f'Voo {voo.numero_voo} atualizado. {total_notificados} passageiro(s) notificado(s).',
+            )
+        else:
+            messages.info(request, f'Nenhuma alteracao aplicada ao voo {voo.numero_voo}.')
+
+    return redirect('dashboard_funcionario')
+
+
+@login_required
 def dashboard_funcionario(request):
     if not _can_access_dashboard(request.user, 'funcionario'):
         return _redirect_to_user_dashboard(request.user)
 
     funcionario = getattr(request.user, 'funcionario', None)
-    voos = Voo.objects.all().order_by('partida')[:5]
-    bagagens = Bagagem.objects.select_related('reserva__passageiro').all().order_by('-id')[:5]
-    portoes = PortaoEmbarque.objects.all().order_by('numero_portao')[:6]
+    voos = _voos_do_dia_operacional()
+    bagagens = Bagagem.objects.select_related('reserva__passageiro', 'reserva__voo').all().order_by('-id')[:8]
+    portoes = PortaoEmbarque.objects.all().order_by('numero_portao')
 
     return render(request, 'painel_funcionario.html', {
         'funcionario': funcionario,
         'voos': voos,
         'bagagens': bagagens,
         'portoes': portoes,
+        'status_choices': Voo.STATUS,
     })
 
 
