@@ -2083,9 +2083,19 @@ class CadastroUsuarioTests(TestCase):
         usuario = get_user_model().objects.get(username='ana.admin')
         self.assertEqual(usuario.tipo, 'administrador')
         self.assertTrue(usuario.is_staff)
-        self.assertFalse(usuario.is_superuser)
+        self.assertTrue(usuario.is_superuser)
         self.assertFalse(Passageiro.objects.filter(usuario=usuario).exists())
         self.assertFalse(Funcionario.objects.filter(usuario=usuario).exists())
+
+    def test_administrador_cadastrado_acessa_modulos_do_django_admin(self):
+        self.client.post(self.cadastro_url, self.dados_administrador())
+        usuario = get_user_model().objects.get(username='ana.admin')
+        self.client.force_login(usuario)
+
+        response = self.client.get('/admin/skybridgeapp/usuariocustomizado/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ana.admin')
 
     def test_cadastro_passageiro_nao_exige_cargo_ou_matricula(self):
         data = self.dados_passageiro()

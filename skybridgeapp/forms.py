@@ -163,13 +163,13 @@ class CadastroBaseForm(UserCreationForm):
         model = UsuarioCustomizado
         fields = ('username', 'nome', 'email', 'password1', 'password2')
 
-    def preparar_usuario(self, tipo, is_staff=False):
+    def preparar_usuario(self, tipo, is_staff=False, is_superuser=False):
         user = super().save(commit=False)
         user.tipo = tipo
         user.email = self.cleaned_data['email']
         user.first_name = self.cleaned_data['nome']
         user.is_staff = is_staff
-        user.is_superuser = False
+        user.is_superuser = is_superuser
         return user
 
 
@@ -262,7 +262,7 @@ class CadastroFuncionarioForm(CadastroBaseForm):
 
 class CadastroAdministradorForm(CadastroBaseForm):
     def save(self, commit=True):
-        user = self.preparar_usuario('administrador', is_staff=True)
+        user = self.preparar_usuario('administrador', is_staff=True, is_superuser=True)
 
         if commit:
             user.save()
