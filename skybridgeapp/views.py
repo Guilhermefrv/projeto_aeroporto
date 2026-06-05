@@ -37,7 +37,7 @@ from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notific
 
 
 LANDING_CONTEXT = {
-    'asset_version': '20260601-search-modal-fix',
+    'asset_version': '20260605-offer-images',
     'nav_items': [
         'Comprar',
         'Minhas viagens',
@@ -111,7 +111,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-manaus',
-            'image_url': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=80',
+            'image_url': '/static/img/offers/manaus.jpg',
             'route': 'São Paulo → Manaus',
             'title': 'Amazônia e cultura no Norte',
             'description': 'Trechos nacionais com opções em datas selecionadas.',
@@ -119,7 +119,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-curitiba',
-            'image_url': 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
+            'image_url': '/static/img/offers/curitiba.jpg',
             'route': 'São Paulo → Curitiba',
             'title': 'Fim de semana no Sul',
             'description': 'Rotas nacionais para viagens rápidas e flexíveis.',
@@ -127,7 +127,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-brasilia',
-            'image_url': 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=900&q=80',
+            'image_url': '/static/img/offers/brasilia.jpg',
             'route': 'São Paulo → Brasília',
             'title': 'Conexão com o Centro-Oeste',
             'description': 'Ofertas para a capital federal com taxas incluídas.',
@@ -143,7 +143,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-porto-alegre',
-            'image_url': 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=80',
+            'image_url': '/static/img/offers/porto-alegre.jpg',
             'route': 'São Paulo → Porto Alegre',
             'title': 'Cultura e gastronomia no Sul',
             'description': 'Trechos nacionais com tarifas promocionais.',
@@ -151,7 +151,7 @@ LANDING_CONTEXT = {
         },
         {
             'image_class': 'offer-cuiaba',
-            'image_url': 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80',
+            'image_url': '/static/img/offers/cuiaba.jpg',
             'route': 'São Paulo → Cuiabá',
             'title': 'Porta de entrada para o Pantanal',
             'description': 'Preços finais para voos dentro do Brasil.',
