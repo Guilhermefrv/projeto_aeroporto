@@ -10,8 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-
-    <!-- Navbar -->
     <nav class="dashboard-nav">
         <div class="nav-container">
             <a href="{% url 'home' %}" class="brand">
@@ -20,7 +18,7 @@
                 </div>
                 <div class="brand-text">
                     <h1>Sky Bridge</h1>
-                    <span>Painel Administrativo</span>
+                    <span>Painel administrativo</span>
                 </div>
             </a>
             <div class="user-menu">
@@ -37,21 +35,18 @@
         </div>
     </nav>
 
-    <!-- Layout -->
     <div class="dashboard-layout">
-        
-        <!-- Sidebar: Info -->
         <aside class="dashboard-sidebar">
             <div class="profile-card">
                 <div class="profile-avatar" style="background: linear-gradient(135deg, #fee2e2 0%, #ffcdd2 100%); color: var(--red);">
                     {{ user.username|slice:":2"|upper }}
                 </div>
                 <h2>{{ user.get_full_name|default:user.username }}</h2>
-                <div class="user-type" style="color: var(--red);">Administrador Global</div>
-                
+                <div class="user-type" style="color: var(--red);">Administrador global</div>
+
                 <div class="profile-details">
                     <div class="profile-item">
-                        <strong>Nome de Usuário</strong>
+                        <strong>Usuario</strong>
                         <span>{{ user.username }}</span>
                     </div>
                     <div class="profile-item">
@@ -59,125 +54,136 @@
                         <span>{{ user.email|default:"Nenhum e-mail cadastrado" }}</span>
                     </div>
                     <div class="profile-item">
-                        <strong>Privilégio</strong>
-                        <span style="font-weight: 600; color: var(--red);">Administração Completa</span>
+                        <strong>Privilegio</strong>
+                        <span style="font-weight: 700; color: var(--red);">Administracao completa</span>
                     </div>
                     <div class="profile-item">
-                        <strong>Último Login</strong>
+                        <strong>Ultimo login</strong>
                         <span>{{ user.last_login|date:"d/m/Y H:i"|default:"Primeiro acesso" }}</span>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="dashboard-content">
-            
-            <!-- Boas-vindas -->
             <section class="welcome-header" style="background: linear-gradient(135deg, var(--navy) 0%, var(--wine) 100%);">
-                <h2>Olá, Administrador!</h2>
-                <p>Painel de controle global ativo. Monitore o crescimento do aeroporto, gerencie dados de sistema e usuários autorizados.</p>
+                <h2>Visao geral do Sky Bridge</h2>
+                <p>Acompanhe os principais numeros do sistema, confira reservas recentes e acesse rapidamente as areas de administracao.</p>
             </section>
 
-            <!-- Widgets de Métricas Consolidadas -->
             <section class="widgets-grid">
-                <div class="widget-card">
-                    <div class="widget-icon" style="background: var(--blue-soft); color: var(--blue);">
-                        <i class="fa-solid fa-users"></i>
-                    </div>
-                    <div class="widget-info">
-                        <h3>Passageiros Cadastrados</h3>
-                        <p>{{ stats.total_passageiros }}</p>
-                    </div>
-                </div>
-
-                <div class="widget-card">
-                    <div class="widget-icon" style="background: #fef3c7; color: #d97706;">
-                        <i class="fa-solid fa-id-card"></i>
-                    </div>
-                    <div class="widget-info">
-                        <h3>Corpo de Funcionários</h3>
-                        <p>{{ stats.total_funcionarios }}</p>
-                    </div>
-                </div>
-
                 <div class="widget-card">
                     <div class="widget-icon" style="background: var(--green-soft); color: var(--green);">
                         <i class="fa-solid fa-plane"></i>
                     </div>
                     <div class="widget-info">
-                        <h3>Voos Cadastrados</h3>
+                        <h3>Voos cadastrados</h3>
                         <p>{{ stats.total_voos }}</p>
                     </div>
                 </div>
 
                 <div class="widget-card">
                     <div class="widget-icon" style="background: #f3e8ff; color: #9333ea;">
-                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <i class="fa-solid fa-ticket"></i>
                     </div>
                     <div class="widget-info">
-                        <h3>Reservas Realizadas</h3>
+                        <h3>Reservas realizadas</h3>
                         <p>{{ stats.total_reservas }}</p>
                     </div>
                 </div>
+
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: var(--blue-soft); color: var(--blue);">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Passageiros</h3>
+                        <p>{{ stats.total_passageiros }}</p>
+                    </div>
+                </div>
+
+                <div class="widget-card">
+                    <div class="widget-icon" style="background: #fef3c7; color: #d97706;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="widget-info">
+                        <h3>Pagamentos</h3>
+                        <p>{{ stats.total_pagamentos }}</p>
+                    </div>
+                </div>
             </section>
 
-            <!-- Atalhos Globais de Administração -->
+            <section class="admin-summary-grid">
+                <article class="section-card admin-highlight-card">
+                    <span class="admin-kicker">Receita simulada</span>
+                    <h3>Receita aprovada</h3>
+                    <strong>{{ stats.receita_aprovada_formatada }}</strong>
+                    <p>{{ stats.pagamentos_aprovados }} pagamento(s) aprovado(s) entram neste total.</p>
+                </article>
+
+                <article class="section-card admin-highlight-card admin-highlight-muted">
+                    <span class="admin-kicker">Operacao</span>
+                    <h3>Equipe e reservas</h3>
+                    <strong>{{ stats.total_funcionarios }}</strong>
+                    <p>funcionario(s) cadastrados para apoiar voos, bagagens e atendimento.</p>
+                </article>
+            </section>
+
             <section class="section-card">
                 <div class="section-header">
-                    <h3><i class="fa-solid fa-gears"></i> Central de Controle de Modelos</h3>
+                    <h3><i class="fa-solid fa-gears"></i> Links rapidos para admin Django</h3>
                 </div>
-                <div class="quick-actions">
-                    <a href="/admin/" class="btn-action primary">
-                        <i class="fa-solid fa-screwdriver-wrench"></i> Acessar Django Admin Completo
-                    </a>
-                </div>
-                
-                <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-                    <a href="/admin/skybridgeapp/usuariocustomizado/" class="btn-action secondary">
-                        <i class="fa-solid fa-user-shield"></i> Gerenciar Usuários
-                    </a>
-                    <a href="/admin/skybridgeapp/voo/" class="btn-action secondary">
-                        <i class="fa-solid fa-plane-up"></i> Gerenciar Voos
-                    </a>
-                    <a href="/admin/skybridgeapp/aeroporto/" class="btn-action secondary">
-                        <i class="fa-solid fa-location-dot"></i> Aeroportos Parceiros
-                    </a>
-                    <a href="/admin/skybridgeapp/aeronave/" class="btn-action secondary">
-                        <i class="fa-solid fa-plane-slash"></i> Frota de Aeronaves
-                    </a>
+                <div class="admin-actions-grid">
+                    {% for link in admin_links %}
+                        <a href="{{ link.url }}" class="btn-action {% if link.primary %}primary{% else %}secondary{% endif %}">
+                            <i class="fa-solid {{ link.icon }}"></i> {{ link.label }}
+                        </a>
+                    {% endfor %}
                 </div>
             </section>
 
-            <!-- Resumo e Saúde do Sistema -->
             <section class="section-card">
                 <div class="section-header">
-                    <h3><i class="fa-solid fa-circle-info"></i> Detalhes do Ambiente</h3>
+                    <h3><i class="fa-solid fa-clock-rotate-left"></i> Ultimas reservas</h3>
                 </div>
-                <div class="table-responsive">
-                    <table class="custom-table">
-                        <tbody>
-                            <tr>
-                                <td><strong>Framework</strong></td>
-                                <td>Django 4.x / 5.x</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Banco de Dados</strong></td>
-                                <td>PostgreSQL (Ativo)</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Status da Conexão</strong></td>
-                                <td>
-                                    <span class="badge-status status-confirmada">
-                                        <i class="fa-solid fa-circle-check"></i> Estável
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
 
+                {% if ultimas_reservas %}
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Reserva</th>
+                                    <th>Passageiro</th>
+                                    <th>Voo</th>
+                                    <th>Assento</th>
+                                    <th>Status</th>
+                                    <th>Pagamento</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reserva in ultimas_reservas %}
+                                    <tr>
+                                        <td><strong>Reserva #{{ reserva.id }}</strong></td>
+                                        <td>{{ reserva.passageiro.nome }}</td>
+                                        <td>{{ reserva.voo.numero_voo }}<br><small>{{ reserva.voo.origem }} -> {{ reserva.voo.destino }}</small></td>
+                                        <td>{{ reserva.assento }}</td>
+                                        <td>
+                                            <span class="badge-status status-{{ reserva.status }}">
+                                                {{ reserva.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ reserva.pagamento_status_painel }}</td>
+                                        <td><strong>{{ reserva.pagamento_valor_painel }}</strong></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="admin-empty-state">Ainda nao existem reservas cadastradas.</p>
+                {% endif %}
+            </section>
         </main>
     </div>
 </body>

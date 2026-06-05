@@ -595,6 +595,67 @@ body {
     justify-content: center;
 }
 
+.admin-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.admin-highlight-card {
+    min-height: 170px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background:
+        linear-gradient(135deg, rgba(27, 59, 143, 0.04), rgba(255, 255, 255, 0.96)),
+        white;
+}
+
+.admin-highlight-card h3 {
+    color: var(--navy);
+    font-size: 20px;
+    margin: 8px 0 10px;
+}
+
+.admin-highlight-card strong {
+    color: var(--wine);
+    font-size: clamp(30px, 5vw, 44px);
+    line-height: 1;
+}
+
+.admin-highlight-card p {
+    color: var(--muted);
+    font-weight: 600;
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+.admin-highlight-muted strong {
+    color: var(--blue);
+}
+
+.admin-kicker {
+    color: var(--red);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+}
+
+.admin-empty-state {
+    margin: 0;
+    padding: 28px 0;
+    color: var(--muted);
+    text-align: center;
+    font-weight: 700;
+}
+
 .sr-only {
     position: absolute;
     width: 1px;
@@ -616,5 +677,9 @@ body {
     .operation-form {
         grid-template-columns: 1fr;
         min-width: 220px;
+    }
+
+    .admin-summary-grid {
+        grid-template-columns: 1fr;
     }
 }

@@ -415,6 +415,7 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - bloqueio amigavel para usuario sem perfil de passageiro;
 - busca pública de status de voo (acessibilidade, busca bem-sucedida normalizada e busca de voo inexistente).
 - painel do funcionario real com voos do dia, atualizacao operacional, notificacoes e bloqueio para passageiro.
+- painel administrativo com indicadores, receita aprovada, ultimas reservas e links para admin Django.
 
 ## 17. Frontend e UX
 
@@ -440,37 +441,27 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - Bagagens recentes sao exibidas no painel operacional com passageiro, voo, peso e status.
 - Passageiros e outros tipos sem permissao nao conseguem executar a rota operacional.
 
+## 20. Painel Administrativo Mais Apresentavel
+
+- Painel administrativo visual em `/dashboard/administrador/`.
+- Administrador ve cards com totais de voos, reservas, passageiros e pagamentos.
+- Receita simulada soma apenas pagamentos aprovados.
+- Painel exibe quantidade de pagamentos aprovados usada no calculo da receita.
+- Links rapidos levam para Django Admin, usuarios, passageiros, funcionarios, voos, reservas, pagamentos, aeroportos, aeronaves e promocoes.
+- Ultimas reservas aparecem em tabela com passageiro, voo, assento, status, pagamento e valor.
+- Funcionarios continuam bloqueados de acessar o painel administrativo.
+
 
 # [A Desenvolver]
 
 ## Prioridade Recomendada
 
-1. Painel administrativo mais apresentavel.
-2. Promocoes vindas do banco.
-3. Milhas refinadas.
-4. Melhorias tecnicas finais.
+1. Promocoes vindas do banco.
+2. Milhas refinadas.
+3. Melhorias tecnicas finais.
 
 
-## 2. Painel Administrativo Mais Apresentavel
-
-Prioridade: media.
-
-Estado atual: admin Django resolve a administracao tecnica, e o painel visual possui estatisticas basicas.
-
-Implementar:
-
-- Cards com total de voos, reservas, passageiros e pagamentos.
-- Links rapidos para admin Django.
-- Lista de ultimas reservas.
-- Receita simulada por pagamentos aprovados.
-
-Criterios de aceite:
-
-- Administrador ve indicadores importantes para apresentacao.
-- Links levam para rotas/admin corretos.
-- Receita usa pagamentos aprovados.
-
-## 3. Promocoes Vindas do Banco
+## 2. Promocoes Vindas do Banco
 
 Prioridade: media.
 
@@ -489,7 +480,7 @@ Criterios de aceite:
 - Home nao quebra quando nao ha promocoes.
 - Cards continuam nacionais e visualmente consistentes.
 
-## 4. Milhas Refinadas
+## 3. Milhas Refinadas
 
 Prioridade: baixa/media.
 
@@ -508,7 +499,7 @@ Criterios de aceite:
 - Transacoes aparecem no painel.
 - Regras ficam simples e demonstraveis.
 
-## 5. Melhorias Tecnicas Importantes
+## 4. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -584,10 +575,10 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Implementar o **Painel Administrativo Mais Apresentavel**, criando uma visao simples para a apresentacao do projeto com indicadores principais, links rapidos para o admin Django, ultimas reservas e receita simulada de pagamentos aprovados.
+Implementar **Promocoes Vindas do Banco**, substituindo os cards estaticos da Home por promocoes reais cadastradas no admin e mantendo um fallback visual quando nao houver ofertas ativas.
 
 Sugestao de entrega:
 
-1. Exibir cards com totais de voos, reservas, passageiros e pagamentos.
-2. Listar ultimas reservas e pagamentos aprovados.
-3. Manter links rapidos para operacoes no admin Django.
+1. Buscar `Promocao.objects.filter(ativa=True)` na view da Home.
+2. Renderizar cards com origem, destino, preco e descricao vindos do banco.
+3. Manter cards nacionais de exemplo quando nao houver promocoes ativas.

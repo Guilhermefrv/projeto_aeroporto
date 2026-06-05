@@ -152,6 +152,39 @@ class AuthFlowTests(TestCase):
             is_staff=True,
         )
 
+    def criar_voo_admin(self, numero_voo='SBADM1'):
+        aeronave = Aeronave.objects.create(
+            modelo=f'Airbus {numero_voo}',
+            capacidade=180,
+            companhia_aerea='Sky Bridge Air',
+        )
+        portao = PortaoEmbarque.objects.create(
+            numero_portao=f'A{numero_voo[-1]}',
+            localizacao='Terminal Admin',
+            status='livre',
+        )
+        partida = timezone.now() + timedelta(days=3)
+        return Voo.objects.create(
+            numero_voo=numero_voo,
+            origem='GRU - Sao Paulo',
+            destino='REC - Recife',
+            partida=partida,
+            chegada=partida + timedelta(hours=3),
+            status='programado',
+            aeronave=aeronave,
+            portao=portao,
+        )
+
+    def criar_reserva_admin(self, passageiro, voo, assento='1A', status='confirmada'):
+        return Reserva.objects.create(
+            passageiro=passageiro,
+            voo=voo,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento=assento,
+            status=status,
+        )
+
     def test_home_page_renders_with_login_link(self):
         response = self.client.get(reverse('home'))
 
@@ -519,6 +552,75 @@ class AuthFlowTests(TestCase):
         response = self.client.get(reverse('dashboard_administrador'))
 
         self.assertRedirects(response, reverse('dashboard_funcionario'))
+
+    def test_admin_dashboard_shows_indicators_and_approved_revenue(self):
+        admin_user = self.criar_usuario_administrador()
+        passenger_user = self.criar_usuario_passageiro()
+        passageiro = Passageiro.objects.get(usuario=passenger_user)
+        voo_um = self.criar_voo_admin('SBAD1')
+        voo_dois = self.criar_voo_admin('SBAD2')
+        reserva_aprovada = self.criar_reserva_admin(passageiro, voo_um, assento='1A')
+        reserva_pendente = self.criar_reserva_admin(passageiro, voo_dois, assento='1B', status='pendente')
+        Pagamento.objects.create(
+            reserva=reserva_aprovada,
+            valor_total=Decimal('500.50'),
+            metodo='pix',
+            status='aprovado',
+            data_pagamento=timezone.now(),
+        )
+        Pagamento.objects.create(
+            reserva=reserva_pendente,
+            valor_total=Decimal('199.90'),
+            metodo='boleto',
+            status='pendente',
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.get(reverse('dashboard_administrador'))
+
+        self.assertEqual(response.status_code, 200)
+        stats = response.context['stats']
+        self.assertEqual(stats['total_voos'], 2)
+        self.assertEqual(stats['total_reservas'], 2)
+        self.assertEqual(stats['total_passageiros'], 1)
+        self.assertEqual(stats['total_pagamentos'], 2)
+        self.assertEqual(stats['pagamentos_aprovados'], 1)
+        self.assertEqual(stats['receita_aprovada'], Decimal('500.50'))
+        self.assertContains(response, 'Receita aprovada')
+        self.assertContains(response, 'R$ 500,50')
+        self.assertContains(response, 'Pagamentos')
+
+    def test_admin_dashboard_lists_latest_reservations(self):
+        admin_user = self.criar_usuario_administrador()
+        passenger_user = self.criar_usuario_passageiro()
+        passageiro = Passageiro.objects.get(usuario=passenger_user)
+        voo = self.criar_voo_admin('SBAD3')
+        reservas = [
+            self.criar_reserva_admin(passageiro, voo, assento=f'{index}A')
+            for index in range(1, 7)
+        ]
+        self.client.force_login(admin_user)
+
+        response = self.client.get(reverse('dashboard_administrador'))
+
+        ultimas_ids = [reserva.id for reserva in response.context['ultimas_reservas']]
+        self.assertEqual(ultimas_ids, [reserva.id for reserva in reversed(reservas[-5:])])
+        self.assertContains(response, f'Reserva #{reservas[-1].id}')
+        self.assertContains(response, passageiro.nome)
+        self.assertContains(response, voo.numero_voo)
+        self.assertNotContains(response, f'Reserva #{reservas[0].id}')
+
+    def test_admin_dashboard_has_quick_links_to_django_admin_models(self):
+        admin_user = self.criar_usuario_administrador()
+        self.client.force_login(admin_user)
+
+        response = self.client.get(reverse('dashboard_administrador'))
+
+        self.assertContains(response, 'href="/admin/"')
+        self.assertContains(response, 'href="/admin/skybridgeapp/voo/"')
+        self.assertContains(response, 'href="/admin/skybridgeapp/reserva/"')
+        self.assertContains(response, 'href="/admin/skybridgeapp/passageiro/"')
+        self.assertContains(response, 'href="/admin/skybridgeapp/pagamento/"')
 
 
 @override_settings(ALLOWED_HOSTS=['testserver'])

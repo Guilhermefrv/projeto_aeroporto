@@ -17,7 +17,7 @@ from django.contrib.auth.views import (
 )
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -1305,14 +1305,48 @@ def dashboard_administrador(request):
     if not _can_access_dashboard(request.user, 'administrador'):
         return _redirect_to_user_dashboard(request.user)
 
+    receita_aprovada = Pagamento.objects.filter(status='aprovado').aggregate(
+        total=Sum('valor_total'),
+    )['total'] or Decimal('0.00')
+    ultimas_reservas = list(
+        Reserva.objects.select_related('passageiro', 'voo', 'pagamento')
+        .order_by('-id')[:5]
+    )
+
+    for reserva in ultimas_reservas:
+        pagamento = getattr(reserva, 'pagamento', None)
+        reserva.pagamento_status_painel = pagamento.get_status_display() if pagamento else 'Sem pagamento'
+        reserva.pagamento_valor_painel = _formatar_moeda(pagamento.valor_total) if pagamento else '-'
+
     stats = {
         'total_passageiros': Passageiro.objects.count(),
         'total_funcionarios': Funcionario.objects.count(),
         'total_voos': Voo.objects.count(),
         'total_reservas': Reserva.objects.count(),
+        'total_pagamentos': Pagamento.objects.count(),
+        'pagamentos_aprovados': Pagamento.objects.filter(status='aprovado').count(),
+        'receita_aprovada': receita_aprovada,
+        'receita_aprovada_formatada': _formatar_moeda(receita_aprovada),
     }
 
-    return render(request, 'painel_admin.html', {'stats': stats})
+    admin_links = [
+        {'label': 'Django Admin', 'url': '/admin/', 'icon': 'fa-screwdriver-wrench', 'primary': True},
+        {'label': 'Usuarios', 'url': '/admin/skybridgeapp/usuariocustomizado/', 'icon': 'fa-user-shield'},
+        {'label': 'Passageiros', 'url': '/admin/skybridgeapp/passageiro/', 'icon': 'fa-users'},
+        {'label': 'Funcionarios', 'url': '/admin/skybridgeapp/funcionario/', 'icon': 'fa-id-card'},
+        {'label': 'Voos', 'url': '/admin/skybridgeapp/voo/', 'icon': 'fa-plane-up'},
+        {'label': 'Reservas', 'url': '/admin/skybridgeapp/reserva/', 'icon': 'fa-ticket'},
+        {'label': 'Pagamentos', 'url': '/admin/skybridgeapp/pagamento/', 'icon': 'fa-file-invoice-dollar'},
+        {'label': 'Aeroportos', 'url': '/admin/skybridgeapp/aeroporto/', 'icon': 'fa-location-dot'},
+        {'label': 'Aeronaves', 'url': '/admin/skybridgeapp/aeronave/', 'icon': 'fa-plane'},
+        {'label': 'Promocoes', 'url': '/admin/skybridgeapp/promocao/', 'icon': 'fa-tags'},
+    ]
+
+    return render(request, 'painel_admin.html', {
+        'stats': stats,
+        'ultimas_reservas': ultimas_reservas,
+        'admin_links': admin_links,
+    })
 
 
 class SkyBridgeLoginView(LoginView):
