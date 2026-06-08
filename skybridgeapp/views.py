@@ -33,7 +33,7 @@ from .forms import (
     PagamentoForm,
     SelecionarVooForm,
 )
-from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, TransacaoMilhas, Voo
+from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, TransacaoMilhas, Voo
 
 
 LANDING_CONTEXT = {
@@ -239,9 +239,90 @@ PAYMENT_METHODS = [
 ]
 
 
+PROMOTION_IMAGE_DATA = {
+    'GIG': {
+        'image_class': 'offer-rio',
+        'image_url': 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=900&q=80',
+    },
+    'REC': {
+        'image_class': 'offer-recife',
+        'image_url': 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=900&q=80',
+    },
+    'SSA': {
+        'image_class': 'offer-salvador',
+        'image_url': 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=80',
+    },
+    'MAO': {
+        'image_class': 'offer-manaus',
+        'image_url': '/static/img/offers/manaus.jpg',
+    },
+    'CWB': {
+        'image_class': 'offer-curitiba',
+        'image_url': '/static/img/offers/curitiba.jpg',
+    },
+    'BSB': {
+        'image_class': 'offer-brasilia',
+        'image_url': '/static/img/offers/brasilia.jpg',
+    },
+    'BEL': {
+        'image_class': 'offer-belem',
+        'image_url': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
+    },
+    'POA': {
+        'image_class': 'offer-porto-alegre',
+        'image_url': '/static/img/offers/porto-alegre.jpg',
+    },
+    'CGB': {
+        'image_class': 'offer-cuiaba',
+        'image_url': '/static/img/offers/cuiaba.jpg',
+    },
+}
+
+
+def _airport_city_or_default(aeroporto, default):
+    if aeroporto:
+        return aeroporto.cidade
+    return default
+
+
+def _promotion_image_data(promocao):
+    codigo_destino = promocao.destino.codigo_iata if promocao.destino else ''
+    return PROMOTION_IMAGE_DATA.get(codigo_destino, {
+        'image_class': 'offer-rio',
+        'image_url': LANDING_CONTEXT['offers'][0]['image_url'],
+    })
+
+
+def _promotion_to_offer(promocao):
+    image_data = _promotion_image_data(promocao)
+    origem = _airport_city_or_default(promocao.origem, 'Brasil')
+    destino = _airport_city_or_default(promocao.destino, 'Destino nacional')
+
+    return {
+        'image_class': image_data['image_class'],
+        'image_url': image_data['image_url'],
+        'route': f'{origem} -> {destino}',
+        'title': promocao.titulo,
+        'description': promocao.descricao or 'Oferta nacional cadastrada para a landing page.',
+        'price': _formatar_moeda(promocao.preco_a_partir_de),
+    }
+
+
+def _offers_for_home():
+    promocoes = list(
+        Promocao.objects.filter(ativa=True)
+        .select_related('origem', 'destino')
+        .order_by('preco_a_partir_de', 'titulo')
+    )
+    if not promocoes:
+        return LANDING_CONTEXT['offers']
+    return [_promotion_to_offer(promocao) for promocao in promocoes]
+
+
 def home(request):
     context = {
         **LANDING_CONTEXT,
+        'offers': _offers_for_home(),
         'search_form': BuscaVooForm(),
         'route_map': _route_map(),
     }

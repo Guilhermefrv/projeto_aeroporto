@@ -13,7 +13,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Reserva, Tarifa, Voo
+from .models import Aeroporto, Aeronave, Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -213,6 +213,86 @@ class AuthFlowTests(TestCase):
         self.assertNotContains(response, 'Buenos Aires')
         self.assertNotContains(response, 'Santiago')
         self.assertNotContains(response, 'Lisboa')
+
+    def test_home_uses_active_promotions_from_database(self):
+        origem = Aeroporto.objects.create(
+            codigo_iata='GRU',
+            nome='Guarulhos',
+            cidade='Sao Paulo',
+            estado='SP',
+            pais='Brasil',
+        )
+        destino = Aeroporto.objects.create(
+            codigo_iata='BSB',
+            nome='Presidente Juscelino Kubitschek',
+            cidade='Brasilia',
+            estado='DF',
+            pais='Brasil',
+        )
+        Promocao.objects.create(
+            titulo='Oferta admin para Brasilia',
+            descricao='Promocao real cadastrada pelo admin.',
+            origem=origem,
+            destino=destino,
+            preco_a_partir_de=Decimal('321.45'),
+            data_inicio=date.today(),
+            data_fim=date.today() + timedelta(days=10),
+            ativa=True,
+        )
+        Promocao.objects.create(
+            titulo='Oferta inativa para Cuiaba',
+            descricao='Nao deve aparecer na Home.',
+            origem=origem,
+            destino=destino,
+            preco_a_partir_de=Decimal('999.99'),
+            data_inicio=date.today(),
+            data_fim=date.today() + timedelta(days=10),
+            ativa=False,
+        )
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        offers = response.context['offers']
+        self.assertEqual(len(offers), 1)
+        self.assertEqual(offers[0]['route'], 'Sao Paulo -> Brasilia')
+        self.assertEqual(offers[0]['title'], 'Oferta admin para Brasilia')
+        self.assertEqual(offers[0]['image_url'], '/static/img/offers/brasilia.jpg')
+        self.assertContains(response, 'Oferta admin para Brasilia')
+        self.assertContains(response, 'Promocao real cadastrada pelo admin.')
+        self.assertContains(response, 'R$ 321,45')
+        self.assertContains(response, '/static/img/offers/brasilia.jpg')
+        self.assertNotContains(response, 'Oferta inativa para Cuiaba')
+        self.assertNotContains(response, 'Escapada urbana')
+
+    def test_home_uses_static_offer_fallback_without_active_promotions(self):
+        origem = Aeroporto.objects.create(
+            codigo_iata='GRU',
+            nome='Guarulhos',
+            cidade='Sao Paulo',
+            estado='SP',
+            pais='Brasil',
+        )
+        Promocao.objects.create(
+            titulo='Oferta inativa de teste',
+            descricao='Nao deve substituir os cards estaticos.',
+            origem=origem,
+            destino=None,
+            preco_a_partir_de=Decimal('199.90'),
+            data_inicio=date.today(),
+            data_fim=date.today() + timedelta(days=10),
+            ativa=False,
+        )
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        offers = response.context['offers']
+        self.assertGreaterEqual(len(offers), 6)
+        self.assertTrue(any(offer['image_class'] == 'offer-manaus' for offer in offers))
+        self.assertFalse(any(offer['title'] == 'Oferta inativa de teste' for offer in offers))
+        self.assertContains(response, 'Escapada urbana')
+        self.assertNotContains(response, 'Oferta inativa de teste')
 
     def test_home_account_menu_greets_authenticated_user_by_first_name(self):
         user = get_user_model().objects.create_user(

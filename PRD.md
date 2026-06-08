@@ -416,6 +416,7 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - busca pública de status de voo (acessibilidade, busca bem-sucedida normalizada e busca de voo inexistente).
 - painel do funcionario real com voos do dia, atualizacao operacional, notificacoes e bloqueio para passageiro.
 - painel administrativo com indicadores, receita aprovada, ultimas reservas e links para admin Django.
+- promocoes ativas vindas do banco na Home e fallback visual sem promocoes ativas.
 
 ## 17. Frontend e UX
 
@@ -451,36 +452,25 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - Ultimas reservas aparecem em tabela com passageiro, voo, assento, status, pagamento e valor.
 - Funcionarios continuam bloqueados de acessar o painel administrativo.
 
+## 21. Promocoes Vindas do Banco
+
+- Home busca `Promocao.objects.filter(ativa=True)` para montar cards reais de ofertas.
+- Promocoes cadastradas no Django Admin aparecem na landing page.
+- Cards exibem rota, titulo, descricao, preco formatado e imagem coerente com o destino.
+- Imagens nacionais ja cadastradas para Brasilia, Cuiaba, Curitiba, Manaus e Porto Alegre sao reaproveitadas.
+- Quando nao ha promocoes ativas, a Home usa os cards estaticos como fallback visual.
+- Dados criados pelo comando `popular_banco` sao compativeis com os cards da Home.
+
 
 # [A Desenvolver]
 
 ## Prioridade Recomendada
 
-1. Promocoes vindas do banco.
-2. Milhas refinadas.
-3. Melhorias tecnicas finais.
+1. Milhas refinadas.
+2. Melhorias tecnicas finais.
 
 
-## 2. Promocoes Vindas do Banco
-
-Prioridade: media.
-
-Estado atual: a landing page ainda usa muitos dados estaticos em `LANDING_CONTEXT`.
-
-Implementar:
-
-- Buscar `Promocao.objects.filter(ativa=True)` na Home.
-- Montar cards de promocao reais.
-- Criar fallback visual caso nao existam promocoes ativas.
-- Reaproveitar dados criados pelo `popular_banco`.
-
-Criterios de aceite:
-
-- Promocoes cadastradas no admin aparecem na Home.
-- Home nao quebra quando nao ha promocoes.
-- Cards continuam nacionais e visualmente consistentes.
-
-## 3. Milhas Refinadas
+## 2. Milhas Refinadas
 
 Prioridade: baixa/media.
 
@@ -499,7 +489,7 @@ Criterios de aceite:
 - Transacoes aparecem no painel.
 - Regras ficam simples e demonstraveis.
 
-## 4. Melhorias Tecnicas Importantes
+## 3. Melhorias Tecnicas Importantes
 
 Prioridade: media antes da apresentacao final.
 
@@ -575,10 +565,10 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Implementar **Promocoes Vindas do Banco**, substituindo os cards estaticos da Home por promocoes reais cadastradas no admin e mantendo um fallback visual quando nao houver ofertas ativas.
+Implementar **Milhas Refinadas**, melhorando a exibicao do saldo, o historico de transacoes e as mensagens do uso de milhas no fluxo de pagamento.
 
 Sugestao de entrega:
 
-1. Buscar `Promocao.objects.filter(ativa=True)` na view da Home.
-2. Renderizar cards com origem, destino, preco e descricao vindos do banco.
-3. Manter cards nacionais de exemplo quando nao houver promocoes ativas.
+1. Exibir historico de transacoes no painel do passageiro.
+2. Mostrar mensagens mais claras para acumulo, resgate e saldo insuficiente.
+3. Documentar uma regra academica simples de conversao entre reais e milhas.
