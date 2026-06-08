@@ -35,7 +35,7 @@ from .forms import (
     PagamentoForm,
     SelecionarVooForm,
 )
-from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, TransacaoMilhas, Voo
+from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, TransacaoMilhas, Viagem, Voo
 
 
 MILHAS_POR_REAL_ACUMULO = 1
@@ -478,6 +478,151 @@ def buscar_voos_datas(request):
     })
 
 
+@login_required
+def selecionar_voo_volta(request, voo_id):
+    voo_ida = get_object_or_404(
+        Voo.objects.select_related('aeronave', 'portao'),
+        pk=voo_id,
+    )
+    return_params = _parametros_busca_volta(request.GET)
+
+    if not return_params:
+        messages.error(request, 'Informe uma data de volta para escolher o segundo trecho.')
+        return redirect(_detalhe_voo_url(voo_ida.id, request.GET.get('classe', ''), request.GET.get('passageiros') or 1))
+
+    form = BuscaVooForm(return_params)
+    voos = []
+    voos_proximos = []
+    datas_flexiveis = []
+    date_nav = {}
+    resultado_tipo = 'exato'
+    filtros_resumo = []
+    rota_consultada_existe = True
+    cleaned_data = {}
+    filtros_validos = form.is_valid()
+
+    if filtros_validos:
+        cleaned_data = form.cleaned_data
+        filtros_resumo = _filtros_resumo_volta(cleaned_data)
+        rota_consultada_existe = _rota_consultada_existe(cleaned_data)
+
+        if not rota_consultada_existe:
+            resultado_tipo = 'rota_indisponivel'
+        elif _deve_escolher_data(cleaned_data, return_params):
+            resultado_tipo = 'selecionar_data'
+            datas_flexiveis = _datas_flexiveis(
+                cleaned_data,
+                request.GET,
+                route_name='selecionar_voo_volta',
+                route_args=[voo_ida.id],
+                date_param_name='data_volta',
+            )
+            date_nav = _date_nav_context(
+                cleaned_data,
+                request.GET,
+                route_name='selecionar_voo_volta',
+                api_route_name='selecionar_voo_volta_datas',
+                route_args=[voo_ida.id],
+                date_param_name='data_volta',
+            )
+        else:
+            voos = _preparar_voos_para_resultado(
+                _filtrar_voos(cleaned_data),
+                cleaned_data.get('classe'),
+            )
+            datas_flexiveis = _datas_flexiveis(
+                cleaned_data,
+                request.GET,
+                route_name='selecionar_voo_volta',
+                route_args=[voo_ida.id],
+                date_param_name='data_volta',
+            )
+            date_nav = _date_nav_context(
+                cleaned_data,
+                request.GET,
+                route_name='selecionar_voo_volta',
+                api_route_name='selecionar_voo_volta_datas',
+                route_args=[voo_ida.id],
+                date_param_name='data_volta',
+            )
+
+            if cleaned_data.get('data_ida') and not voos:
+                voos_proximos = _voos_proximos(cleaned_data)
+                if voos_proximos:
+                    resultado_tipo = 'proximo'
+                else:
+                    resultado_tipo = 'vazio'
+
+    voos_exibidos = voos if voos else voos_proximos
+    _adicionar_urls_resumo_ida_volta(voos_exibidos, voo_ida.id, request.GET)
+    passageiros_ida = (cleaned_data.get('passageiros') or 1) if filtros_validos else 1
+    voo_ida = _preparar_voo_para_detalhe(voo_ida, request.GET.get('classe', ''), passageiros_ida)
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'search_form': form,
+        'voos': voos,
+        'voos_exibidos': voos_exibidos,
+        'voos_proximos': voos_proximos,
+        'resultado_tipo': resultado_tipo,
+        'rota_consultada_existe': rota_consultada_existe,
+        'datas_flexiveis': datas_flexiveis,
+        'date_nav': date_nav,
+        'filtros_resumo': filtros_resumo,
+        'busca_realizada': True,
+        'rotas_disponiveis': _rotas_disponiveis(cleaned_data),
+        'route_map': _route_map(),
+        'is_return_step': True,
+        'voo_ida': voo_ida,
+        'page_title': 'Sky Bridge | Escolher voo de volta',
+        'results_eyebrow': 'Ida e volta',
+        'results_title': 'Escolha seu voo de volta',
+        'results_subtitle': 'Agora escolha o trecho de retorno usando a rota invertida da sua busca.',
+        'flex_date_note': 'Datas proximas para o voo de volta.',
+        'results_heading_default': 'Voos de volta disponiveis',
+    }
+    _add_account_context(request, context)
+
+    return render(request, 'buscar_voos.html', context)
+
+
+@login_required
+def selecionar_voo_volta_datas(request, voo_id):
+    get_object_or_404(Voo, pk=voo_id)
+    return_params = _parametros_busca_volta(request.GET)
+    if not return_params:
+        return JsonResponse({'error': 'Filtros invalidos.'}, status=400)
+
+    form = BuscaVooForm(return_params)
+    if not form.is_valid():
+        return JsonResponse({'error': 'Filtros invalidos.'}, status=400)
+
+    cleaned_data = form.cleaned_data
+    datas = _datas_flexiveis(
+        cleaned_data,
+        request.GET,
+        route_name='selecionar_voo_volta',
+        route_args=[voo_id],
+        date_param_name='data_volta',
+    )
+    date_nav = _date_nav_context(
+        cleaned_data,
+        request.GET,
+        route_name='selecionar_voo_volta',
+        api_route_name='selecionar_voo_volta_datas',
+        route_args=[voo_id],
+        date_param_name='data_volta',
+    )
+
+    return JsonResponse({
+        'dates': [_date_chip_payload(dia) for dia in datas],
+        'previousUrl': date_nav.get('previous_api_url', ''),
+        'nextUrl': date_nav.get('next_api_url', ''),
+        'windowUrl': date_nav.get('window_url', ''),
+    })
+
+
 def detalhe_voo(request, voo_id):
     voo = get_object_or_404(
         Voo.objects.select_related('aeronave', 'portao'),
@@ -511,8 +656,51 @@ def detalhe_voo(request, voo_id):
 
 
 @login_required
+def resumo_ida_volta(request, ida_id, volta_id):
+    voo_ida = get_object_or_404(Voo.objects.select_related('aeronave', 'portao'), pk=ida_id)
+    voo_volta = get_object_or_404(Voo.objects.select_related('aeronave', 'portao'), pk=volta_id)
+    form = SelecionarVooForm(request.GET or None)
+    classe = ''
+    passageiros = 1
+
+    if form.is_valid():
+        classe = form.cleaned_data.get('classe') or ''
+        passageiros = form.cleaned_data.get('passageiros') or 1
+
+    voo_ida = _preparar_voo_para_detalhe(voo_ida, classe, passageiros)
+    voo_volta = _preparar_voo_para_detalhe(voo_volta, classe, passageiros)
+    total_geral = _valor_total_ida_volta(voo_ida, voo_volta, passageiros)
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'voo_ida': voo_ida,
+        'voo_volta': voo_volta,
+        'selection_form': form,
+        'classe_selecionada': classe,
+        'passageiros': passageiros,
+        'seat_map_ida': _mapa_assentos(voo_ida, _normalizar_assento(request.GET.get('assento_ida', ''))),
+        'seat_map_volta': _mapa_assentos(voo_volta, _normalizar_assento(request.GET.get('assento_volta', ''))),
+        'assento_ida_selecionado': _normalizar_assento(request.GET.get('assento_ida', '')),
+        'assento_volta_selecionado': _normalizar_assento(request.GET.get('assento_volta', '')),
+        'total_geral': _formatar_moeda(total_geral) if total_geral is not None else None,
+        'confirmar_url': reverse('criar_reserva_ida_volta', args=[voo_ida.id, voo_volta.id]),
+    }
+    _add_account_context(request, context)
+
+    return render(request, 'resumo_ida_volta.html', context)
+
+
+@login_required
 def selecionar_voo(request, voo_id):
     get_object_or_404(Voo, pk=voo_id)
+    if request.GET.get('data_volta'):
+        volta_url = reverse('selecionar_voo_volta', args=[voo_id])
+        query_string = request.GET.urlencode()
+        if query_string:
+            volta_url = f'{volta_url}?{query_string}'
+        return redirect(volta_url)
+
     detalhe_url = reverse('detalhe_voo', args=[voo_id])
     query_string = request.GET.urlencode()
 
@@ -566,20 +754,98 @@ def criar_reserva(request, voo_id):
 
 
 @login_required
+@require_POST
+def criar_reserva_ida_volta(request, ida_id, volta_id):
+    voo_ida = get_object_or_404(Voo.objects.select_related('aeronave', 'portao'), pk=ida_id)
+    voo_volta = get_object_or_404(Voo.objects.select_related('aeronave', 'portao'), pk=volta_id)
+    form = SelecionarVooForm(request.POST)
+    classe = ''
+    passageiros = 1
+
+    if form.is_valid():
+        classe = form.cleaned_data.get('classe') or ''
+        passageiros = form.cleaned_data.get('passageiros') or 1
+
+    assento_ida = _normalizar_assento(request.POST.get('assento_ida', ''))
+    assento_volta = _normalizar_assento(request.POST.get('assento_volta', ''))
+    resumo_url = _resumo_ida_volta_url(ida_id, volta_id, classe, passageiros, assento_ida, assento_volta)
+
+    passageiro = getattr(request.user, 'passageiro', None)
+    if not passageiro:
+        messages.error(request, 'Complete seu cadastro de passageiro antes de reservar uma viagem.')
+        return redirect(resumo_url)
+
+    if not assento_ida or not assento_volta:
+        messages.error(request, 'Escolha os assentos de ida e de volta para continuar.')
+        return redirect(resumo_url)
+
+    if assento_ida not in _assentos_validos(voo_ida):
+        messages.error(request, 'Escolha um assento de ida valido para este voo.')
+        return redirect(resumo_url)
+
+    if assento_volta not in _assentos_validos(voo_volta):
+        messages.error(request, 'Escolha um assento de volta valido para este voo.')
+        return redirect(resumo_url)
+
+    if not _assento_disponivel(voo_ida, assento_ida):
+        messages.error(request, 'O assento de ida acabou de ficar indisponivel. Escolha outro assento.')
+        return redirect(resumo_url)
+
+    if not _assento_disponivel(voo_volta, assento_volta):
+        messages.error(request, 'O assento de volta acabou de ficar indisponivel. Escolha outro assento.')
+        return redirect(resumo_url)
+
+    with transaction.atomic():
+        viagem = Viagem.objects.create(
+            passageiro=passageiro,
+            tipo='ida_volta',
+            classe_tarifa=classe,
+            quantidade_passageiros=passageiros,
+            status='pendente',
+        )
+        reserva_ida = Reserva.objects.create(
+            passageiro=passageiro,
+            viagem=viagem,
+            voo=voo_ida,
+            classe_tarifa=classe,
+            quantidade_passageiros=passageiros,
+            assento=assento_ida,
+            status='pendente',
+        )
+        Reserva.objects.create(
+            passageiro=passageiro,
+            viagem=viagem,
+            voo=voo_volta,
+            classe_tarifa=classe,
+            quantidade_passageiros=passageiros,
+            assento=assento_volta,
+            status='pendente',
+        )
+
+    messages.success(request, 'Viagem ida e volta criada com sucesso. Finalize o pagamento unico para confirmar os voos.')
+    return redirect('pagamento_reserva', reserva_id=reserva_ida.id)
+
+
+@login_required
 def pagamento_reserva(request, reserva_id):
     reserva = get_object_or_404(
-        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao'),
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'viagem'),
         pk=reserva_id,
     )
 
     if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
         return _redirect_to_user_dashboard(request.user)
 
-    pagamento_existente = getattr(reserva, 'pagamento', None)
+    reservas_pagamento = _reservas_pagamento_agrupado(reserva)
+    reserva_principal = _reserva_principal_pagamento(reserva)
+    viagem_pagamento = reserva_principal.viagem if reserva_principal.viagem_id else None
+    pagamento_unico_viagem = viagem_pagamento is not None and len(reservas_pagamento) > 1
+    alvo_pagamento = 'viagem' if pagamento_unico_viagem else 'reserva'
+    pagamento_existente = _pagamento_efetivo_reserva(reserva)
     if _pagamento_aprovado(pagamento_existente):
-        return redirect('reserva_sucesso', reserva_id=reserva.id)
+        return redirect('reserva_sucesso', reserva_id=reserva_principal.id)
 
-    valor_total = _valor_total_reserva(reserva)
+    valor_total = _valor_total_reservas(reservas_pagamento)
     conta_milhas = _obter_ou_criar_conta_milhas(reserva.passageiro)
     milhas_necessarias = _milhas_necessarias_para_resgate(valor_total)
     milhas_acumulo_estimado = _milhas_acumuladas_por_pagamento(valor_total)
@@ -588,7 +854,7 @@ def pagamento_reserva(request, reserva_id):
         form = PagamentoForm(request.POST)
         if form.is_valid():
             if valor_total is None:
-                messages.error(request, 'Nao foi possivel calcular o valor total desta reserva.')
+                messages.error(request, f'Nao foi possivel calcular o valor total desta {alvo_pagamento}.')
                 return redirect(_detalhe_voo_url(reserva.voo_id, reserva.classe_tarifa, reserva.quantidade_passageiros))
 
             metodo = form.cleaned_data['metodo']
@@ -597,7 +863,7 @@ def pagamento_reserva(request, reserva_id):
                     form.add_error(
                         'metodo',
                         (
-                            'Saldo de milhas insuficiente. Para esta reserva sao necessarias '
+                            f'Saldo de milhas insuficiente. Para esta {alvo_pagamento} sao necessarias '
                             f'{milhas_necessarias} milhas, mas seu saldo atual e de {conta_milhas.saldo} milhas.'
                         ),
                     )
@@ -611,15 +877,15 @@ def pagamento_reserva(request, reserva_id):
                             conta=conta_milhas,
                             tipo='resgate',
                             quantidade=-milhas_necessarias,
-                            descricao=f"Resgate para voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
+                            descricao=_descricao_transacao_pagamento(reserva_principal, 'Resgate')
                         )
                         
-                        _aprovar_pagamento(reserva, metodo, valor_total)
+                        _aprovar_pagamento(reserva_principal, metodo, valor_total, reservas_pagamento)
                     messages.success(
                         request,
-                        f'Pagamento em milhas aprovado. Foram resgatadas {milhas_necessarias} milhas para a reserva #{reserva.id}.',
+                        f'Pagamento em milhas aprovado. Foram resgatadas {milhas_necessarias} milhas para a {alvo_pagamento}.',
                     )
-                    return redirect('reserva_sucesso', reserva_id=reserva.id)
+                    return redirect('reserva_sucesso', reserva_id=reserva_principal.id)
             else:
                 with transaction.atomic():
                     milhas_acumuladas = _milhas_acumuladas_por_pagamento(valor_total)
@@ -630,12 +896,12 @@ def pagamento_reserva(request, reserva_id):
                         conta=conta_milhas,
                         tipo='acumulo',
                         quantidade=milhas_acumuladas,
-                        descricao=f"Acumulo por voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
+                        descricao=_descricao_transacao_pagamento(reserva_principal, 'Acumulo')
                     )
                     
-                    _aprovar_pagamento(reserva, metodo, valor_total)
-                messages.success(request, f'Pagamento aprovado. Voce acumulou {milhas_acumuladas} milhas nesta reserva.')
-                return redirect('reserva_sucesso', reserva_id=reserva.id)
+                    _aprovar_pagamento(reserva_principal, metodo, valor_total, reservas_pagamento)
+                messages.success(request, f'Pagamento aprovado. Voce acumulou {milhas_acumuladas} milhas nesta {alvo_pagamento}.')
+                return redirect('reserva_sucesso', reserva_id=reserva_principal.id)
     else:
         metodo_inicial = pagamento_existente.metodo if pagamento_existente and pagamento_existente.metodo else PAYMENT_METHODS[0]['value']
         form = PagamentoForm(initial={'metodo': metodo_inicial})
@@ -643,11 +909,14 @@ def pagamento_reserva(request, reserva_id):
     context = {
         'asset_version': LANDING_CONTEXT['asset_version'],
         'nav_items': LANDING_CONTEXT['nav_items'],
-        'reserva': reserva,
+        'reserva': reserva_principal,
+        'reservas_pagamento': reservas_pagamento,
+        'viagem_pagamento': viagem_pagamento,
+        'pagamento_unico_viagem': pagamento_unico_viagem,
         'pagamento_form': form,
         'metodos_pagamento': PAYMENT_METHODS,
         'valor_total': _formatar_moeda(valor_total) if valor_total is not None else None,
-        'tarifa_label': dict(Tarifa.CLASSES).get(reserva.classe_tarifa, 'Menor tarifa disponivel'),
+        'tarifa_label': dict(Tarifa.CLASSES).get(reserva_principal.classe_tarifa, 'Menor tarifa disponivel'),
         'conta_milhas': conta_milhas,
         'milhas_necessarias': milhas_necessarias,
         'milhas_acumulo_estimado': milhas_acumulo_estimado,
@@ -666,21 +935,24 @@ def pagamento_reserva(request, reserva_id):
 @login_required
 def reserva_sucesso(request, reserva_id):
     reserva = get_object_or_404(
-        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento'),
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'viagem'),
         pk=reserva_id,
     )
 
     if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
         return _redirect_to_user_dashboard(request.user)
 
-    pagamento = getattr(reserva, 'pagamento', None)
+    pagamento = _pagamento_efetivo_reserva(reserva)
     if not pagamento or pagamento.status != 'aprovado':
         return redirect('pagamento_reserva', reserva_id=reserva.id)
 
+    reservas_pagamento = _reservas_pagamento_agrupado(reserva)
     context = {
         'asset_version': LANDING_CONTEXT['asset_version'],
         'nav_items': LANDING_CONTEXT['nav_items'],
         'reserva': reserva,
+        'reservas_pagamento': reservas_pagamento,
+        'pagamento_unico_viagem': reserva.viagem_id is not None and len(reservas_pagamento) > 1,
         'pagamento': pagamento,
         'valor_total': _formatar_moeda(pagamento.valor_total),
     }
@@ -692,7 +964,7 @@ def reserva_sucesso(request, reserva_id):
 @login_required
 def bilhete_reserva(request, reserva_id):
     reserva = get_object_or_404(
-        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'bilhete'),
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'bilhete', 'viagem'),
         pk=reserva_id,
     )
 
@@ -700,7 +972,7 @@ def bilhete_reserva(request, reserva_id):
         return _redirect_to_user_dashboard(request.user)
 
     bilhete = get_object_or_404(Bilhete, reserva=reserva)
-    pagamento = getattr(reserva, 'pagamento', None)
+    pagamento = _pagamento_efetivo_reserva(reserva)
 
     context = {
         'asset_version': LANDING_CONTEXT['asset_version'],
@@ -727,7 +999,7 @@ def minhas_viagens(request):
     if passageiro:
         reservas = _preparar_reservas_jornada(
             passageiro.reserva_set
-            .select_related('voo__aeronave', 'voo__portao', 'pagamento', 'bilhete')
+            .select_related('voo__aeronave', 'voo__portao', 'pagamento', 'bilhete', 'viagem')
             .all()
             .order_by('-id')
         )
@@ -745,7 +1017,7 @@ def minhas_viagens(request):
 @login_required
 def detalhe_reserva(request, reserva_id):
     reserva = get_object_or_404(
-        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'bilhete'),
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'pagamento', 'bilhete', 'viagem'),
         pk=reserva_id,
     )
 
@@ -872,13 +1144,14 @@ def _preparar_reservas_jornada(reservas):
 
 
 def _preparar_reserva_jornada(reserva):
-    pagamento = getattr(reserva, 'pagamento', None)
+    pagamento = _pagamento_efetivo_reserva(reserva)
     bilhete = getattr(reserva, 'bilhete', None)
     checkin = _checkin_da_reserva(reserva)
 
     reserva.pagamento_jornada = pagamento
     reserva.bilhete_jornada = bilhete
     reserva.checkin_jornada = checkin
+    reserva.reserva_pagamento_principal = _reserva_principal_pagamento(reserva)
     reserva.pode_checkin = _reserva_pode_checkin(reserva) and not checkin
     reserva.pagamento_status_label = pagamento.get_status_display() if pagamento else 'Pendente'
     reserva.pagamento_status_texto = f'Pagamento {reserva.pagamento_status_label.lower()}'
@@ -900,6 +1173,44 @@ def _checkin_da_reserva(reserva):
     ).order_by('-data_hora').first()
 
 
+def _reservas_pagamento_agrupado(reserva):
+    if reserva.viagem_id:
+        return list(
+            Reserva.objects
+            .filter(viagem_id=reserva.viagem_id)
+            .select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'viagem')
+            .order_by('voo__partida', 'id')
+        )
+    return [reserva]
+
+
+def _reserva_principal_pagamento(reserva):
+    if not reserva.viagem_id:
+        return reserva
+
+    return (
+        Reserva.objects
+        .filter(viagem_id=reserva.viagem_id)
+        .select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao', 'viagem')
+        .order_by('voo__partida', 'id')
+        .first()
+        or reserva
+    )
+
+
+def _pagamento_efetivo_reserva(reserva):
+    if reserva.viagem_id:
+        return (
+            Pagamento.objects
+            .filter(reserva__viagem_id=reserva.viagem_id)
+            .select_related('reserva')
+            .order_by('reserva__voo__partida', 'reserva_id')
+            .first()
+        )
+
+    return getattr(reserva, 'pagamento', None)
+
+
 def _valor_total_reserva(reserva):
     tarifa = _tarifa_preferida(reserva.voo, reserva.classe_tarifa or None)
     if not tarifa:
@@ -907,6 +1218,16 @@ def _valor_total_reserva(reserva):
 
     quantidade = max(1, reserva.quantidade_passageiros or 1)
     return (tarifa.preco_base + tarifa.taxas) * quantidade
+
+
+def _valor_total_reservas(reservas):
+    total = Decimal('0.00')
+    for reserva in reservas:
+        valor_reserva = _valor_total_reserva(reserva)
+        if valor_reserva is None:
+            return None
+        total += valor_reserva
+    return total
 
 
 def _milhas_necessarias_para_resgate(valor_total):
@@ -929,9 +1250,18 @@ def _regra_milhas_context():
     }
 
 
-def _aprovar_pagamento(reserva, metodo, valor_total):
+def _descricao_transacao_pagamento(reserva, operacao):
+    if reserva.viagem_id:
+        return f"{operacao} da viagem #{reserva.viagem_id} (pagamento unico)"
+    return f"{operacao} por voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
+
+
+def _aprovar_pagamento(reserva, metodo, valor_total, reservas_pagamento=None):
+    reservas_pagamento = list(reservas_pagamento or [reserva])
+    reserva_principal = _reserva_principal_pagamento(reserva)
+
     Pagamento.objects.update_or_create(
-        reserva=reserva,
+        reserva=reserva_principal,
         defaults={
             'valor_total': valor_total,
             'metodo': metodo,
@@ -939,17 +1269,19 @@ def _aprovar_pagamento(reserva, metodo, valor_total):
             'data_pagamento': timezone.now(),
         },
     )
-    reserva.status = 'confirmada'
-    reserva.save(update_fields=['status'])
+    Reserva.objects.filter(pk__in=[item.pk for item in reservas_pagamento]).update(status='confirmada')
 
-    # Gerar Bilhete automaticamente ao aprovar o pagamento
-    codigo_bilhete = f"TKT-{reserva.id}-{uuid.uuid4().hex[:6].upper()}"
-    Bilhete.objects.get_or_create(
-        reserva=reserva,
-        defaults={
-            'codigo': codigo_bilhete
-        }
-    )
+    if reserva_principal.viagem_id:
+        Viagem.objects.filter(pk=reserva_principal.viagem_id).update(status='confirmada')
+
+    for item in reservas_pagamento:
+        codigo_bilhete = f"TKT-{item.id}-{uuid.uuid4().hex[:6].upper()}"
+        Bilhete.objects.get_or_create(
+            reserva=item,
+            defaults={
+                'codigo': codigo_bilhete
+            }
+        )
 
 
 def _obter_ou_criar_conta_milhas(passageiro):
@@ -1042,6 +1374,75 @@ def _filtrar_voos(cleaned_data):
         voos = voos.filter(tarifas__classe=classe, tarifas__ativa=True)
 
     return voos.distinct().order_by('partida')
+
+
+def _parametros_busca_volta(query_params):
+    origem_original = query_params.get('origem')
+    destino_original = query_params.get('destino')
+
+    if not (origem_original and destino_original):
+        return None
+
+    parametros = query_params.copy()
+    parametros['origem'] = destino_original
+    parametros['destino'] = origem_original
+
+    if query_params.get('data_volta'):
+        parametros['data_ida'] = query_params.get('data_volta')
+    elif 'data_ida' in parametros:
+        del parametros['data_ida']
+
+    return parametros
+
+
+def _adicionar_urls_resumo_ida_volta(voos, ida_id, query_params):
+    for voo in voos:
+        voo.selecionar_url = _resumo_ida_volta_url(
+            ida_id,
+            voo.id,
+            query_params.get('classe', ''),
+            query_params.get('passageiros') or 1,
+            data_ida=query_params.get('data_ida', ''),
+            data_volta=query_params.get('data_volta', ''),
+            origem=query_params.get('origem', ''),
+            destino=query_params.get('destino', ''),
+        )
+
+
+def _resumo_ida_volta_url(
+    ida_id,
+    volta_id,
+    classe='',
+    passageiros=1,
+    assento_ida='',
+    assento_volta='',
+    data_ida='',
+    data_volta='',
+    origem='',
+    destino='',
+):
+    parametros = {}
+    if classe:
+        parametros['classe'] = classe
+    if passageiros:
+        parametros['passageiros'] = passageiros
+    if assento_ida:
+        parametros['assento_ida'] = assento_ida
+    if assento_volta:
+        parametros['assento_volta'] = assento_volta
+    if data_ida:
+        parametros['data_ida'] = data_ida
+    if data_volta:
+        parametros['data_volta'] = data_volta
+    if origem:
+        parametros['origem'] = origem
+    if destino:
+        parametros['destino'] = destino
+
+    url = reverse('resumo_ida_volta', args=[ida_id, volta_id])
+    if parametros:
+        url = f'{url}?{urlencode(parametros)}'
+    return url
 
 
 def _rotas_disponiveis(cleaned_data=None, limit=6):
@@ -1184,26 +1585,33 @@ def _data_inicio_faixa(cleaned_data, query_params, janela=3):
     return timezone.localdate()
 
 
-def _date_nav_context(cleaned_data, query_params):
+def _date_nav_context(
+    cleaned_data,
+    query_params,
+    route_name='buscar_voos',
+    api_route_name='buscar_voos_datas',
+    route_args=None,
+    date_param_name='data_ida',
+):
     if not (cleaned_data.get('origem') and cleaned_data.get('destino')):
         return {}
 
     inicio = _data_inicio_faixa(cleaned_data, query_params)
     return {
-        'previous_url': _date_nav_url(query_params, inicio - timedelta(days=7), 'buscar_voos'),
-        'next_url': _date_nav_url(query_params, inicio + timedelta(days=7), 'buscar_voos'),
-        'previous_api_url': _date_nav_url(query_params, inicio - timedelta(days=7), 'buscar_voos_datas'),
-        'next_api_url': _date_nav_url(query_params, inicio + timedelta(days=7), 'buscar_voos_datas'),
-        'window_url': _date_nav_url(query_params, inicio, 'buscar_voos'),
+        'previous_url': _date_nav_url(query_params, inicio - timedelta(days=7), route_name, route_args, date_param_name),
+        'next_url': _date_nav_url(query_params, inicio + timedelta(days=7), route_name, route_args, date_param_name),
+        'previous_api_url': _date_nav_url(query_params, inicio - timedelta(days=7), api_route_name, route_args, date_param_name),
+        'next_api_url': _date_nav_url(query_params, inicio + timedelta(days=7), api_route_name, route_args, date_param_name),
+        'window_url': _date_nav_url(query_params, inicio, route_name, route_args, date_param_name),
     }
 
 
-def _date_nav_url(query_params, inicio, route_name):
+def _date_nav_url(query_params, inicio, route_name, route_args=None, date_param_name='data_ida'):
     parametros = query_params.copy()
-    if 'data_ida' in parametros:
-        del parametros['data_ida']
+    if date_param_name in parametros:
+        del parametros[date_param_name]
     parametros['inicio'] = inicio.isoformat()
-    return f'{reverse(route_name)}?{parametros.urlencode()}'
+    return f'{reverse(route_name, args=route_args or [])}?{parametros.urlencode()}'
 
 
 def _date_chip_payload(dia):
@@ -1218,7 +1626,14 @@ def _date_chip_payload(dia):
     }
 
 
-def _datas_flexiveis(cleaned_data, query_params, janela=3):
+def _datas_flexiveis(
+    cleaned_data,
+    query_params,
+    janela=3,
+    route_name='buscar_voos',
+    route_args=None,
+    date_param_name='data_ida',
+):
     origem = cleaned_data.get('origem')
     destino = cleaned_data.get('destino')
     data_ida = cleaned_data.get('data_ida')
@@ -1241,12 +1656,12 @@ def _datas_flexiveis(cleaned_data, query_params, janela=3):
         parametros = query_params.copy()
         if 'inicio' in parametros:
             del parametros['inicio']
-        parametros['data_ida'] = data_consulta.isoformat()
+        parametros[date_param_name] = data_consulta.isoformat()
 
         datas.append({
             'data': data_consulta,
             'label': f'{DIAS_SEMANA_ABREV[data_consulta.weekday()]} {data_consulta:%d/%m}',
-            'url': f'{reverse("buscar_voos")}?{parametros.urlencode()}',
+            'url': f'{reverse(route_name, args=route_args or [])}?{parametros.urlencode()}',
             'preco': _formatar_moeda(menor_preco) if menor_preco else None,
             'tem_voo': bool(voos_dia),
             'selecionada': data_consulta == data_ida,
@@ -1270,6 +1685,26 @@ def _filtros_resumo(cleaned_data):
         resumo.append(('Destino', BuscaVooForm._label_aeroporto(destino)))
     if data_ida:
         resumo.append(('Ida', data_ida.strftime('%d/%m/%Y')))
+    if data_volta:
+        resumo.append(('Volta', data_volta.strftime('%d/%m/%Y')))
+    if classe:
+        resumo.append(('Cabine', dict(Tarifa.CLASSES).get(classe, classe)))
+
+    return resumo
+
+
+def _filtros_resumo_volta(cleaned_data):
+    resumo = []
+
+    origem = cleaned_data.get('origem')
+    destino = cleaned_data.get('destino')
+    data_volta = cleaned_data.get('data_ida')
+    classe = cleaned_data.get('classe')
+
+    if origem:
+        resumo.append(('Origem da volta', BuscaVooForm._label_aeroporto(origem)))
+    if destino:
+        resumo.append(('Destino da volta', BuscaVooForm._label_aeroporto(destino)))
     if data_volta:
         resumo.append(('Volta', data_volta.strftime('%d/%m/%Y')))
     if classe:
@@ -1328,6 +1763,12 @@ def _preparar_voo_para_detalhe(voo, classe=None, passageiros=1):
     voo.destino_codigo = _codigo_rota(voo.destino)
     voo.duracao_label = _formatar_duracao(voo.chegada - voo.partida)
     return voo
+
+
+def _valor_total_ida_volta(voo_ida, voo_volta, passageiros):
+    if voo_ida.preco_valor is None or voo_volta.preco_valor is None:
+        return None
+    return (voo_ida.preco_valor + voo_volta.preco_valor) * passageiros
 
 
 def _tarifa_preferida(voo, classe=None):

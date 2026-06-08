@@ -16,10 +16,11 @@ O escopo foi mantido propositalmente simples para apresentacao de faculdade: o s
 - Header dinamico para usuario autenticado com dropdown de conta.
 - Busca real de voos nacionais usando dados do banco.
 - Faixa de datas proximas com precos e sugestoes quando nao ha voo na data escolhida.
+- Fluxo simples de ida e volta: seleciona ida, escolhe volta, revisa resumo e cria uma viagem agrupada.
 - Pagina de detalhe do voo com origem, destino, horarios, cabine, passageiros e preco real.
 - Escolha real de assento no detalhe do voo, bloqueando assentos ja ocupados.
 - Reserva real associada ao passageiro logado com assento escolhido.
-- Pagamento simulado por Pix, cartao, boleto ou milhas.
+- Pagamento simulado por Pix, cartao, boleto ou milhas, incluindo pagamento unico para ida e volta.
 - Emissao automatica de bilhete/comprovante apos pagamento aprovado.
 - Area do passageiro com reservas, bilhetes, check-in, notificacoes e milhas.
 - Historico de transacoes de milhas e regra academica de conversao.
@@ -32,7 +33,6 @@ O escopo foi mantido propositalmente simples para apresentacao de faculdade: o s
 
 ## Funcionalidades futuras
 
-- Reserva de ida e volta completa.
 - Filtros comerciais mais avancados.
 - Cancelamento com regras por horario/status.
 - Uso de milhas mais detalhado por tarifa.
@@ -104,8 +104,11 @@ projeto_aeroporto/
 | `/voos/buscar/` | Resultados da busca de voos. |
 | `/voos/<id>/` | Detalhe do voo. |
 | `/voos/<id>/selecionar/` | Entrada protegida para selecionar voo. |
+| `/voos/<id>/volta/` | Seleciona o voo de volta de uma busca ida e volta. |
+| `/voos/<ida_id>/volta/<volta_id>/resumo/` | Resumo da viagem ida e volta com assentos. |
 | `/voos/<id>/reservar/` | Cria reserva real. |
-| `/reservas/<id>/pagamento/` | Pagamento simulado. |
+| `/voos/<ida_id>/volta/<volta_id>/reservar/` | Cria uma viagem agrupada com reservas de ida e volta. |
+| `/reservas/<id>/pagamento/` | Pagamento simulado de reserva ou viagem agrupada. |
 | `/reservas/<id>/sucesso/` | Sucesso da reserva apos pagamento. |
 | `/reservas/<id>/bilhete/` | Bilhete/comprovante. |
 | `/reservas/<id>/check-in/` | Faz check-in online. |
@@ -131,6 +134,7 @@ projeto_aeroporto/
 - `Voo`
 - `Tarifa`
 - `Promocao`
+- `Viagem`
 - `Reserva`
 - `Pagamento`
 - `Bilhete`
@@ -146,7 +150,7 @@ Observacao: `Administrador` e um model legado mantido apenas por compatibilidade
 
 - Passageiro cadastrado recebe conta Sky Pass com saldo inicial de 10.000 milhas.
 - Pagamentos por Pix, cartao ou boleto acumulam `1 milha` a cada `R$ 1,00` pago.
-- Pagamento por milhas usa `10 milhas` a cada `R$ 1,00` da reserva.
+- Pagamento por milhas usa `10 milhas` a cada `R$ 1,00` da reserva ou viagem agrupada.
 - Se o saldo for insuficiente, a reserva permanece pendente e o usuario recebe feedback amigavel.
 - Toda movimentacao gera `TransacaoMilhas` e aparece no painel do passageiro.
 
@@ -259,11 +263,11 @@ Acesse:
 
 1. Rode `python manage.py popular_banco --usuarios-demo`.
 2. Acesse `/`.
-3. Escolha origem, destino e data.
+3. Escolha origem, destino, data de ida e, se quiser demonstrar ida e volta, data de volta.
 4. Compare datas proximas.
-5. Selecione um voo.
+5. Selecione o voo de ida e, quando houver data de volta, selecione tambem o voo de retorno.
 6. Acesse `passageiro.demo` ou crie uma conta de passageiro.
-7. Escolha um assento e confirme a reserva.
+7. Escolha assento(s) e confirme a reserva.
 8. Simule pagamento.
 9. Veja o bilhete.
 10. Abra "Minhas viagens".

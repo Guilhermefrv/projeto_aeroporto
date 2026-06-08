@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sky Bridge | Buscar voos nacionais</title>
+    <title>{{ page_title|default:"Sky Bridge | Buscar voos nacionais" }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ asset_version }}">
     <link rel="stylesheet"
@@ -110,11 +110,12 @@
 
 <main id="conteudo" class="results-page">
     <section class="results-hero" aria-labelledby="results-title">
-        <p class="eyebrow">Voos nacionais</p>
-        <h1 id="results-title">Buscar voos nacionais</h1>
-        <p>Consulte voos programados dentro do Brasil usando origem, destino e data de ida.</p>
+        <p class="eyebrow">{{ results_eyebrow|default:"Voos nacionais" }}</p>
+        <h1 id="results-title">{{ results_title|default:"Buscar voos nacionais" }}</h1>
+        <p>{{ results_subtitle|default:"Consulte voos programados dentro do Brasil usando origem, destino e data de ida." }}</p>
     </section>
 
+    {% if not is_return_step %}
     <section class="search-panel results-search-panel" aria-label="Refinar busca">
         <form class="flight-search-form" method="get" action="{% url 'buscar_voos' %}">
             <div class="search-grid">
@@ -182,6 +183,7 @@
             </div>
         </form>
     </section>
+    {% endif %}
 
     {% if filtros_resumo %}
         <section class="selected-filters" aria-label="Filtros selecionados">
@@ -200,6 +202,21 @@
         </section>
     {% endif %}
 
+    {% if voo_ida %}
+        <section class="selected-flight-summary" aria-label="Voo de ida escolhido">
+            <div>
+                <p class="eyebrow">Voo de ida escolhido</p>
+                <h2>{{ voo_ida.origem_codigo }} para {{ voo_ida.destino_codigo }}</h2>
+                <p>Agora selecione o voo de volta para completar a viagem.</p>
+            </div>
+            <div class="selected-flight-card">
+                <strong>Voo {{ voo_ida.numero_voo }}</strong>
+                <span>{{ voo_ida.origem }} -> {{ voo_ida.destino }}</span>
+                <small>{{ voo_ida.partida|date:"d/m/Y H:i" }} · {{ voo_ida.preco_a_partir_de|default:"Tarifa indisponivel" }}</small>
+            </div>
+        </section>
+    {% endif %}
+
     {% if datas_flexiveis %}
         <section class="flex-date-section" aria-labelledby="flex-date-title">
             <div class="flex-date-heading">
@@ -213,7 +230,7 @@
                         {% endif %}
                     </h2>
                 </div>
-                <span>Busca funcional apenas para voo de ida nesta etapa.</span>
+                <span>{{ flex_date_note|default:"Busca funcional apenas para voo de ida nesta etapa." }}</span>
             </div>
 
             <div class="flex-date-carousel" data-flex-date-carousel aria-label="Navegacao por datas de voo">
@@ -267,7 +284,7 @@
                     {% elif resultado_tipo == 'selecionar_data' %}
                         Escolha a data do voo
                     {% else %}
-                        Voos disponiveis
+                        {{ results_heading_default|default:"Voos disponiveis" }}
                     {% endif %}
                 </h2>
             </div>
@@ -378,10 +395,10 @@
                                         <strong>Tarifa indisponível</strong>
                                     {% endif %}
                                 </div>
-                                {% with classe_atual=search_form.classe.value passageiros_atual=search_form.passageiros.value|default:"1" %}
+                                {% with classe_atual=search_form.classe.value passageiros_atual=search_form.passageiros.value|default:"1" data_volta_atual=search_form.data_volta.value origem_atual=search_form.origem.value destino_atual=search_form.destino.value data_ida_atual=search_form.data_ida.value %}
                                     <a class="card-button"
-                                       href="{% url 'selecionar_voo' voo.id %}?classe={{ classe_atual|urlencode }}&passageiros={{ passageiros_atual|urlencode }}">
-                                        {% if resultado_tipo == 'proximo' %}Ver opcao{% else %}Selecionar voo{% endif %}
+                                       href="{% if voo.selecionar_url %}{{ voo.selecionar_url }}{% else %}{% url 'selecionar_voo' voo.id %}?classe={{ classe_atual|urlencode }}&passageiros={{ passageiros_atual|urlencode }}{% if data_volta_atual %}&origem={{ origem_atual|urlencode }}&destino={{ destino_atual|urlencode }}&data_ida={{ data_ida_atual|urlencode }}&data_volta={{ data_volta_atual|urlencode }}{% endif %}{% endif %}">
+                                        {% if is_return_step %}Selecionar volta{% elif resultado_tipo == 'proximo' %}Ver opcao{% else %}Selecionar voo{% endif %}
                                     </a>
                                 {% endwith %}
                             </div>

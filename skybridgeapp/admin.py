@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import (
     UsuarioCustomizado, Passageiro, Funcionario, Administrador,
-    Aeroporto, CompanhiaAerea, Aeronave, Voo, Tarifa, Promocao, Reserva,
+    Aeroporto, CompanhiaAerea, Aeronave, Voo, Tarifa, Promocao, Viagem, Reserva,
     Pagamento, Bilhete, Bagagem, CheckIn, PortaoEmbarque, Notificacao,
     ContaMilhas, TransacaoMilhas,
 )
@@ -129,9 +129,16 @@ class PromocaoAdmin(admin.ModelAdmin):
 
 @admin.register(Reserva)
 class ReservaAdmin(admin.ModelAdmin):
-    list_display = ['id', 'passageiro', 'voo', 'assento', 'status']
+    list_display = ['id', 'passageiro', 'viagem', 'voo', 'assento', 'status']
     list_filter = ['status']
     search_fields = ['passageiro__nome', 'voo__numero_voo']
+
+
+@admin.register(Viagem)
+class ViagemAdmin(admin.ModelAdmin):
+    list_display = ['id', 'passageiro', 'tipo', 'quantidade_passageiros', 'classe_tarifa', 'status', 'criada_em']
+    list_filter = ['tipo', 'status', 'classe_tarifa']
+    search_fields = ['passageiro__nome', 'reservas__voo__numero_voo']
 
 
 @admin.register(Pagamento)

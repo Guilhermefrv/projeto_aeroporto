@@ -116,8 +116,12 @@ Nao ha `package.json`, build frontend, React, Vite, TypeScript, Tailwind, ESLint
 | `/voos/buscar/` | `buscar_voos` | `buscar_voos.html` | Busca/listagem real de voos nacionais |
 | `/voos/<int:voo_id>/` | `detalhe_voo` | `detalhe_voo.html` | Detalhe real do voo selecionado |
 | `/voos/<int:voo_id>/selecionar/` | `selecionar_voo` | - | Exige login e volta ao detalhe do voo |
+| `/voos/<int:voo_id>/volta/` | `selecionar_voo_volta` | `buscar_voos.html` | Lista voos de volta com rota invertida |
+| `/voos/<int:voo_id>/volta/datas/` | `selecionar_voo_volta_datas` | JSON | Datas flexiveis da volta |
+| `/voos/<int:ida_id>/volta/<int:volta_id>/resumo/` | `resumo_ida_volta` | `resumo_ida_volta.html` | Resumo da viagem ida e volta |
 | `/voos/<int:voo_id>/reservar/` | `criar_reserva` | - | Cria reserva real e redireciona para pagamento |
-| `/reservas/<int:reserva_id>/pagamento/` | `pagamento_reserva` | `pagamento.html` | Pagamento simulado de reserva |
+| `/voos/<int:ida_id>/volta/<int:volta_id>/reservar/` | `criar_reserva_ida_volta` | - | Cria uma viagem agrupada com reservas de ida e volta |
+| `/reservas/<int:reserva_id>/pagamento/` | `pagamento_reserva` | `pagamento.html` | Pagamento simulado de reserva ou viagem agrupada |
 | `/reservas/<int:reserva_id>/sucesso/` | `reserva_sucesso` | `reserva_sucesso.html` | Tela final da reserva confirmada |
 | `/reservas/<int:reserva_id>/bilhete/` | `bilhete_reserva` | `bilhete.html` | Tela dedicada de bilhete/comprovante |
 | `/reservas/<int:reserva_id>/check-in/` | `realizar_checkin` | - | Cria check-in por POST para reserva confirmada futura |
@@ -168,6 +172,7 @@ Models existentes:
 - `Voo`
 - `Tarifa`
 - `Promocao`
+- `Viagem`
 - `Reserva`
 - `Pagamento`
 - `Bilhete`
@@ -177,7 +182,7 @@ Models existentes:
 - `ContaMilhas`
 - `TransacaoMilhas`
 
-Observacao: algumas models ja existem para etapas futuras, mas ainda nao possuem fluxo completo de interface. `Reserva`, `Pagamento`, `Bilhete`, `CheckIn`, `ContaMilhas` e `TransacaoMilhas` ja participam do fluxo basico de reserva/pagamento/check-in. `Bagagem` ainda nao possui fluxo completo pela interface.
+Observacao: algumas models ja existem para etapas futuras, mas ainda nao possuem fluxo completo de interface. `Viagem`, `Reserva`, `Pagamento`, `Bilhete`, `CheckIn`, `ContaMilhas` e `TransacaoMilhas` ja participam do fluxo basico de reserva/pagamento/check-in. `Bagagem` ainda nao possui fluxo completo pela interface.
 
 ## 3. Admin Django
 
@@ -290,6 +295,10 @@ Estado atual:
 - Rota protegida `selecionar_voo` exige login antes de seguir.
 - Usuario anonimo e redirecionado para `/login/` com `next`.
 - Usuario logado volta para o detalhe do voo selecionado.
+- Quando a busca possui `data_volta`, selecionar o voo de ida leva para a etapa de escolha do voo de volta.
+- A etapa de volta inverte origem e destino, usa a data de volta e mantem faixa de datas proximas.
+- A pagina de volta mostra resumo do voo de ida ja escolhido antes de listar os retornos.
+- Depois da volta, a tela `resumo_ida_volta` mostra ida, volta, passageiros, classe, precos, total geral e dois mapas de assento.
 - Pagina de detalhe do voo exibe origem, destino, data, horarios, status, aeronave, portao, classe e preco.
 - Detalhe do voo permite ajustar quantidade simples de passageiros.
 - Detalhe do voo exibe mapa simples de assentos com estados livre, selecionado e ocupado.
@@ -303,6 +312,7 @@ Estado atual:
 - Assento e escolhido pelo passageiro no detalhe do voo e salvo no campo `Reserva.assento`.
 - Para reservas com mais de um passageiro, o assento representa o assento principal da reserva nesta versao simples.
 - Assentos ocupados por reservas nao canceladas ficam bloqueados e nao podem ser reservados novamente.
+- No fluxo ida e volta, confirmar o resumo cria uma `Viagem` agrupada com duas reservas pendentes, uma para cada trecho.
 - Status inicial da reserva e `pendente`, pois a confirmacao final depende do pagamento simulado.
 - Apos criar a reserva, o usuario e redirecionado para a pagina de pagamento.
 - Reserva criada aparece no painel do passageiro em "Minhas viagens".
@@ -314,13 +324,14 @@ Estado atual:
 - Acesso protegido por login.
 - Apenas o passageiro dono da reserva ou staff pode acessar o pagamento.
 - Exibe resumo da reserva, voo, passageiro, cabine, quantidade, assento e valor total.
+- Quando a reserva pertence a uma `Viagem` ida e volta, a pagina cobra o total dos dois trechos em um unico pagamento.
 - Metodos visuais disponiveis:
   - Pix;
   - Cartao;
   - Boleto;
   - Milhas.
 - Confirmacao do formulario cria ou atualiza `Pagamento`.
-- Pagamento aprovado altera a reserva para `confirmada`.
+- Pagamento aprovado altera a reserva para `confirmada`; em viagem agrupada, confirma todas as reservas do grupo.
 - Reserva sem pagamento aprovado nao acessa a tela final de sucesso.
 - Valor total usa a tarifa ativa da classe escolhida ou a menor tarifa ativa disponivel.
 
@@ -402,6 +413,10 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - exibicao de tarifa real no detalhe.
 - escolha real de assento no detalhe do voo;
 - bloqueio de assento ja ocupado;
+- fluxo ida e volta com redirecionamento para selecao de volta;
+- resumo ida e volta com precos, total e assentos;
+- criacao de viagem agrupada com duas reservas pendentes no fluxo ida e volta;
+- pagamento unico de viagem ida e volta;
 - criacao real de reserva;
 - pagamento simulado por Pix;
 - pagamento com milhas;
@@ -491,8 +506,7 @@ O arquivo `skybridgeapp/tests.py` cobre:
 ## Prioridade Recomendada
 
 1. Revisao visual final para apresentacao.
-2. Opcional: fluxo completo de ida e volta.
-3. Opcional futuro: migrar campos de texto de voo/aeronave para relacionamentos mais fortes.
+2. Opcional futuro: migrar campos de texto de voo/aeronave para relacionamentos mais fortes.
 
 
 ## Fluxo MVP Para Apresentacao

@@ -1692,6 +1692,7 @@ button{
 }
 
 .selected-filters,
+.selected-flight-summary,
 .flex-date-section{
     border:1px solid rgba(27,59,143,0.12);
     border-radius:8px;
@@ -1708,11 +1709,59 @@ button{
     gap:18px;
 }
 
+.selected-flight-summary{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(320px,420px);
+    gap:18px;
+    align-items:center;
+}
+
 .selected-filters h2,
+.selected-flight-summary h2,
 .flex-date-section h2{
     color:var(--navy);
     font-size:22px;
     margin:0;
+}
+
+.selected-flight-summary p:not(.eyebrow){
+    color:var(--muted);
+    font-size:14px;
+    font-weight:700;
+    margin:8px 0 0;
+}
+
+.selected-flight-card{
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:8px;
+    background:#f8fbff;
+    padding:16px;
+}
+
+.selected-flight-card strong,
+.selected-flight-card span,
+.selected-flight-card small{
+    display:block;
+}
+
+.selected-flight-card strong{
+    color:var(--blue);
+    font-size:14px;
+    font-weight:900;
+    margin-bottom:7px;
+}
+
+.selected-flight-card span{
+    color:var(--navy);
+    font-size:16px;
+    font-weight:900;
+}
+
+.selected-flight-card small{
+    color:var(--muted);
+    font-size:12px;
+    font-weight:800;
+    margin-top:7px;
 }
 
 .selected-filter-list{
@@ -2550,6 +2599,84 @@ button{
     text-align:center;
 }
 
+.trip-summary-page{
+    padding-bottom:80px;
+}
+
+.roundtrip-form{
+    display:grid;
+    gap:22px;
+}
+
+.roundtrip-grid,
+.roundtrip-seat-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:18px;
+}
+
+.roundtrip-flight-card h2{
+    color:var(--navy);
+    font-size:28px;
+    line-height:1.15;
+    margin:8px 0 4px;
+}
+
+.roundtrip-flight-card > p{
+    color:var(--blue);
+    font-size:14px;
+    font-weight:900;
+    margin-bottom:16px;
+}
+
+.roundtrip-seat-grid .seat-picker{
+    margin-top:0;
+}
+
+.roundtrip-seat-grid .seat-picker h2{
+    color:var(--navy);
+    font-size:20px;
+    line-height:1.2;
+    margin:4px 0 0;
+}
+
+.roundtrip-total-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:8px;
+    background:linear-gradient(135deg,#101747,#1b3b8f);
+    color:white;
+    box-shadow:0 22px 52px rgba(16,24,40,0.16);
+    padding:24px;
+}
+
+.roundtrip-total-card h2{
+    color:white;
+    font-size:34px;
+    line-height:1;
+    margin:6px 0;
+}
+
+.roundtrip-total-card p:not(.eyebrow){
+    color:rgba(255,255,255,0.82);
+    font-size:14px;
+    font-weight:800;
+    margin:0;
+}
+
+.roundtrip-total-card .eyebrow{
+    color:#dbe7ff;
+}
+
+.roundtrip-total-card .primary-button{
+    flex:0 0 auto;
+    background:var(--green);
+    color:white;
+}
+
 .detail-reserve-button{
     width:100%;
     margin-top:18px;
@@ -2772,16 +2899,27 @@ button{
     .trust-strip,
     .flex-date-strip,
     .flight-results-grid,
-    .flight-detail-layout{
+    .flight-detail-layout,
+    .selected-flight-summary,
+    .roundtrip-grid,
+    .roundtrip-seat-grid{
         grid-template-columns:repeat(2,minmax(0,1fr));
     }
 
-    .flight-detail-layout{
+    .flight-detail-layout,
+    .selected-flight-summary,
+    .roundtrip-grid,
+    .roundtrip-seat-grid{
         grid-template-columns:1fr;
     }
 
     .booking-panel{
         position:static;
+    }
+
+    .roundtrip-total-card{
+        align-items:stretch;
+        flex-direction:column;
     }
 
     .footer-grid{
@@ -3360,6 +3498,35 @@ button{
 .payment-flight-box i {
     color: var(--muted);
     font-size: 14px;
+}
+
+.payment-trip-segments {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.payment-trip-segment {
+    background: #f8fafc;
+    border: 1px solid rgba(16, 24, 40, 0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+
+.payment-trip-segment span,
+.payment-trip-segment small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.payment-trip-segment strong {
+    display: block;
+    color: var(--navy);
+    font-size: 15px;
+    margin: 6px 0;
 }
 
 .payment-meta {

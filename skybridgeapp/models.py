@@ -313,6 +313,58 @@ class Promocao(models.Model):
         ordering = ['-data_inicio']
 
 
+class Viagem(models.Model):
+    TIPOS = [
+        ('somente_ida', 'Somente ida'),
+        ('ida_volta', 'Ida e volta'),
+    ]
+    STATUS = [
+        ('pendente', 'Pendente'),
+        ('confirmada', 'Confirmada'),
+        ('cancelada', 'Cancelada'),
+    ]
+
+    passageiro = models.ForeignKey(
+        Passageiro,
+        on_delete=models.CASCADE,
+        related_name='viagens',
+        verbose_name='Passageiro',
+    )
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPOS,
+        default='somente_ida',
+        verbose_name='Tipo de viagem',
+    )
+    classe_tarifa = models.CharField(
+        max_length=20,
+        choices=Tarifa.CLASSES,
+        blank=True,
+        default='',
+        verbose_name='Classe da tarifa',
+    )
+    quantidade_passageiros = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Quantidade de passageiros',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS,
+        default='pendente',
+        verbose_name='Status',
+    )
+    criada_em = models.DateTimeField(auto_now_add=True, verbose_name='Criada em')
+    atualizada_em = models.DateTimeField(auto_now=True, verbose_name='Atualizada em')
+
+    def __str__(self):
+        return f"Viagem #{self.id} - {self.passageiro.nome} ({self.get_tipo_display()})"
+
+    class Meta:
+        verbose_name = 'Viagem'
+        verbose_name_plural = 'Viagens'
+        ordering = ['-criada_em']
+
+
 class Reserva(models.Model):
     STATUS = [
         ('pendente', 'Pendente'),
@@ -323,6 +375,14 @@ class Reserva(models.Model):
         Passageiro,
         on_delete=models.CASCADE,
         verbose_name='Passageiro',
+    )
+    viagem = models.ForeignKey(
+        Viagem,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='reservas',
+        verbose_name='Viagem',
     )
     voo = models.ForeignKey(
         Voo,

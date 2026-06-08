@@ -14,7 +14,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 
-from .models import Administrador, Aeroporto, Aeronave, Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, TransacaoMilhas, Voo
+from .models import Administrador, Aeroporto, Aeronave, Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, TransacaoMilhas, Viagem, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -43,6 +43,9 @@ class AirportDomainModelMetadataTests(SimpleTestCase):
         self.assertTrue(Promocao._meta.get_field('destino').null)
 
         self.assertEqual(Pagamento._meta.get_field('reserva').remote_field.model.__name__, 'Reserva')
+        self.assertEqual(Reserva._meta.get_field('viagem').remote_field.model.__name__, 'Viagem')
+        self.assertEqual(Viagem._meta.get_field('passageiro').remote_field.model.__name__, 'Passageiro')
+        self.assertIn(('ida_volta', 'Ida e volta'), Viagem.TIPOS)
         self.assertIn(('pix', 'Pix'), Pagamento.METODOS)
         self.assertIn(('aprovado', 'Aprovado'), Pagamento.STATUS)
         self.assertIn(('pendente', 'Pendente'), Reserva.STATUS)
@@ -1297,6 +1300,25 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, f'href="{selecionar_url}?classe=premium_economy&passageiros=3"')
         self.assertContains(response, 'Selecionar voo')
 
+    def test_resultados_ida_e_volta_preservam_dados_da_volta_no_link(self):
+        data_volta = (self.partida_base + timedelta(days=2)).date().isoformat()
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida_base.date().isoformat(),
+            'data_volta': data_volta,
+            'passageiros': 2,
+        })
+
+        selecionar_url = reverse('selecionar_voo', args=[self.voo_gru_rec.pk])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'href="{selecionar_url}?')
+        self.assertContains(response, f'data_volta={data_volta}')
+        self.assertContains(response, f'origem={self.gru.pk}')
+        self.assertContains(response, f'destino={self.rec.pk}')
+        self.assertContains(response, 'passageiros=2')
+
     def test_detalhe_voo_real_exibe_resumo_e_menor_tarifa_ativa(self):
         response = self.client.get(reverse('detalhe_voo', args=[self.voo_gru_rec.pk]))
 
@@ -1386,6 +1408,191 @@ class BuscaVoosTests(TestCase):
         response = self.client.get(f'{selecionar_url}?classe=economy&passageiros=2')
 
         self.assertRedirects(response, f'{detalhe_url}?classe=economy&passageiros=2')
+
+    def test_selecionar_voo_ida_e_volta_redireciona_para_escolha_da_volta(self):
+        user, _ = self.criar_usuario_passageiro_com_perfil()
+        self.client.force_login(user)
+        selecionar_url = reverse('selecionar_voo', args=[self.voo_gru_rec.pk])
+        volta_url = reverse('selecionar_voo_volta', args=[self.voo_gru_rec.pk])
+        data_volta = (self.partida_base + timedelta(days=2)).date().isoformat()
+
+        response = self.client.get(selecionar_url, {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida_base.date().isoformat(),
+            'data_volta': data_volta,
+            'classe': 'economy',
+            'passageiros': 2,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response['Location'].startswith(f'{volta_url}?'))
+        self.assertIn(f'data_volta={data_volta}', response['Location'])
+
+    def test_pagina_de_volta_inverte_rota_e_mostra_resumo_da_ida(self):
+        Tarifa.objects.create(
+            voo=self.voo_rec_gru,
+            classe='economy',
+            preco_base=Decimal('310.00'),
+            taxas=Decimal('30.00'),
+            ativa=True,
+        )
+        user, _ = self.criar_usuario_passageiro_com_perfil()
+        self.client.force_login(user)
+        data_volta = (self.partida_base + timedelta(days=2)).date().isoformat()
+
+        response = self.client.get(reverse('selecionar_voo_volta', args=[self.voo_gru_rec.pk]), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'data_ida': self.partida_base.date().isoformat(),
+            'data_volta': data_volta,
+            'classe': 'economy',
+            'passageiros': 2,
+        })
+
+        resumo_url = reverse('resumo_ida_volta', args=[self.voo_gru_rec.pk, self.voo_rec_gru.pk])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Escolha seu voo de volta')
+        self.assertContains(response, 'Voo de ida escolhido')
+        self.assertContains(response, 'SB123')
+        self.assertContains(response, 'SB125')
+        self.assertContains(response, 'REC - Recife')
+        self.assertContains(response, 'GRU')
+        self.assertContains(response, f'href="{resumo_url}?')
+        self.assertContains(response, f'data_ida={self.partida_base.date().isoformat()}')
+        self.assertContains(response, f'data_volta={data_volta}')
+
+    def test_resumo_ida_volta_exibe_precos_totais_e_assentos(self):
+        Tarifa.objects.create(
+            voo=self.voo_rec_gru,
+            classe='economy',
+            preco_base=Decimal('310.00'),
+            taxas=Decimal('30.00'),
+            ativa=True,
+        )
+        user, _ = self.criar_usuario_passageiro_com_perfil()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('resumo_ida_volta', args=[self.voo_gru_rec.pk, self.voo_rec_gru.pk]), {
+            'classe': 'economy',
+            'passageiros': 2,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Resumo da viagem ida e volta')
+        self.assertContains(response, 'Voo de ida')
+        self.assertContains(response, 'Voo de volta')
+        self.assertContains(response, 'R$ 270,00')
+        self.assertContains(response, 'R$ 340,00')
+        self.assertContains(response, 'R$ 1.220,00')
+        self.assertContains(response, 'name="assento_ida"')
+        self.assertContains(response, 'name="assento_volta"')
+
+    def test_confirmar_ida_volta_cria_viagem_agrupada_com_duas_reservas(self):
+        Tarifa.objects.create(
+            voo=self.voo_rec_gru,
+            classe='economy',
+            preco_base=Decimal('310.00'),
+            taxas=Decimal('30.00'),
+            ativa=True,
+        )
+        user, passageiro = self.criar_usuario_passageiro_com_perfil()
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('criar_reserva_ida_volta', args=[self.voo_gru_rec.pk, self.voo_rec_gru.pk]), {
+            'classe': 'economy',
+            'passageiros': 2,
+            'assento_ida': '11A',
+            'assento_volta': '12B',
+        }, follow=True)
+
+        reservas = list(Reserva.objects.filter(passageiro=passageiro).order_by('voo__partida'))
+        viagem = Viagem.objects.get(passageiro=passageiro)
+
+        self.assertEqual(len(reservas), 2)
+        self.assertRedirects(response, reverse('pagamento_reserva', args=[reservas[0].pk]))
+        self.assertEqual(viagem.tipo, 'ida_volta')
+        self.assertEqual(viagem.status, 'pendente')
+        self.assertEqual(viagem.classe_tarifa, 'economy')
+        self.assertEqual(viagem.quantidade_passageiros, 2)
+        self.assertEqual(reservas[0].viagem, viagem)
+        self.assertEqual(reservas[1].viagem, viagem)
+        self.assertEqual(reservas[0].voo, self.voo_gru_rec)
+        self.assertEqual(reservas[0].assento, '11A')
+        self.assertEqual(reservas[1].voo, self.voo_rec_gru)
+        self.assertEqual(reservas[1].assento, '12B')
+        self.assertContains(response, 'Pagamento unico da viagem')
+
+    def test_pagamento_ida_volta_cobra_total_da_viagem_e_confirma_duas_reservas(self):
+        Tarifa.objects.create(
+            voo=self.voo_rec_gru,
+            classe='economy',
+            preco_base=Decimal('310.00'),
+            taxas=Decimal('30.00'),
+            ativa=True,
+        )
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='pagante_ida_volta',
+            cpf_passaporte='PAGIDAVOLTA',
+        )
+        self.client.force_login(user)
+
+        self.client.post(reverse('criar_reserva_ida_volta', args=[self.voo_gru_rec.pk, self.voo_rec_gru.pk]), {
+            'classe': 'economy',
+            'passageiros': 2,
+            'assento_ida': '11A',
+            'assento_volta': '12B',
+        })
+        reservas = list(Reserva.objects.filter(passageiro=passageiro).order_by('voo__partida'))
+        viagem = Viagem.objects.get(passageiro=passageiro)
+
+        response = self.client.post(reverse('pagamento_reserva', args=[reservas[0].pk]), {
+            'metodo': 'pix',
+        }, follow=True)
+
+        for reserva in reservas:
+            reserva.refresh_from_db()
+            self.assertEqual(reserva.status, 'confirmada')
+
+        viagem.refresh_from_db()
+        pagamento = Pagamento.objects.get()
+
+        self.assertEqual(viagem.status, 'confirmada')
+        self.assertEqual(pagamento.reserva, reservas[0])
+        self.assertEqual(pagamento.valor_total, Decimal('1220.00'))
+        self.assertEqual(Bilhete.objects.filter(reserva__in=reservas).count(), 2)
+        self.assertContains(response, 'Pagamento aprovado')
+
+    def test_confirmar_ida_volta_bloqueia_assento_ocupado(self):
+        _, passageiro_ocupante = self.criar_usuario_passageiro_com_perfil(
+            username='ocupante_volta',
+            cpf_passaporte='OCUPVOLTA',
+        )
+        Reserva.objects.create(
+            passageiro=passageiro_ocupante,
+            voo=self.voo_rec_gru,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='12B',
+            status='confirmada',
+        )
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_ida_volta',
+            cpf_passaporte='IDAVOLTA123',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('criar_reserva_ida_volta', args=[self.voo_gru_rec.pk, self.voo_rec_gru.pk]), {
+            'classe': 'economy',
+            'passageiros': 1,
+            'assento_ida': '11A',
+            'assento_volta': '12B',
+        }, follow=True)
+
+        self.assertEqual(Reserva.objects.filter(passageiro=passageiro).count(), 0)
+        self.assertContains(response, 'O assento de volta acabou de ficar indisponivel.')
+
 
     def test_passageiro_logado_cria_reserva_real(self):
         user, passageiro = self.criar_usuario_passageiro_com_perfil()

@@ -152,7 +152,7 @@
 
                 <div class="quick-actions" style="margin-top: 20px;">
                     {% if reserva.status == 'pendente' %}
-                        <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
+                        <a href="{% url 'pagamento_reserva' reserva.reserva_pagamento_principal.id %}" class="btn-action primary">
                             <i class="fa-solid fa-credit-card"></i> Finalizar pagamento
                         </a>
                     {% endif %}

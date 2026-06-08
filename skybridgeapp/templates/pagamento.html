@@ -129,8 +129,13 @@
 <main id="conteudo" class="results-page payment-page">
     <section class="results-hero detail-hero" aria-labelledby="payment-title">
         <p class="eyebrow">Pagamento</p>
-        <h1 id="payment-title">Reserve o voo {{ reserva.voo.numero_voo }}</h1>
-        <p>Escolha um metodo visualmente e confirme o pagamento simulado para aprovar a reserva.</p>
+        {% if pagamento_unico_viagem %}
+            <h1 id="payment-title">Pagamento unico da viagem</h1>
+            <p>Confirme ida e volta em uma unica cobranca simulada para aprovar todos os trechos.</p>
+        {% else %}
+            <h1 id="payment-title">Reserve o voo {{ reserva.voo.numero_voo }}</h1>
+            <p>Escolha um metodo visualmente e confirme o pagamento simulado para aprovar a reserva.</p>
+        {% endif %}
     </section>
 
     <section class="payment-layout" aria-label="Pagamento da reserva">
@@ -138,7 +143,11 @@
             <p class="eyebrow">Metodo de pagamento</p>
             <h2 id="payment-method-title">Escolha como deseja pagar</h2>
             <p class="payment-description">
-                A reserva permanece pendente ate a confirmacao. Depois do envio, o sistema altera o status para aprovado.
+                {% if pagamento_unico_viagem %}
+                    A viagem permanece pendente ate a confirmacao. Depois do envio, o sistema aprova ida e volta juntos.
+                {% else %}
+                    A reserva permanece pendente ate a confirmacao. Depois do envio, o sistema altera o status para aprovado.
+                {% endif %}
             </p>
 
             <form method="post" class="payment-form">
@@ -239,17 +248,27 @@
 
         <aside class="payment-summary-card" aria-labelledby="summary-title">
             <p class="eyebrow">Resumo</p>
-            <h2 id="summary-title">Detalhes da reserva</h2>
+            <h2 id="summary-title">
+                {% if pagamento_unico_viagem %}Detalhes da viagem{% else %}Detalhes da reserva{% endif %}
+            </h2>
 
             <div class="payment-summary-list">
                 <div class="payment-summary-item">
-                    <span>Reserva</span>
-                    <strong>#{{ reserva.id }}</strong>
+                    <span>{% if pagamento_unico_viagem %}Viagem{% else %}Reserva{% endif %}</span>
+                    <strong>
+                        {% if pagamento_unico_viagem %}
+                            #{{ viagem_pagamento.id }}
+                        {% else %}
+                            #{{ reserva.id }}
+                        {% endif %}
+                    </strong>
                 </div>
-                <div class="payment-summary-item">
-                    <span>Voo</span>
-                    <strong>{{ reserva.voo.numero_voo }}</strong>
-                </div>
+                {% if not pagamento_unico_viagem %}
+                    <div class="payment-summary-item">
+                        <span>Voo</span>
+                        <strong>{{ reserva.voo.numero_voo }}</strong>
+                    </div>
+                {% endif %}
                 <div class="payment-summary-item">
                     <span>Passageiro</span>
                     <strong>{{ reserva.passageiro.nome }}</strong>
@@ -272,28 +291,40 @@
                 </div>
             </div>
 
-            <div class="payment-flight-box">
-                <div>
-                    <span>Origem</span>
-                    <strong>{{ reserva.voo.origem }}</strong>
+            {% if pagamento_unico_viagem %}
+                <div class="payment-trip-segments">
+                    {% for trecho in reservas_pagamento %}
+                        <article class="payment-trip-segment">
+                            <span>{% if forloop.first %}Ida{% else %}Volta{% endif %} - {{ trecho.voo.numero_voo }}</span>
+                            <strong>{{ trecho.voo.origem }} -> {{ trecho.voo.destino }}</strong>
+                            <small>{{ trecho.voo.partida|date:"d/m/Y H:i" }} - assento {{ trecho.assento }}</small>
+                        </article>
+                    {% endfor %}
                 </div>
-                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                <div>
-                    <span>Destino</span>
-                    <strong>{{ reserva.voo.destino }}</strong>
+            {% else %}
+                <div class="payment-flight-box">
+                    <div>
+                        <span>Origem</span>
+                        <strong>{{ reserva.voo.origem }}</strong>
+                    </div>
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    <div>
+                        <span>Destino</span>
+                        <strong>{{ reserva.voo.destino }}</strong>
+                    </div>
                 </div>
-            </div>
 
-            <dl class="payment-meta">
-                <div>
-                    <dt>Partida</dt>
-                    <dd>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</dd>
-                </div>
-                <div>
-                    <dt>Assento</dt>
-                    <dd>{{ reserva.assento }}</dd>
-                </div>
-            </dl>
+                <dl class="payment-meta">
+                    <div>
+                        <dt>Partida</dt>
+                        <dd>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</dd>
+                    </div>
+                    <div>
+                        <dt>Assento</dt>
+                        <dd>{{ reserva.assento }}</dd>
+                    </div>
+                </dl>
+            {% endif %}
 
             <p class="payment-note">
                 A confirmação simula a aprovação imediata e libera a página final da reserva.

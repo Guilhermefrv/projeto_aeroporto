@@ -35,6 +35,17 @@
         </div>
     </nav>
 
+    {% if messages %}
+        <div class="dashboard-messages" role="status" aria-live="polite">
+            {% for message in messages %}
+                <div class="dashboard-message {{ message.tags }}">
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <div class="dashboard-layout">
         <aside class="dashboard-sidebar">
             <div class="profile-card">
@@ -147,7 +158,7 @@
                                                     Ver detalhes
                                                 </a>
                                                 {% if reserva.status == 'pendente' %}
-                                                    <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
+                                                    <a href="{% url 'pagamento_reserva' reserva.reserva_pagamento_principal.id %}" class="btn-action primary">
                                                         Finalizar pagamento
                                                     </a>
                                                 {% endif %}

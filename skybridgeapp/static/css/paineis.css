@@ -661,6 +661,13 @@ body {
     transform: translateY(-1px);
 }
 
+.dashboard-messages {
+    width: min(1180px, calc(100% - 32px));
+    margin: 20px auto 0;
+    display: grid;
+    gap: 10px;
+}
+
 .dashboard-message {
     margin: 0;
     padding: 12px 14px;
