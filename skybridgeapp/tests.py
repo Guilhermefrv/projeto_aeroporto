@@ -114,6 +114,23 @@ class PopularBancoCommandTests(TestCase):
         self.assertFalse(Voo.objects.filter(numero_voo__startswith='SB').exists())
         self.assertFalse(Tarifa.objects.filter(voo__numero_voo__startswith='SB').exists())
 
+    def test_popular_banco_pode_criar_usuarios_demo_opcionais(self):
+        call_command('popular_banco', '--usuarios-demo')
+
+        passageiro = get_user_model().objects.get(username='passageiro.demo')
+        funcionario = get_user_model().objects.get(username='funcionario.demo')
+        administrador = get_user_model().objects.get(username='admin.demo')
+
+        self.assertTrue(passageiro.check_password('SkyBridge@123'))
+        self.assertEqual(passageiro.tipo, 'passageiro')
+        self.assertTrue(hasattr(passageiro, 'passageiro'))
+        self.assertTrue(hasattr(passageiro.passageiro, 'conta_milhas'))
+        self.assertEqual(funcionario.tipo, 'funcionario')
+        self.assertTrue(hasattr(funcionario, 'funcionario'))
+        self.assertEqual(administrador.tipo, 'administrador')
+        self.assertTrue(administrador.is_staff)
+        self.assertTrue(administrador.is_superuser)
+
 
 class ErrorPageTests(TestCase):
     @override_settings(DEBUG=False, ALLOWED_HOSTS=['testserver'])
@@ -1011,8 +1028,8 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'data-bs-target="#originAirportModal"')
         self.assertContains(response, 'data-bs-target="#destinationAirportModal"')
         self.assertContains(response, 'data-airport-option')
-        self.assertContains(response, '/static/css/home.css?v=20260608-milhas-tech')
-        self.assertContains(response, '/static/js/main.js?v=20260608-milhas-tech')
+        self.assertContains(response, '/static/css/home.css?v=20260608-seat-demo')
+        self.assertContains(response, '/static/js/main.js?v=20260608-seat-demo')
         self.assertContains(response, 'name="origem"')
         self.assertContains(response, 'name="destino"')
         self.assertContains(response, 'name="data_ida"')
@@ -1291,6 +1308,8 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'Economy')
         self.assertContains(response, 'name="passageiros"')
         self.assertContains(response, 'value="1"')
+        self.assertContains(response, 'Escolha seu assento')
+        self.assertContains(response, 'name="assento"')
 
     def test_detalhe_voo_exibe_tarifa_da_classe_selecionada(self):
         response = self.client.get(reverse('detalhe_voo', args=[self.voo_gru_rec.pk]), {
@@ -1312,6 +1331,27 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'R$ 270,00')
         self.assertContains(response, 'Economy')
         self.assertNotContains(response, 'R$ 15,00')
+
+    def test_detalhe_voo_marca_assento_ocupado_como_indisponivel(self):
+        _, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='ocupante',
+            cpf_passaporte='OCUP123456',
+        )
+        Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='1A',
+            status='confirmada',
+        )
+
+        response = self.client.get(reverse('detalhe_voo', args=[self.voo_gru_rec.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="1A"')
+        self.assertContains(response, 'disabled')
+        self.assertContains(response, 'Ocupado')
 
     def test_selecionar_voo_anonimo_redireciona_para_login_com_next(self):
         selecionar_url = reverse('selecionar_voo', args=[self.voo_gru_rec.pk])
@@ -1348,25 +1388,13 @@ class BuscaVoosTests(TestCase):
         self.assertRedirects(response, f'{detalhe_url}?classe=economy&passageiros=2')
 
     def test_passageiro_logado_cria_reserva_real(self):
-        user = get_user_model().objects.create_user(
-            username='comprador',
-            password='senha-segura-123',
-            first_name='Comprador',
-            tipo='passageiro',
-        )
-        passageiro = Passageiro.objects.create(
-            usuario=user,
-            nome='Comprador Teste',
-            cpf_passaporte='COMP123456',
-            data_nascimento='1990-01-01',
-            contato='(11) 90000-0000',
-            nacionalidade='Brasileira',
-        )
+        user, passageiro = self.criar_usuario_passageiro_com_perfil()
         self.client.force_login(user)
 
         response = self.client.post(reverse('criar_reserva', args=[self.voo_gru_rec.pk]), {
             'classe': 'economy',
             'passageiros': 1,
+            'assento': '12C',
         })
 
         reserva = Reserva.objects.get()
@@ -1376,7 +1404,47 @@ class BuscaVoosTests(TestCase):
         self.assertEqual(reserva.status, 'pendente')
         self.assertEqual(reserva.classe_tarifa, 'economy')
         self.assertEqual(reserva.quantidade_passageiros, 1)
-        self.assertRegex(reserva.assento, r'^[0-9]{1,2}[A-F]$')
+        self.assertEqual(reserva.assento, '12C')
+
+    def test_passageiro_precisa_escolher_assento_para_reservar(self):
+        user, _ = self.criar_usuario_passageiro_com_perfil()
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('criar_reserva', args=[self.voo_gru_rec.pk]), {
+            'classe': 'economy',
+            'passageiros': 1,
+        }, follow=True)
+
+        self.assertEqual(Reserva.objects.count(), 0)
+        self.assertContains(response, 'Escolha um assento disponivel para continuar.')
+
+    def test_passageiro_nao_consegue_reservar_assento_ocupado(self):
+        _, passageiro_ocupante = self.criar_usuario_passageiro_com_perfil(
+            username='ocupante',
+            cpf_passaporte='OCUP123456',
+        )
+        Reserva.objects.create(
+            passageiro=passageiro_ocupante,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='8A',
+            status='confirmada',
+        )
+        user, _ = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_livre',
+            cpf_passaporte='LIVRE123456',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('criar_reserva', args=[self.voo_gru_rec.pk]), {
+            'classe': 'economy',
+            'passageiros': 1,
+            'assento': '8A',
+        }, follow=True)
+
+        self.assertEqual(Reserva.objects.count(), 1)
+        self.assertContains(response, 'Esse assento acabou de ficar indisponivel.')
 
     def test_pagina_pagamento_exibe_resumo_e_metodos(self):
         user = get_user_model().objects.create_user(
@@ -1902,6 +1970,7 @@ class BuscaVoosTests(TestCase):
         self.client.post(reverse('criar_reserva', args=[self.voo_gru_rec.pk]), {
             'classe': 'economy',
             'passageiros': 1,
+            'assento': '10C',
         })
         reserva = Reserva.objects.get(passageiro=passageiro)
         response = self.client.get(reverse('dashboard_passageiro'))

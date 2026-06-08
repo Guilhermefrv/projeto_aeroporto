@@ -17,7 +17,8 @@ O escopo foi mantido propositalmente simples para apresentacao de faculdade: o s
 - Busca real de voos nacionais usando dados do banco.
 - Faixa de datas proximas com precos e sugestoes quando nao ha voo na data escolhida.
 - Pagina de detalhe do voo com origem, destino, horarios, cabine, passageiros e preco real.
-- Reserva real associada ao passageiro logado.
+- Escolha real de assento no detalhe do voo, bloqueando assentos ja ocupados.
+- Reserva real associada ao passageiro logado com assento escolhido.
 - Pagamento simulado por Pix, cartao, boleto ou milhas.
 - Emissao automatica de bilhete/comprovante apos pagamento aprovado.
 - Area do passageiro com reservas, bilhetes, check-in, notificacoes e milhas.
@@ -32,7 +33,6 @@ O escopo foi mantido propositalmente simples para apresentacao de faculdade: o s
 ## Funcionalidades futuras
 
 - Reserva de ida e volta completa.
-- Escolha real de assento.
 - Filtros comerciais mais avancados.
 - Cancelamento com regras por horario/status.
 - Uso de milhas mais detalhado por tarifa.
@@ -216,6 +216,20 @@ python manage.py migrate
 python manage.py popular_banco
 ```
 
+Para criar tambem contas de demonstracao para a banca:
+
+```bash
+python manage.py popular_banco --usuarios-demo
+```
+
+Contas criadas por essa opcao:
+
+| Usuario | Tipo | Senha |
+| --- | --- | --- |
+| `passageiro.demo` | Passageiro | `SkyBridge@123` |
+| `funcionario.demo` | Funcionario | `SkyBridge@123` |
+| `admin.demo` | Administrador | `SkyBridge@123` |
+
 Para limpar apenas dados de exemplo criados pelo comando:
 
 ```bash
@@ -243,13 +257,13 @@ Acesse:
 
 ## Fluxo recomendado para demonstracao
 
-1. Rode `python manage.py popular_banco`.
+1. Rode `python manage.py popular_banco --usuarios-demo`.
 2. Acesse `/`.
 3. Escolha origem, destino e data.
 4. Compare datas proximas.
 5. Selecione um voo.
-6. Crie ou acesse uma conta de passageiro.
-7. Confirme a reserva.
+6. Acesse `passageiro.demo` ou crie uma conta de passageiro.
+7. Escolha um assento e confirme a reserva.
 8. Simule pagamento.
 9. Veja o bilhete.
 10. Abra "Minhas viagens".

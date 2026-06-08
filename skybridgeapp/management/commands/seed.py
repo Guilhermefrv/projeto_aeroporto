@@ -1,6 +1,7 @@
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 from django.utils import timezone
@@ -9,6 +10,9 @@ from skybridgeapp.models import (
     Aeroporto,
     Aeronave,
     CompanhiaAerea,
+    ContaMilhas,
+    Funcionario,
+    Passageiro,
     PortaoEmbarque,
     Promocao,
     Reserva,
@@ -92,6 +96,11 @@ class Command(BaseCommand):
             action='store_true',
             help='Remove apenas voos, tarifas e promocoes de exemplo criados por este comando.',
         )
+        parser.add_argument(
+            '--usuarios-demo',
+            action='store_true',
+            help='Cria usuarios de demonstracao com perfis para apresentacao.',
+        )
 
     def handle(self, *args, **options):
         if options['limpar']:
@@ -111,11 +120,16 @@ class Command(BaseCommand):
         voos = self._criar_voos(aeroportos, aeronaves, portoes)
         total_tarifas = self._criar_tarifas(voos)
         total_promocoes = self._criar_promocoes(aeroportos)
+        usuarios_demo = self._criar_usuarios_demo() if options['usuarios_demo'] else 0
 
         self.stdout.write(self.style.SUCCESS(
             f"Banco populado com sucesso! {len(aeroportos)} aeroportos, "
             f"{len(voos)} voos, {total_tarifas} tarifas e {total_promocoes} promocoes."
         ))
+        if usuarios_demo:
+            self.stdout.write(self.style.SUCCESS(
+                f"{usuarios_demo} usuarios demo prontos. Senha comum: SkyBridge@123"
+            ))
 
     def _limpar_dados_exemplo(self):
         voos_gerados = Voo.objects.filter(
@@ -345,6 +359,98 @@ class Command(BaseCommand):
             )
 
         return len(promocoes)
+
+    def _criar_usuarios_demo(self):
+        User = get_user_model()
+        senha_demo = 'SkyBridge@123'
+
+        passageiro_user = self._criar_usuario_demo(
+            User,
+            username='passageiro.demo',
+            password=senha_demo,
+            tipo='passageiro',
+            first_name='Passageiro',
+            last_name='Demo',
+            email='passageiro.demo@skybridge.local',
+        )
+        passageiro, _ = Passageiro.objects.update_or_create(
+            usuario=passageiro_user,
+            defaults={
+                'nome': 'Passageiro Demo',
+                'cpf_passaporte': 'DEMO-PASS-001',
+                'data_nascimento': date(1995, 5, 20),
+                'contato': '(11) 90000-0101',
+                'nacionalidade': 'Brasileira',
+            },
+        )
+        ContaMilhas.objects.update_or_create(
+            passageiro=passageiro,
+            defaults={
+                'saldo': 15000,
+                'numero_programa': 'SB-DEMO-001',
+            },
+        )
+
+        funcionario_user = self._criar_usuario_demo(
+            User,
+            username='funcionario.demo',
+            password=senha_demo,
+            tipo='funcionario',
+            first_name='Funcionario',
+            last_name='Demo',
+            email='funcionario.demo@skybridge.local',
+        )
+        Funcionario.objects.update_or_create(
+            usuario=funcionario_user,
+            defaults={
+                'nome': 'Funcionario Demo',
+                'cargo': 'atendente',
+                'matricula': 'DEMO-FUNC-001',
+                'contato': '(11) 90000-0202',
+            },
+        )
+
+        self._criar_usuario_demo(
+            User,
+            username='admin.demo',
+            password=senha_demo,
+            tipo='administrador',
+            first_name='Admin',
+            last_name='Demo',
+            email='admin.demo@skybridge.local',
+            is_staff=True,
+            is_superuser=True,
+        )
+
+        return 3
+
+    def _criar_usuario_demo(
+        self,
+        User,
+        username,
+        password,
+        tipo,
+        first_name,
+        last_name,
+        email,
+        is_staff=False,
+        is_superuser=False,
+    ):
+        user, _ = User.objects.update_or_create(
+            username=username,
+            defaults={
+                'tipo': tipo,
+                'first_name': first_name,
+                'last_name': last_name,
+                'email': email,
+                'is_staff': is_staff,
+                'is_superuser': is_superuser,
+                'is_active': True,
+            },
+        )
+        user.set_password(password)
+        user.save()
+        return user
 
     def _rotulo_aeroporto(self, aeroporto):
         return f'{aeroporto.codigo_iata} - {aeroporto.cidade}'

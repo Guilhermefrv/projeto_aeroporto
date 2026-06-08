@@ -41,10 +41,11 @@ from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notific
 MILHAS_POR_REAL_ACUMULO = 1
 MILHAS_POR_REAL_RESGATE = 10
 MILHAS_SALDO_INICIAL = 10000
+ASSENTO_COLUNAS = ('A', 'B', 'C', 'D', 'E', 'F')
 
 
 LANDING_CONTEXT = {
-    'asset_version': '20260608-milhas-tech',
+    'asset_version': '20260608-seat-demo',
     'nav_items': [
         'Comprar',
         'Minhas viagens',
@@ -491,6 +492,7 @@ def detalhe_voo(request, voo_id):
         passageiros = form.cleaned_data.get('passageiros') or 1
 
     voo = _preparar_voo_para_detalhe(voo, classe, passageiros)
+    assento_selecionado = _normalizar_assento(request.GET.get('assento', ''))
 
     context = {
         'asset_version': LANDING_CONTEXT['asset_version'],
@@ -499,6 +501,8 @@ def detalhe_voo(request, voo_id):
         'selection_form': form,
         'passageiros': passageiros,
         'classe_selecionada': classe,
+        'assento_selecionado': assento_selecionado,
+        'seat_map': _mapa_assentos(voo, assento_selecionado),
         'selecionar_url': reverse('selecionar_voo', args=[voo.id]),
     }
     _add_account_context(request, context)
@@ -529,10 +533,23 @@ def criar_reserva(request, voo_id):
     if form.is_valid():
         classe = form.cleaned_data.get('classe') or ''
         passageiros = form.cleaned_data.get('passageiros') or 1
+    assento = _normalizar_assento(request.POST.get('assento', ''))
 
     passageiro = getattr(request.user, 'passageiro', None)
     if not passageiro:
         messages.error(request, 'Complete seu cadastro de passageiro antes de reservar um voo.')
+        return redirect(_detalhe_voo_url(voo.id, classe, passageiros, assento))
+
+    if not assento:
+        messages.error(request, 'Escolha um assento disponivel para continuar.')
+        return redirect(_detalhe_voo_url(voo.id, classe, passageiros))
+
+    if assento not in _assentos_validos(voo):
+        messages.error(request, 'Escolha um assento valido para este voo.')
+        return redirect(_detalhe_voo_url(voo.id, classe, passageiros))
+
+    if not _assento_disponivel(voo, assento):
+        messages.error(request, 'Esse assento acabou de ficar indisponivel. Escolha outro assento.')
         return redirect(_detalhe_voo_url(voo.id, classe, passageiros))
 
     reserva = Reserva.objects.create(
@@ -540,7 +557,7 @@ def criar_reserva(request, voo_id):
         voo=voo,
         classe_tarifa=classe,
         quantidade_passageiros=passageiros,
-        assento=_gerar_assento_simples(voo),
+        assento=assento,
         status='pendente',
     )
     messages.success(request, 'Reserva criada com sucesso. Finalize o pagamento para confirmar a viagem.')
@@ -1324,32 +1341,82 @@ def _tarifa_preferida(voo, classe=None):
     return min(tarifas, key=lambda tarifa: tarifa.preco_base + tarifa.taxas, default=None)
 
 
-def _detalhe_voo_url(voo_id, classe='', passageiros=1):
-    parametros = []
+def _detalhe_voo_url(voo_id, classe='', passageiros=1, assento=''):
+    parametros = {}
     if classe:
-        parametros.append(f'classe={classe}')
+        parametros['classe'] = classe
     if passageiros:
-        parametros.append(f'passageiros={passageiros}')
+        parametros['passageiros'] = passageiros
+    if assento:
+        parametros['assento'] = assento
 
     url = reverse('detalhe_voo', args=[voo_id])
     if parametros:
-        url = f'{url}?{"&".join(parametros)}'
+        url = f'{url}?{urlencode(parametros)}'
 
     return url
 
 
+def _normalizar_assento(valor):
+    return (valor or '').strip().upper()
+
+
+def _assentos_validos(voo):
+    capacidade = max(voo.aeronave.capacidade or len(ASSENTO_COLUNAS), 1)
+    assentos = []
+
+    for indice in range(capacidade):
+        fileira = (indice // len(ASSENTO_COLUNAS)) + 1
+        coluna = ASSENTO_COLUNAS[indice % len(ASSENTO_COLUNAS)]
+        assentos.append(f'{fileira}{coluna}')
+
+    return set(assentos)
+
+
+def _assentos_ocupados(voo):
+    return {
+        _normalizar_assento(assento)
+        for assento in Reserva.objects.filter(voo=voo)
+        .exclude(status='cancelada')
+        .values_list('assento', flat=True)
+        if assento
+    }
+
+
+def _assento_disponivel(voo, assento):
+    return assento in _assentos_validos(voo) and assento not in _assentos_ocupados(voo)
+
+
+def _mapa_assentos(voo, assento_selecionado=''):
+    capacidade = max(voo.aeronave.capacidade or len(ASSENTO_COLUNAS), 1)
+    ocupados = _assentos_ocupados(voo)
+    fileiras = []
+
+    for indice in range(capacidade):
+        numero_fileira = (indice // len(ASSENTO_COLUNAS)) + 1
+        coluna = ASSENTO_COLUNAS[indice % len(ASSENTO_COLUNAS)]
+        codigo = f'{numero_fileira}{coluna}'
+
+        if not fileiras or fileiras[-1]['numero'] != numero_fileira:
+            fileiras.append({'numero': numero_fileira, 'esquerda': [], 'direita': []})
+
+        assento = {
+            'codigo': codigo,
+            'ocupado': codigo in ocupados,
+            'selecionado': codigo == assento_selecionado,
+        }
+        lado = 'esquerda' if coluna in ASSENTO_COLUNAS[:3] else 'direita'
+        fileiras[-1][lado].append(assento)
+
+    return fileiras
+
+
 def _gerar_assento_simples(voo):
-    letras = 'ABCDEF'
-    capacidade = max(voo.aeronave.capacidade or 180, 1)
-    total_fileiras = max(1, (capacidade + len(letras) - 1) // len(letras))
-    assentos_ocupados = set(Reserva.objects.filter(voo=voo).values_list('assento', flat=True))
+    for assento in sorted(_assentos_validos(voo), key=lambda item: (int(item[:-1]), item[-1])):
+        if _assento_disponivel(voo, assento):
+            return assento
 
-    for fileira in range(1, total_fileiras + 1):
-        for letra in letras:
-            assento = f'{fileira}{letra}'
-            if assento not in assentos_ocupados:
-                return assento
-
+    total_fileiras = max(1, (voo.aeronave.capacidade or len(ASSENTO_COLUNAS)) // len(ASSENTO_COLUNAS))
     return f'{total_fileiras + 1}A'
 
 

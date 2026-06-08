@@ -241,25 +241,87 @@
                 <strong>{{ voo.valor_total_estimado|default:"A calcular" }}</strong>
             </div>
 
-            {% if user.is_authenticated %}
-                <form method="post" action="{% url 'criar_reserva' voo.id %}">
+            <form class="seat-reservation-form"
+                  method="{% if user.is_authenticated %}post{% else %}get{% endif %}"
+                  action="{% if user.is_authenticated %}{% url 'criar_reserva' voo.id %}{% else %}{% url 'login' %}{% endif %}">
+                {% if user.is_authenticated %}
                     {% csrf_token %}
-                    <input type="hidden" name="classe" value="{{ classe_selecionada }}">
-                    <input type="hidden" name="passageiros" value="{{ passageiros }}">
-                    <button class="primary-button detail-reserve-button" type="submit">
-                        Continuar para reserva
-                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    </button>
-                </form>
-                <p class="detail-next-step">Sua reserva sera criada com um assento gerado automaticamente.</p>
-            {% else %}
-                <a class="primary-button detail-reserve-button"
-                   href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">
-                    Entrar para reservar
+                {% else %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                {% endif %}
+                <input type="hidden" name="classe" value="{{ classe_selecionada }}">
+                <input type="hidden" name="passageiros" value="{{ passageiros }}">
+
+                <section class="seat-picker" aria-labelledby="seat-picker-title">
+                    <div class="seat-picker-heading">
+                        <div>
+                            <p class="eyebrow">Assento</p>
+                            <h3 id="seat-picker-title">Escolha seu assento</h3>
+                            <p>Selecione um lugar disponivel para confirmar a reserva.</p>
+                        </div>
+                        <div class="seat-legend" aria-label="Legenda dos assentos">
+                            <span><i class="seat-dot is-free"></i> Livre</span>
+                            <span><i class="seat-dot is-selected"></i> Selecionado</span>
+                            <span><i class="seat-dot is-busy"></i> Ocupado</span>
+                        </div>
+                    </div>
+
+                    <div class="seat-map" role="radiogroup" aria-label="Assentos do voo {{ voo.numero_voo }}">
+                        {% for fileira in seat_map %}
+                            <div class="seat-row">
+                                <span class="seat-row-number">{{ fileira.numero }}</span>
+                                <div class="seat-bank">
+                                    {% for assento in fileira.esquerda %}
+                                        <label class="seat-option{% if assento.ocupado %} is-occupied{% endif %}">
+                                            <input class="seat-radio"
+                                                   type="radio"
+                                                   name="assento"
+                                                   value="{{ assento.codigo }}"
+                                                   {% if assento.ocupado %}disabled{% endif %}
+                                                   {% if assento.selecionado %}checked{% endif %}
+                                                   {% if user.is_authenticated %}required{% endif %}>
+                                            <span class="seat-code">{{ assento.codigo }}</span>
+                                            {% if assento.ocupado %}
+                                                <small>Ocupado</small>
+                                            {% endif %}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                <span class="seat-aisle" aria-hidden="true"></span>
+                                <div class="seat-bank">
+                                    {% for assento in fileira.direita %}
+                                        <label class="seat-option{% if assento.ocupado %} is-occupied{% endif %}">
+                                            <input class="seat-radio"
+                                                   type="radio"
+                                                   name="assento"
+                                                   value="{{ assento.codigo }}"
+                                                   {% if assento.ocupado %}disabled{% endif %}
+                                                   {% if assento.selecionado %}checked{% endif %}
+                                                   {% if user.is_authenticated %}required{% endif %}>
+                                            <span class="seat-code">{{ assento.codigo }}</span>
+                                            {% if assento.ocupado %}
+                                                <small>Ocupado</small>
+                                            {% endif %}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <button class="primary-button detail-reserve-button" type="submit">
+                    {% if user.is_authenticated %}Continuar para reserva{% else %}Entrar para reservar{% endif %}
                     <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                </a>
-                <p class="detail-next-step">Faca login para continuar exatamente neste voo.</p>
-            {% endif %}
+                </button>
+            </form>
+            <p class="detail-next-step">
+                {% if user.is_authenticated %}
+                    O assento escolhido sera mantido como assento principal da sua reserva.
+                {% else %}
+                    Faca login para reservar este voo e concluir a escolha do assento.
+                {% endif %}
+            </p>
 
             <a class="detail-back-link" href="{% url 'buscar_voos' %}">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>

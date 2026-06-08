@@ -11,7 +11,16 @@ class Command(BaseCommand):
             action='store_true',
             help='Remove apenas dados de exemplo criados pelo comando.',
         )
+        parser.add_argument(
+            '--usuarios-demo',
+            action='store_true',
+            help='Cria usuarios de demonstracao para apresentar os fluxos do sistema.',
+        )
 
     def handle(self, *args, **options):
-        argumentos = ['--limpar'] if options['limpar'] else []
+        argumentos = []
+        if options['limpar']:
+            argumentos.append('--limpar')
+        if options['usuarios_demo']:
+            argumentos.append('--usuarios-demo')
         call_command('seed', *argumentos, stdout=self.stdout)

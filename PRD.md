@@ -292,6 +292,7 @@ Estado atual:
 - Usuario logado volta para o detalhe do voo selecionado.
 - Pagina de detalhe do voo exibe origem, destino, data, horarios, status, aeronave, portao, classe e preco.
 - Detalhe do voo permite ajustar quantidade simples de passageiros.
+- Detalhe do voo exibe mapa simples de assentos com estados livre, selecionado e ocupado.
 - Preco exibido usa a tarifa ativa da classe selecionada ou a menor tarifa ativa disponivel.
 - Total estimado e calculado com base na quantidade de passageiros.
 
@@ -299,7 +300,9 @@ Estado atual:
 
 - Botao "Continuar para reserva" no detalhe do voo cria uma `Reserva` real.
 - Reserva e associada ao `Passageiro` logado.
-- Assento simples e gerado automaticamente em formato como `1A`, `1B`, `2A`.
+- Assento e escolhido pelo passageiro no detalhe do voo e salvo no campo `Reserva.assento`.
+- Para reservas com mais de um passageiro, o assento representa o assento principal da reserva nesta versao simples.
+- Assentos ocupados por reservas nao canceladas ficam bloqueados e nao podem ser reservados novamente.
 - Status inicial da reserva e `pendente`, pois a confirmacao final depende do pagamento simulado.
 - Apos criar a reserva, o usuario e redirecionado para a pagina de pagamento.
 - Reserva criada aparece no painel do passageiro em "Minhas viagens".
@@ -363,6 +366,7 @@ Estado atual:
 - Cria malha nacional ate o fim do ano atual.
 - Usa `update_or_create` e estrategia idempotente.
 - Possui opcao `--limpar` para remover dados de exemplo sem apagar usuarios reais.
+- Possui opcao `--usuarios-demo` para criar contas de demonstracao de passageiro, funcionario e administrador com senha comum `SkyBridge@123`.
 
 Aeroportos principais:
 
@@ -396,6 +400,8 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - detalhe de voo;
 - selecao de voo com login obrigatorio e `next`;
 - exibicao de tarifa real no detalhe.
+- escolha real de assento no detalhe do voo;
+- bloqueio de assento ja ocupado;
 - criacao real de reserva;
 - pagamento simulado por Pix;
 - pagamento com milhas;
@@ -485,10 +491,8 @@ O arquivo `skybridgeapp/tests.py` cobre:
 ## Prioridade Recomendada
 
 1. Revisao visual final para apresentacao.
-2. Revisao dos dados de demonstracao no banco antes da banca.
-3. Opcional: escolha real de assentos.
-4. Opcional: fluxo completo de ida e volta.
-5. Opcional futuro: migrar campos de texto de voo/aeronave para relacionamentos mais fortes.
+2. Opcional: fluxo completo de ida e volta.
+3. Opcional futuro: migrar campos de texto de voo/aeronave para relacionamentos mais fortes.
 
 
 ## Fluxo MVP Para Apresentacao
@@ -516,7 +520,7 @@ Manter simples:
 
 - Somente voos nacionais no Brasil.
 - Sem integracao real com pagamento.
-- Sem reserva de assentos complexa.
+- Sem mapa de assentos complexo por aeronave; a escolha atual e simples e baseada na capacidade.
 - Sem API externa.
 - Sem IA obrigatoria.
 - Sem carrinho ou pedido complexo.
@@ -546,11 +550,11 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Fazer uma revisao final de apresentacao: conferir dados do `popular_banco`, criar usuarios de demonstracao, validar o fluxo completo de passageiro, funcionario e administrador, e ajustar apenas polimentos visuais pontuais.
+Fazer uma revisao final de apresentacao: popular dados com usuarios demo, validar o fluxo completo de passageiro, funcionario e administrador, e ajustar apenas polimentos visuais pontuais.
 
 Sugestao de entrega:
 
-1. Rodar `python manage.py popular_banco --limpar` e `python manage.py popular_banco`.
+1. Rodar `python manage.py popular_banco --limpar` e `python manage.py popular_banco --usuarios-demo`.
 2. Validar busca, reserva, pagamento, bilhete e check-in com um passageiro.
 3. Validar alteracao de status/portao com um funcionario.
 4. Validar indicadores e links rapidos com um administrador.
