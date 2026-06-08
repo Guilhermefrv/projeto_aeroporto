@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAirportSelectionControls();
     setupBootstrapToasts();
     setupPaymentMethodSelection();
+    setupFlexibleDateCarousel();
 });
 
 function setupBootstrapToasts() {
@@ -212,5 +213,124 @@ function setupPaymentMethodSelection() {
                 label.classList.add('is-selected');
             }
         }
+    });
+}
+
+function setupFlexibleDateCarousel() {
+    document.querySelectorAll('[data-flex-date-carousel]').forEach((carousel) => {
+        carousel.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-flex-date-arrow]');
+            if (!button || button.disabled) {
+                return;
+            }
+
+            event.preventDefault();
+            loadFlexibleDates(carousel, button);
+        });
+    });
+}
+
+async function loadFlexibleDates(carousel, button) {
+    const strip = carousel.querySelector('[data-flex-date-strip]');
+    const url = button.dataset.url;
+    if (!strip || !url) {
+        return;
+    }
+
+    const direction = button.dataset.flexDateArrow === 'next' ? 'next' : 'previous';
+    const movementClass = direction === 'next' ? 'is-moving-left' : 'is-moving-right';
+    const enterClass = direction === 'next' ? 'is-entering-right' : 'is-entering-left';
+    const buttons = carousel.querySelectorAll('[data-flex-date-arrow]');
+
+    buttons.forEach((arrow) => {
+        arrow.disabled = true;
+    });
+    carousel.setAttribute('aria-busy', 'true');
+    strip.classList.remove('is-entering-left', 'is-entering-right');
+    strip.classList.add(movementClass);
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+        if (!response.ok) {
+            throw new Error('Nao foi possivel carregar as datas.');
+        }
+
+        const payload = await response.json();
+        await waitForAnimationFrame();
+        renderFlexibleDates(strip, payload.dates || []);
+        updateDateArrow(carousel, 'previous', payload.previousUrl);
+        updateDateArrow(carousel, 'next', payload.nextUrl);
+
+        strip.classList.remove(movementClass);
+        strip.classList.add(enterClass);
+
+        if (payload.windowUrl && window.history?.replaceState) {
+            window.history.replaceState({}, '', payload.windowUrl);
+        }
+    } catch (error) {
+        strip.classList.remove(movementClass);
+        console.error(error);
+    } finally {
+        carousel.removeAttribute('aria-busy');
+        buttons.forEach((arrow) => {
+            arrow.disabled = !arrow.dataset.url;
+        });
+        window.setTimeout(() => {
+            strip.classList.remove('is-entering-left', 'is-entering-right');
+        }, 320);
+    }
+}
+
+function renderFlexibleDates(strip, dates) {
+    strip.replaceChildren(...dates.map(createDateChip));
+}
+
+function createDateChip(dateInfo) {
+    const chip = document.createElement('a');
+    chip.className = 'flex-date-chip';
+    chip.href = dateInfo.url || '#';
+    chip.setAttribute('aria-label', dateInfo.ariaLabel || 'Buscar voos nesta data');
+
+    if (dateInfo.selected) {
+        chip.classList.add('is-selected');
+    }
+    if (!dateInfo.hasFlight) {
+        chip.classList.add('is-empty');
+    }
+
+    const label = document.createElement('span');
+    label.textContent = dateInfo.label || '';
+    chip.appendChild(label);
+
+    if (dateInfo.price) {
+        const price = document.createElement('strong');
+        price.textContent = dateInfo.price;
+        chip.appendChild(price);
+    } else {
+        const empty = document.createElement('small');
+        empty.textContent = 'Sem voo';
+        chip.appendChild(empty);
+    }
+
+    return chip;
+}
+
+function updateDateArrow(carousel, direction, url) {
+    const arrow = carousel.querySelector(`[data-flex-date-arrow="${direction}"]`);
+    if (!arrow) {
+        return;
+    }
+
+    arrow.dataset.url = url || '';
+    arrow.disabled = !url;
+}
+
+function waitForAnimationFrame() {
+    return new Promise((resolve) => {
+        window.setTimeout(resolve, 180);
     });
 }

@@ -6,6 +6,7 @@ urlpatterns = [
     path('acesso/', views.auth_home, name='auth_home'),
     path('status-voo/', views.status_voo, name='status_voo'),
     path('voos/buscar/', views.buscar_voos, name='buscar_voos'),
+    path('voos/datas/', views.buscar_voos_datas, name='buscar_voos_datas'),
     path('voos/<int:voo_id>/', views.detalhe_voo, name='detalhe_voo'),
     path('voos/<int:voo_id>/selecionar/', views.selecionar_voo, name='selecionar_voo'),
     path('voos/<int:voo_id>/reservar/', views.criar_reserva, name='criar_reserva'),

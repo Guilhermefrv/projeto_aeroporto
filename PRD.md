@@ -196,7 +196,7 @@ Observacao: algumas models ja existem para etapas futuras, mas ainda nao possuem
 - Footer.
 - Escopo de voos ajustado para Brasil.
 
-Ponto pendente: parte das ofertas ainda vem de `LANDING_CONTEXT` em `views.py`, nao diretamente de `Promocao` no banco.
+Observacao: quando nao ha promocoes ativas no banco, a Home usa `LANDING_CONTEXT` apenas como fallback visual.
 
 ## 5. Autenticacao
 
@@ -278,6 +278,8 @@ Estado atual:
 - Exibe menor tarifa ativa como "preco a partir de".
 - Mostra sugestoes proximas quando nao ha voo na data exata.
 - Mostra faixa de datas flexiveis.
+- Quando a rota vem de uma oferta sem data escolhida, a pagina primeiro mostra um seletor de datas navegavel e so lista voos depois que o usuario escolhe um dia.
+- Setas da faixa de datas carregam novas janelas via JavaScript/JSON, sem recarregar a pagina inteira.
 - Mostra rotas disponiveis quando a combinacao nao existe.
 
 ## 9. Fluxo Selecionar Voo
@@ -457,7 +459,9 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - Home busca `Promocao.objects.filter(ativa=True)` para montar cards reais de ofertas.
 - Promocoes cadastradas no Django Admin aparecem na landing page.
 - Cards exibem rota, titulo, descricao, preco formatado e imagem coerente com o destino.
-- Imagens nacionais ja cadastradas para Brasilia, Cuiaba, Curitiba, Manaus e Porto Alegre sao reaproveitadas.
+- Imagens nacionais ja cadastradas para Sao Paulo, Brasilia, Cuiaba, Curitiba, Manaus e Porto Alegre sao reaproveitadas.
+- Botao "Ver oferta" dos cards reais leva para a busca de voos com origem e destino da promocao.
+- Promocoes repetidas para a mesma origem/destino sao deduplicadas na Home, priorizando o menor preco.
 - Quando nao ha promocoes ativas, a Home usa os cards estaticos como fallback visual.
 - Dados criados pelo comando `popular_banco` sao compativeis com os cards da Home.
 

@@ -448,7 +448,13 @@
                             <span>a partir de</span>
                             <strong>{{ offer.price }}</strong>
                         </div>
-                        <button class="card-button" type="button">Ver oferta</button>
+                        {% if offer.search_url %}
+                            <a class="card-button" href="{{ offer.search_url }}" aria-label="Ver oferta {{ offer.route }}">
+                                Ver oferta
+                            </a>
+                        {% else %}
+                            <button class="card-button" type="button">Ver oferta</button>
+                        {% endif %}
                     </div>
                 </article>
             {% endfor %}

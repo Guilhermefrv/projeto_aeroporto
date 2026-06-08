@@ -205,24 +205,52 @@
             <div class="flex-date-heading">
                 <div>
                     <p class="eyebrow">Datas proximas</p>
-                    <h2 id="flex-date-title">Compare opcoes por dia</h2>
+                    <h2 id="flex-date-title">
+                        {% if resultado_tipo == 'selecionar_data' %}
+                            Escolha uma data para ver os voos
+                        {% else %}
+                            Compare opcoes por dia
+                        {% endif %}
+                    </h2>
                 </div>
                 <span>Busca funcional apenas para voo de ida nesta etapa.</span>
             </div>
 
-            <div class="flex-date-strip">
-                {% for dia in datas_flexiveis %}
-                    <a class="flex-date-chip{% if dia.selecionada %} is-selected{% endif %}{% if not dia.tem_voo %} is-empty{% endif %}"
-                       href="{{ dia.url }}"
-                       aria-label="Buscar voos em {{ dia.data|date:'d/m/Y' }}">
-                        <span>{{ dia.label }}</span>
-                        {% if dia.preco %}
-                            <strong>{{ dia.preco }}</strong>
-                        {% else %}
-                            <small>Sem voo</small>
-                        {% endif %}
-                    </a>
-                {% endfor %}
+            <div class="flex-date-carousel" data-flex-date-carousel aria-label="Navegacao por datas de voo">
+                {% if date_nav.previous_api_url %}
+                    <button class="flex-date-arrow"
+                            type="button"
+                            data-flex-date-arrow="previous"
+                            data-url="{{ date_nav.previous_api_url }}"
+                            aria-label="Ver datas anteriores">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                {% endif %}
+
+                <div class="flex-date-strip" data-flex-date-strip>
+                    {% for dia in datas_flexiveis %}
+                        <a class="flex-date-chip{% if dia.selecionada %} is-selected{% endif %}{% if not dia.tem_voo %} is-empty{% endif %}"
+                           href="{{ dia.url }}"
+                           aria-label="Buscar voos em {{ dia.data|date:'d/m/Y' }}">
+                            <span>{{ dia.label }}</span>
+                            {% if dia.preco %}
+                                <strong>{{ dia.preco }}</strong>
+                            {% else %}
+                                <small>Sem voo</small>
+                            {% endif %}
+                        </a>
+                    {% endfor %}
+                </div>
+
+                {% if date_nav.next_api_url %}
+                    <button class="flex-date-arrow"
+                            type="button"
+                            data-flex-date-arrow="next"
+                            data-url="{{ date_nav.next_api_url }}"
+                            aria-label="Ver proximas datas">
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                {% endif %}
             </div>
         </section>
     {% endif %}
@@ -236,6 +264,8 @@
                         Rota indisponivel
                     {% elif resultado_tipo == 'proximo' %}
                         Opcoes proximas
+                    {% elif resultado_tipo == 'selecionar_data' %}
+                        Escolha a data do voo
                     {% else %}
                         Voos disponiveis
                     {% endif %}
@@ -264,6 +294,14 @@
                     <div>
                         <strong>Nao encontramos voos nessa data, mas encontramos opcoes proximas.</strong>
                         <span>Escolha uma das alternativas abaixo ou clique em outra data na faixa acima.</span>
+                    </div>
+                </div>
+            {% elif resultado_tipo == 'selecionar_data' %}
+                <div class="nearby-results-note">
+                    <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                    <div>
+                        <strong>Escolha uma data para ver os voos dessa oferta.</strong>
+                        <span>Clique em um dia da faixa acima para carregar somente os voos daquela data.</span>
                     </div>
                 </div>
             {% endif %}
@@ -349,6 +387,12 @@
                             </div>
                         </article>
                     {% endfor %}
+                </div>
+            {% elif resultado_tipo == 'selecionar_data' %}
+                <div class="empty-results date-choice-empty">
+                    <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                    <h3>Nenhuma data selecionada ainda.</h3>
+                    <p>Use a faixa de datas acima para escolher o dia da viagem e listar os voos disponiveis.</p>
                 </div>
             {% else %}
                 <div class="empty-results">

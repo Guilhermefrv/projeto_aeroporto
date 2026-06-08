@@ -18,10 +18,12 @@ from django.contrib.auth.views import (
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Prefetch, Q, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
+from django.utils.dateparse import parse_date
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -37,7 +39,7 @@ from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notific
 
 
 LANDING_CONTEXT = {
-    'asset_version': '20260605-offer-images',
+    'asset_version': '20260608-date-carousel',
     'nav_items': [
         'Comprar',
         'Minhas viagens',
@@ -240,6 +242,10 @@ PAYMENT_METHODS = [
 
 
 PROMOTION_IMAGE_DATA = {
+    'GRU': {
+        'image_class': 'offer-sao-paulo',
+        'image_url': 'https://images.unsplash.com/photo-1744771070810-886638822097?auto=format&fit=crop&w=900&q=80',
+    },
     'GIG': {
         'image_class': 'offer-rio',
         'image_url': 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=900&q=80',
@@ -293,6 +299,18 @@ def _promotion_image_data(promocao):
     })
 
 
+def _promotion_search_url(promocao):
+    if not (promocao.origem_id and promocao.destino_id):
+        return ''
+
+    query = urlencode({
+        'origem': promocao.origem_id,
+        'destino': promocao.destino_id,
+        'passageiros': 1,
+    })
+    return f'{reverse("buscar_voos")}?{query}'
+
+
 def _promotion_to_offer(promocao):
     image_data = _promotion_image_data(promocao)
     origem = _airport_city_or_default(promocao.origem, 'Brasil')
@@ -305,18 +323,32 @@ def _promotion_to_offer(promocao):
         'title': promocao.titulo,
         'description': promocao.descricao or 'Oferta nacional cadastrada para a landing page.',
         'price': _formatar_moeda(promocao.preco_a_partir_de),
+        'search_url': _promotion_search_url(promocao),
     }
 
 
 def _offers_for_home():
-    promocoes = list(
+    promocoes = (
         Promocao.objects.filter(ativa=True)
         .select_related('origem', 'destino')
         .order_by('preco_a_partir_de', 'titulo')
     )
-    if not promocoes:
+    ofertas_unicas = []
+    rotas_exibidas = set()
+
+    for promocao in promocoes:
+        chave_rota = (
+            promocao.origem_id,
+            promocao.destino_id,
+        ) if promocao.origem_id and promocao.destino_id else ('promocao', promocao.pk)
+        if chave_rota in rotas_exibidas:
+            continue
+        rotas_exibidas.add(chave_rota)
+        ofertas_unicas.append(promocao)
+
+    if not ofertas_unicas:
         return LANDING_CONTEXT['offers']
-    return [_promotion_to_offer(promocao) for promocao in promocoes]
+    return [_promotion_to_offer(promocao) for promocao in ofertas_unicas]
 
 
 def home(request):
@@ -367,6 +399,7 @@ def buscar_voos(request):
     voos = []
     voos_proximos = []
     datas_flexiveis = []
+    date_nav = {}
     resultado_tipo = 'exato'
     filtros_resumo = []
     rota_consultada_existe = True
@@ -380,12 +413,17 @@ def buscar_voos(request):
 
         if request.GET and not rota_consultada_existe:
             resultado_tipo = 'rota_indisponivel'
+        elif _deve_escolher_data(cleaned_data, request.GET):
+            resultado_tipo = 'selecionar_data'
+            datas_flexiveis = _datas_flexiveis(cleaned_data, request.GET)
+            date_nav = _date_nav_context(cleaned_data, request.GET)
         else:
             voos = _preparar_voos_para_resultado(
                 _filtrar_voos(cleaned_data),
                 cleaned_data.get('classe'),
             )
             datas_flexiveis = _datas_flexiveis(cleaned_data, request.GET)
+            date_nav = _date_nav_context(cleaned_data, request.GET)
 
             if request.GET and cleaned_data.get('data_ida') and not voos:
                 voos_proximos = _voos_proximos(cleaned_data)
@@ -406,6 +444,7 @@ def buscar_voos(request):
         'resultado_tipo': resultado_tipo,
         'rota_consultada_existe': rota_consultada_existe,
         'datas_flexiveis': datas_flexiveis,
+        'date_nav': date_nav,
         'filtros_resumo': filtros_resumo,
         'busca_realizada': bool(request.GET),
         'rotas_disponiveis': _rotas_disponiveis(cleaned_data),
@@ -414,6 +453,23 @@ def buscar_voos(request):
     _add_account_context(request, context)
 
     return render(request, 'buscar_voos.html', context)
+
+
+def buscar_voos_datas(request):
+    form = BuscaVooForm(request.GET or None)
+    if not form.is_valid():
+        return JsonResponse({'error': 'Filtros invalidos.'}, status=400)
+
+    cleaned_data = form.cleaned_data
+    datas = _datas_flexiveis(cleaned_data, request.GET)
+    date_nav = _date_nav_context(cleaned_data, request.GET)
+
+    return JsonResponse({
+        'dates': [_date_chip_payload(dia) for dia in datas],
+        'previousUrl': date_nav.get('previous_api_url', ''),
+        'nextUrl': date_nav.get('next_api_url', ''),
+        'windowUrl': date_nav.get('window_url', ''),
+    })
 
 
 def detalhe_voo(request, voo_id):
@@ -1026,17 +1082,87 @@ def _voos_proximos(cleaned_data, janela=7):
     return _preparar_voos_para_resultado(voos, cleaned_data.get('classe'))
 
 
+DIAS_SEMANA_ABREV = ['seg.', 'ter.', 'qua.', 'qui.', 'sex.', 'sab.', 'dom.']
+
+
+def _deve_escolher_data(cleaned_data, query_params):
+    return bool(
+        query_params
+        and cleaned_data.get('origem')
+        and cleaned_data.get('destino')
+        and not cleaned_data.get('data_ida')
+    )
+
+
+def _data_inicio_faixa(cleaned_data, query_params, janela=3):
+    data_ida = cleaned_data.get('data_ida')
+    if data_ida:
+        return data_ida - timedelta(days=janela)
+
+    data_inicio = parse_date(query_params.get('inicio', ''))
+    if data_inicio:
+        return data_inicio
+
+    filtros = cleaned_data.copy()
+    filtros['data_ida'] = None
+    primeiro_voo = (
+        _filtrar_voos(filtros)
+        .filter(partida__date__gte=timezone.localdate())
+        .order_by('partida')
+        .first()
+    )
+    if primeiro_voo:
+        return timezone.localtime(primeiro_voo.partida).date()
+
+    return timezone.localdate()
+
+
+def _date_nav_context(cleaned_data, query_params):
+    if not (cleaned_data.get('origem') and cleaned_data.get('destino')):
+        return {}
+
+    inicio = _data_inicio_faixa(cleaned_data, query_params)
+    return {
+        'previous_url': _date_nav_url(query_params, inicio - timedelta(days=7), 'buscar_voos'),
+        'next_url': _date_nav_url(query_params, inicio + timedelta(days=7), 'buscar_voos'),
+        'previous_api_url': _date_nav_url(query_params, inicio - timedelta(days=7), 'buscar_voos_datas'),
+        'next_api_url': _date_nav_url(query_params, inicio + timedelta(days=7), 'buscar_voos_datas'),
+        'window_url': _date_nav_url(query_params, inicio, 'buscar_voos'),
+    }
+
+
+def _date_nav_url(query_params, inicio, route_name):
+    parametros = query_params.copy()
+    if 'data_ida' in parametros:
+        del parametros['data_ida']
+    parametros['inicio'] = inicio.isoformat()
+    return f'{reverse(route_name)}?{parametros.urlencode()}'
+
+
+def _date_chip_payload(dia):
+    return {
+        'date': dia['data'].isoformat(),
+        'label': dia['label'],
+        'url': dia['url'],
+        'price': dia['preco'],
+        'hasFlight': dia['tem_voo'],
+        'selected': dia['selecionada'],
+        'ariaLabel': f"Buscar voos em {dia['data']:%d/%m/%Y}",
+    }
+
+
 def _datas_flexiveis(cleaned_data, query_params, janela=3):
     origem = cleaned_data.get('origem')
     destino = cleaned_data.get('destino')
     data_ida = cleaned_data.get('data_ida')
 
-    if not (origem and destino and data_ida):
+    if not (origem and destino):
         return []
 
+    inicio = _data_inicio_faixa(cleaned_data, query_params, janela=janela)
     datas = []
-    for deslocamento in range(-janela, janela + 1):
-        data_consulta = data_ida + timedelta(days=deslocamento)
+    for deslocamento in range(0, 7):
+        data_consulta = inicio + timedelta(days=deslocamento)
         filtros = cleaned_data.copy()
         filtros['data_ida'] = data_consulta
         voos_dia = _preparar_voos_para_resultado(
@@ -1046,11 +1172,13 @@ def _datas_flexiveis(cleaned_data, query_params, janela=3):
         precos = [voo.preco_valor for voo in voos_dia if voo.preco_valor is not None]
         menor_preco = min(precos, default=None)
         parametros = query_params.copy()
+        if 'inicio' in parametros:
+            del parametros['inicio']
         parametros['data_ida'] = data_consulta.isoformat()
 
         datas.append({
             'data': data_consulta,
-            'label': data_consulta.strftime('%d/%m'),
+            'label': f'{DIAS_SEMANA_ABREV[data_consulta.weekday()]} {data_consulta:%d/%m}',
             'url': f'{reverse("buscar_voos")}?{parametros.urlencode()}',
             'preco': _formatar_moeda(menor_preco) if menor_preco else None,
             'tem_voo': bool(voos_dia),

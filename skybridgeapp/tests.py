@@ -265,6 +265,83 @@ class AuthFlowTests(TestCase):
         self.assertNotContains(response, 'Oferta inativa para Cuiaba')
         self.assertNotContains(response, 'Escapada urbana')
 
+    def test_home_promotion_button_links_to_flight_search(self):
+        origem = Aeroporto.objects.create(
+            codigo_iata='GRU',
+            nome='Guarulhos',
+            cidade='Sao Paulo',
+            estado='SP',
+            pais='Brasil',
+        )
+        destino = Aeroporto.objects.create(
+            codigo_iata='REC',
+            nome='Guararapes',
+            cidade='Recife',
+            estado='PE',
+            pais='Brasil',
+        )
+        Promocao.objects.create(
+            titulo='Oferta clicavel para Recife',
+            descricao='Clique para buscar voos dessa rota.',
+            origem=origem,
+            destino=destino,
+            preco_a_partir_de=Decimal('299.90'),
+            data_inicio=date.today(),
+            data_fim=date.today() + timedelta(days=10),
+            ativa=True,
+        )
+
+        response = self.client.get(reverse('home'))
+
+        expected_url = f'{reverse("buscar_voos")}?origem={origem.pk}&destino={destino.pk}&passageiros=1'
+        self.assertContains(response, f'href="{expected_url.replace("&", "&amp;")}"')
+        self.assertContains(response, 'Ver oferta')
+
+    def test_home_deduplicates_active_promotions_by_route_using_lowest_price(self):
+        origem = Aeroporto.objects.create(
+            codigo_iata='GRU',
+            nome='Guarulhos',
+            cidade='Sao Paulo',
+            estado='SP',
+            pais='Brasil',
+        )
+        destino = Aeroporto.objects.create(
+            codigo_iata='REC',
+            nome='Guararapes',
+            cidade='Recife',
+            estado='PE',
+            pais='Brasil',
+        )
+        Promocao.objects.create(
+            titulo='Oferta cara para Recife',
+            descricao='Duplicada com preco maior.',
+            origem=origem,
+            destino=destino,
+            preco_a_partir_de=Decimal('499.90'),
+            data_inicio=date.today(),
+            data_fim=date.today() + timedelta(days=10),
+            ativa=True,
+        )
+        Promocao.objects.create(
+            titulo='Oferta barata para Recife',
+            descricao='Duplicada com melhor preco.',
+            origem=origem,
+            destino=destino,
+            preco_a_partir_de=Decimal('299.90'),
+            data_inicio=date.today(),
+            data_fim=date.today() + timedelta(days=10),
+            ativa=True,
+        )
+
+        response = self.client.get(reverse('home'))
+
+        offers = response.context['offers']
+        self.assertEqual(len(offers), 1)
+        self.assertEqual(offers[0]['title'], 'Oferta barata para Recife')
+        self.assertEqual(offers[0]['price'], 'R$ 299,90')
+        self.assertContains(response, 'Oferta barata para Recife')
+        self.assertNotContains(response, 'Oferta cara para Recife')
+
     def test_home_uses_static_offer_fallback_without_active_promotions(self):
         origem = Aeroporto.objects.create(
             codigo_iata='GRU',
@@ -914,7 +991,8 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'data-bs-target="#originAirportModal"')
         self.assertContains(response, 'data-bs-target="#destinationAirportModal"')
         self.assertContains(response, 'data-airport-option')
-        self.assertContains(response, '/static/js/main.js?v=')
+        self.assertContains(response, '/static/css/home.css?v=20260608-date-carousel')
+        self.assertContains(response, '/static/js/main.js?v=20260608-date-carousel')
         self.assertContains(response, 'name="origem"')
         self.assertContains(response, 'name="destino"')
         self.assertContains(response, 'name="data_ida"')
@@ -976,15 +1054,67 @@ class BuscaVoosTests(TestCase):
         response = self.client.get(reverse('buscar_voos'), {
             'origem': self.gru.pk,
             'destino': self.rec.pk,
+            'data_ida': self.partida_base.date().isoformat(),
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SB123')
-        self.assertContains(response, 'SB127')
+        self.assertNotContains(response, 'SB127')
         self.assertNotContains(response, 'SB124')
         self.assertNotContains(response, 'SB125')
         self.assertNotContains(response, 'SB126')
         self.assertNotContains(response, 'SB999')
+
+    def test_busca_por_oferta_sem_data_mostra_seletor_de_datas_sem_listar_voos(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'passageiros': 1,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['resultado_tipo'], 'selecionar_data')
+        self.assertEqual(response.context['voos_exibidos'], [])
+        self.assertContains(response, 'Escolha uma data para ver os voos')
+        self.assertContains(response, 'Datas proximas')
+        self.assertContains(response, f'data_ida={self.partida_base.date().isoformat()}')
+        self.assertContains(response, f'data_ida={(self.partida_base + timedelta(days=2)).date().isoformat()}')
+        self.assertContains(response, 'Ver proximas datas')
+        self.assertContains(response, 'Ver datas anteriores')
+        self.assertNotContains(response, 'Voo SB123')
+        self.assertNotContains(response, 'Voo SB127')
+
+    def test_setas_de_datas_usam_endpoint_json_para_animacao(self):
+        response = self.client.get(reverse('buscar_voos'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'passageiros': 1,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-flex-date-carousel')
+        self.assertContains(response, 'data-flex-date-arrow="previous"')
+        self.assertContains(response, 'data-flex-date-arrow="next"')
+        self.assertContains(response, reverse('buscar_voos_datas'))
+
+    def test_endpoint_datas_flexiveis_retorna_json_para_carrossel(self):
+        inicio = self.partida_base.date().isoformat()
+        response = self.client.get(reverse('buscar_voos_datas'), {
+            'origem': self.gru.pk,
+            'destino': self.rec.pk,
+            'passageiros': 1,
+            'inicio': inicio,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload['dates']), 7)
+        self.assertEqual(payload['dates'][0]['date'], inicio)
+        self.assertEqual(payload['dates'][0]['price'], 'R$ 270,00')
+        self.assertTrue(payload['dates'][0]['hasFlight'])
+        self.assertIn('data_ida=', payload['dates'][0]['url'])
+        self.assertIn(reverse('buscar_voos_datas'), payload['previousUrl'])
+        self.assertIn(reverse('buscar_voos_datas'), payload['nextUrl'])
 
     def test_busca_filtra_por_data_de_partida(self):
         response = self.client.get(reverse('buscar_voos'), {

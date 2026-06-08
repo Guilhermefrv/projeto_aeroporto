@@ -1695,22 +1695,95 @@ button{
     font-weight:800;
 }
 
+.flex-date-carousel{
+    display:grid;
+    grid-template-columns:44px minmax(0,1fr) 44px;
+    align-items:stretch;
+    gap:0;
+    overflow:hidden;
+    border:1px solid rgba(27,59,143,0.13);
+    border-radius:8px;
+    background:#fff;
+    box-shadow:0 12px 28px rgba(16,24,40,0.08);
+}
+
+.flex-date-arrow{
+    appearance:none;
+    -webkit-appearance:none;
+    width:44px;
+    min-height:64px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:0;
+    border-radius:0;
+    background:#fff;
+    color:var(--blue);
+    font-size:18px;
+    line-height:1;
+    padding:0;
+    transition:transform 0.2s ease,box-shadow 0.2s ease,border-color 0.2s ease,background 0.2s ease;
+}
+
+.flex-date-arrow:first-child{
+    border-right:1px solid rgba(27,59,143,0.11);
+}
+
+.flex-date-arrow:last-child{
+    border-left:1px solid rgba(27,59,143,0.11);
+}
+
+.flex-date-arrow:hover,
+.flex-date-arrow:focus-visible{
+    background:#f2f5ff;
+    color:var(--navy);
+    outline:2px solid var(--blue);
+    outline-offset:-2px;
+    transform:none;
+}
+
+.flex-date-arrow:disabled{
+    cursor:wait;
+    opacity:0.55;
+}
+
 .flex-date-strip{
     display:grid;
     grid-template-columns:repeat(7,minmax(0,1fr));
-    gap:10px;
+    gap:0;
+    transition:transform 0.28s ease,opacity 0.28s ease;
+    will-change:transform,opacity;
+}
+
+.flex-date-strip.is-moving-left{
+    opacity:0.35;
+    transform:translateX(-32px);
+}
+
+.flex-date-strip.is-moving-right{
+    opacity:0.35;
+    transform:translateX(32px);
+}
+
+.flex-date-strip.is-entering-left{
+    animation:flexDateEnterLeft 0.28s ease both;
+}
+
+.flex-date-strip.is-entering-right{
+    animation:flexDateEnterRight 0.28s ease both;
 }
 
 .flex-date-chip{
-    min-height:76px;
+    min-height:64px;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap:7px;
-    border:1px solid rgba(27,59,143,0.13);
-    border-radius:8px;
-    background:#f8fbff;
+    gap:6px;
+    border:0;
+    border-left:1px solid rgba(27,59,143,0.11);
+    border-radius:0;
+    background:#fff;
     color:var(--navy);
     text-align:center;
     text-decoration:none;
@@ -1719,11 +1792,10 @@ button{
 
 .flex-date-chip:hover,
 .flex-date-chip:focus-visible{
-    border-color:rgba(27,59,143,0.34);
-    background:white;
-    box-shadow:0 14px 28px rgba(16,24,40,0.12);
+    background:#f6f8ff;
+    box-shadow:inset 0 -3px 0 rgba(27,59,143,0.24);
     color:var(--navy);
-    transform:translateY(-2px);
+    transform:none;
 }
 
 .flex-date-chip span{
@@ -1744,10 +1816,12 @@ button{
 }
 
 .flex-date-chip.is-selected{
-    background:#101747 !important;
-    border-color:var(--navy);
+    margin:0 4px;
+    border-radius:8px;
+    background:var(--blue) !important;
+    border-left:0;
     color:white !important;
-    box-shadow:0 14px 32px rgba(11,18,56,0.23);
+    box-shadow:0 10px 22px rgba(27,59,143,0.26);
 }
 
 .flex-date-chip.is-selected span,
@@ -1758,6 +1832,28 @@ button{
 
 .flex-date-chip.is-empty{
     background:#ffffff;
+}
+
+@keyframes flexDateEnterLeft{
+    from{
+        opacity:0.35;
+        transform:translateX(-32px);
+    }
+    to{
+        opacity:1;
+        transform:translateX(0);
+    }
+}
+
+@keyframes flexDateEnterRight{
+    from{
+        opacity:0.35;
+        transform:translateX(32px);
+    }
+    to{
+        opacity:1;
+        transform:translateX(0);
+    }
 }
 
 .results-list-section{
