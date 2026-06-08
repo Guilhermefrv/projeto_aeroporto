@@ -47,6 +47,73 @@ button{
     top:12px;
 }
 
+.error-page{
+    min-height:100vh;
+    display:grid;
+    place-items:center;
+    padding:24px;
+    background:
+        radial-gradient(circle at top left, rgba(27,59,143,0.12), transparent 32%),
+        linear-gradient(135deg,#f8fbff,#ffffff);
+}
+
+.error-shell{
+    width:min(620px,100%);
+    display:grid;
+    gap:20px;
+}
+
+.error-brand{
+    justify-self:center;
+}
+
+.error-card{
+    border:1px solid rgba(27,59,143,0.12);
+    border-radius:18px;
+    background:rgba(255,255,255,0.94);
+    box-shadow:0 24px 60px rgba(16,24,40,0.12);
+    padding:38px;
+    text-align:center;
+}
+
+.error-icon{
+    width:68px;
+    height:68px;
+    display:grid;
+    place-items:center;
+    margin:0 auto 18px;
+    border-radius:18px;
+    background:var(--blue-soft);
+    color:var(--blue);
+    font-size:26px;
+}
+
+.error-icon.is-danger{
+    background:#fff1f2;
+    color:var(--red);
+}
+
+.error-card h1{
+    color:var(--navy);
+    font-size:clamp(32px,6vw,48px);
+    line-height:1.05;
+    margin:0 0 12px;
+}
+
+.error-card p:not(.eyebrow){
+    color:var(--muted);
+    font-size:16px;
+    line-height:1.6;
+    margin:0 auto 24px;
+    max-width:460px;
+}
+
+.error-card .primary-button{
+    display:inline-flex;
+    width:auto;
+    min-width:190px;
+}
+
 .site-header{
     position:sticky;
     top:0;
@@ -2947,6 +3014,100 @@ button{
     gap: 10px;
 }
 
+.miles-payment-panel {
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid rgba(27, 59, 143, 0.12);
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ffffff, #f8fbff);
+    box-shadow: 0 14px 34px rgba(16, 24, 40, 0.06);
+}
+
+.miles-payment-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.miles-payment-header .eyebrow {
+    margin: 0 0 3px;
+}
+
+.miles-payment-header h3 {
+    margin: 0;
+    color: var(--navy);
+    font-size: 20px;
+}
+
+.miles-payment-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: #fef3c7;
+    color: #d97706;
+    box-shadow: 0 10px 24px rgba(217, 119, 6, 0.14);
+}
+
+.miles-rule-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.miles-rule-grid div,
+.miles-balance-box div {
+    border: 1px solid rgba(27, 59, 143, 0.12);
+    border-radius: 12px;
+    background: white;
+    padding: 12px;
+}
+
+.miles-rule-grid span,
+.miles-balance-box span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.miles-rule-grid strong,
+.miles-balance-box strong {
+    display: block;
+    color: var(--navy);
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.miles-balance-box {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+.miles-balance-box.is-warning {
+    background: #fff7ed;
+}
+
+.miles-balance-box.is-warning div {
+    border-color: rgba(217, 119, 6, 0.24);
+}
+
+.miles-payment-note {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 12px 0 0;
+}
+
 /* Resumo Lateral */
 .payment-summary-card {
     padding: 28px;
@@ -3081,6 +3242,11 @@ button{
 
 @media (max-width: 576px) {
     .payment-method-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .miles-rule-grid,
+    .miles-balance-box {
         grid-template-columns: 1fr;
     }
 }

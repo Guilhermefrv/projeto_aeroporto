@@ -181,6 +181,60 @@
                     <i class="fa-solid fa-lock" aria-hidden="true"></i>
                 </button>
             </form>
+
+            <div class="miles-payment-panel" aria-labelledby="miles-payment-title">
+                <div class="miles-payment-header">
+                    <span class="miles-payment-icon" aria-hidden="true">
+                        <i class="fa-solid fa-star"></i>
+                    </span>
+                    <div>
+                        <p class="eyebrow">Sky Pass</p>
+                        <h3 id="miles-payment-title">Como funcionam as milhas</h3>
+                    </div>
+                </div>
+
+                <div class="miles-rule-grid">
+                    <div>
+                        <span>Acumulo</span>
+                        <strong>R$ 1,00 pago = {{ regra_milhas.acumulo_por_real }} milha acumulada</strong>
+                    </div>
+                    <div>
+                        <span>Resgate</span>
+                        <strong>R$ 1,00 da reserva = {{ regra_milhas.resgate_por_real }} milhas para resgate</strong>
+                    </div>
+                </div>
+
+                {% if conta_milhas %}
+                    <div class="miles-balance-box{% if not saldo_suficiente_milhas %} is-warning{% endif %}">
+                        <div>
+                            <span>Saldo atual</span>
+                            <strong>{{ conta_milhas.saldo }} milhas</strong>
+                        </div>
+                        {% if milhas_necessarias %}
+                            <div aria-label="Esta reserva exige {{ milhas_necessarias }} milhas">
+                                <span>Esta reserva exige</span>
+                                <strong>{{ milhas_necessarias }} milhas</strong>
+                            </div>
+                            <div>
+                                <span>Saldo apos resgate</span>
+                                <strong>
+                                    {% if saldo_suficiente_milhas %}
+                                        {{ saldo_apos_resgate }} milhas
+                                    {% else %}
+                                        saldo insuficiente
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {% if milhas_acumulo_estimado %}
+                    <p class="miles-payment-note">
+                        Se pagar com Pix, cartao ou boleto, esta reserva acumula {{ milhas_acumulo_estimado }} milhas.
+                    </p>
+                {% endif %}
+            </div>
         </article>
 
         <aside class="payment-summary-card" aria-labelledby="summary-title">

@@ -1,134 +1,129 @@
 # Sky Bridge Airport
 
-Aplicacao web em Django para um sistema aeroportuario chamado Sky Bridge. O projeto combina uma landing page responsiva de ofertas de viagens com uma base de modelos para gerenciamento de usuarios, passageiros, funcionarios, aeroportos, voos, reservas, bilhetes, bagagens, check-in, portoes de embarque, pagamentos, milhas, promocoes e notificacoes.
+Aplicacao web em Django para um sistema academico de aeroporto/companhia aerea. O projeto combina uma landing page de ofertas nacionais com fluxo real de cadastro, login, busca de voos, reserva, pagamento simulado, bilhete, check-in, dashboards por tipo de usuario e administracao simples.
 
-A Home atual apresenta ofertas, busca visual, filtros, beneficios e navegacao preparada para futuras funcionalidades. O fluxo de acesso ja usa a autenticacao nativa do Django para login, logout e dashboard protegido, enquanto o cadastro ainda e apenas visual.
+O escopo foi mantido propositalmente simples para apresentacao de faculdade: o sistema trabalha com voos nacionais no Brasil, dados populados por comando de gerenciamento e funcionalidades demonstraveis sem integracoes externas.
+
+## Preview
+
+![Preview do projeto](./docs/preview.png)
 
 ## Funcionalidades atuais
 
-- Landing page responsiva como Home principal.
-- Header com logo, navegacao e botao "Fazer login".
-- Botao "Fazer login" levando para a pagina de acesso em `/acesso/`.
-- Pagina de acesso com cards para login e cadastro.
-- Tela de login integrada ao `LoginView` do Django.
-- Logout integrado ao `LogoutView` do Django.
-- Dashboard protegido por `login_required`.
-- Tela de cadastro visual, ainda sem gravar usuarios no banco.
-- Modulo visual de busca de voos e servicos.
-- Abas, filtros, campos e botoes clicaveis como placeholders.
-- Cards de ofertas com destinos e precos ficticios.
-- Secoes de beneficios, milhas e footer.
-- Usuario customizado com tipo de conta: passageiro, funcionario ou administrador.
-- Modelos Django registrados no admin para entidades do dominio aeroportuario.
-- Context processor para contar notificacoes nao lidas de passageiros autenticados.
-- Testes automatizados cobrindo metadados de modelos e fluxo basico de autenticacao.
+- Landing page responsiva com header, ofertas nacionais, busca de voos, beneficios e footer.
+- Cadastro real com Bootstrap Modal para passageiro, funcionario e administrador.
+- Login, logout, redefinicao e alteracao de senha usando recursos nativos do Django.
+- Header dinamico para usuario autenticado com dropdown de conta.
+- Busca real de voos nacionais usando dados do banco.
+- Faixa de datas proximas com precos e sugestoes quando nao ha voo na data escolhida.
+- Pagina de detalhe do voo com origem, destino, horarios, cabine, passageiros e preco real.
+- Reserva real associada ao passageiro logado.
+- Pagamento simulado por Pix, cartao, boleto ou milhas.
+- Emissao automatica de bilhete/comprovante apos pagamento aprovado.
+- Area do passageiro com reservas, bilhetes, check-in, notificacoes e milhas.
+- Historico de transacoes de milhas e regra academica de conversao.
+- Check-in online simples para reservas confirmadas de voos futuros.
+- Status de voo publico por numero do voo.
+- Painel do funcionario para lista de voos do dia, alteracao de status/portao e notificacao de passageiros.
+- Painel administrativo visual com indicadores, ultimas reservas, receita simulada e links para Django Admin.
+- Promocoes vindas do banco, com fallback visual quando nao existem promocoes ativas.
+- Paginas 404/500 personalizadas.
 
 ## Funcionalidades futuras
 
-- Cadastro real de usuarios e criacao dos perfis correspondentes.
-- Busca real de voos.
-- Area do usuario para reservas e viagens.
-- Sistema completo de reservas.
-- Pagamentos e emissao de bilhetes.
-- Filtros funcionais para ofertas.
-- Check-in online funcional.
-- Gerenciamento real de milhas.
-- Chat/FAQ de ajuda com IA.
-- Integracao com APIs externas.
+- Reserva de ida e volta completa.
+- Escolha real de assento.
+- Filtros comerciais mais avancados.
+- Cancelamento com regras por horario/status.
+- Uso de milhas mais detalhado por tarifa.
+- Dashboards por perfil com mais acoes operacionais.
+- Paginas de erro adicionais e monitoramento.
+- Variaveis de ambiente obrigatorias em ambiente publicado.
+- Possivel migracao futura de `Voo.origem`/`Voo.destino` para `ForeignKey(Aeroporto)`.
+- Possivel migracao futura de `Aeronave.companhia_aerea` para `ForeignKey(CompanhiaAerea)`.
 
 ## Tecnologias utilizadas
 
 - Python
 - Django 5.2.13
 - PostgreSQL via `psycopg2-binary`
-- HTML com Django Templates
+- Django Templates
+- HTML
 - CSS
+- JavaScript simples
+- Bootstrap via CDN
 - Font Awesome via CDN
 
-Nao foram encontrados neste projeto:
-
-- `package.json`
-- React
-- Vite
-- TypeScript
-- Tailwind CSS
-- React Router
-- ESLint
-- Vitest ou Testing Library
+Nao ha `package.json`; portanto o projeto nao usa React, Vite, TypeScript, Tailwind, ESLint, Vitest ou scripts `npm`.
 
 ## Estrutura de pastas
 
 ```txt
 projeto_aeroporto/
-  .gitignore
   manage.py
   README.md
+  PRD.md
   requirements.txt
   sistema_aeroporto/
-    __init__.py
-    asgi.py
     settings.py
     urls.py
     wsgi.py
+    asgi.py
   skybridgeapp/
-    __init__.py
     admin.py
     apps.py
     context_processors.py
+    forms.py
     models.py
     tests.py
     urls.py
     views.py
+    management/
+      commands/
+        popular_banco.py
+        seed.py
     migrations/
-      __init__.py
-      0001_initial.py
-      0002_aeroporto_companhiaaerea_contamilhas_pagamento_and_more.py
     static/
       css/
-        auth_home.css
-        cadastro.css
-        home.css
-        login.css
+      img/
+      js/
     templates/
-      auth_home.html
-      cadastro.html
-      dashboard.html
-      home.html
-      login.html
 ```
 
-## Paginas e rotas
+## Principais rotas
 
-| Rota | View | Template | Descricao |
-| --- | --- | --- | --- |
-| `/` | `home` | `home.html` | Landing page principal com ofertas, busca visual e beneficios. |
-| `/acesso/` | `auth_home` | `auth_home.html` | Pagina intermediaria com opcoes de login e cadastro. |
-| `/cadastro/` | `cadastro` | `cadastro.html` | Tela visual de criacao de conta, ainda sem persistencia. |
-| `/login/` | `SkyBridgeLoginView` | `login.html` | Login real usando autenticacao do Django. |
-| `/logout/` | `SkyBridgeLogoutView` | - | Logout real usando autenticacao do Django. |
-| `/dashboard/` | `dashboard` | `dashboard.html` | Area protegida para usuarios autenticados. |
-| `/admin/` | Django Admin | Django Admin | Painel administrativo do Django. |
+| Rota | Descricao |
+| --- | --- |
+| `/` | Landing page principal e busca de voos. |
+| `/acesso/` | Pagina intermediaria para login/cadastro. |
+| `/cadastro/` | Cadastro real com modais para tipos de usuario. |
+| `/login/` | Login real com suporte a `next`. |
+| `/logout/` | Logout real. |
+| `/senha/redefinir/` | Fluxo de redefinicao de senha. |
+| `/senha/alterar/` | Alteracao de senha para usuario logado. |
+| `/voos/buscar/` | Resultados da busca de voos. |
+| `/voos/<id>/` | Detalhe do voo. |
+| `/voos/<id>/selecionar/` | Entrada protegida para selecionar voo. |
+| `/voos/<id>/reservar/` | Cria reserva real. |
+| `/reservas/<id>/pagamento/` | Pagamento simulado. |
+| `/reservas/<id>/sucesso/` | Sucesso da reserva apos pagamento. |
+| `/reservas/<id>/bilhete/` | Bilhete/comprovante. |
+| `/reservas/<id>/check-in/` | Faz check-in online. |
+| `/reservas/<id>/cartao-embarque/` | Cartao de embarque simples. |
+| `/minhas-viagens/` | Lista de reservas do passageiro. |
+| `/notificacoes/` | Notificacoes do passageiro. |
+| `/status-voo/` | Consulta publica de status de voo. |
+| `/dashboard/passageiro/` | Painel do passageiro. |
+| `/dashboard/funcionario/` | Painel operacional do funcionario. |
+| `/dashboard/administrador/` | Painel administrativo visual. |
+| `/admin/` | Django Admin. |
 
-Fluxo principal:
-
-1. O usuario acessa `/`.
-2. Clica em "Fazer login".
-3. E direcionado para `/acesso/`.
-4. Clica em "Fazer Login".
-5. E direcionado para `/login/`.
-6. Apos autenticar, e redirecionado para `/dashboard/`.
-7. No dashboard, pode sair pelo formulario de logout.
-
-## Dados e dominio
-
-O app `skybridgeapp` possui os seguintes modelos:
+## Modelos principais
 
 - `UsuarioCustomizado`
 - `Passageiro`
-- `ContaMilhas`
-- `TransacaoMilhas`
 - `Funcionario`
-- `Administrador`
+- `Administrador` legado
 - `Aeroporto`
 - `CompanhiaAerea`
 - `Aeronave`
@@ -142,55 +137,48 @@ O app `skybridgeapp` possui os seguintes modelos:
 - `Bagagem`
 - `CheckIn`
 - `Notificacao`
+- `ContaMilhas`
+- `TransacaoMilhas`
 
-Esses modelos estao registrados no Django Admin em `skybridgeapp/admin.py`.
+Observacao: `Administrador` e um model legado mantido apenas por compatibilidade historica. O novo cadastro administrativo usa `UsuarioCustomizado` com `tipo='administrador'`, `is_staff=True` e `is_superuser=True`. No Django Admin, o model legado fica isolado e nao permite criar/editar/excluir registros nem expor a senha.
 
-### Usuario customizado
+## Regra academica de milhas
 
-O projeto define `AUTH_USER_MODEL = 'skybridgeapp.UsuarioCustomizado'`. Esse modelo herda de `AbstractUser` e adiciona o campo `tipo`, que pode ser:
+- Passageiro cadastrado recebe conta Sky Pass com saldo inicial de 10.000 milhas.
+- Pagamentos por Pix, cartao ou boleto acumulam `1 milha` a cada `R$ 1,00` pago.
+- Pagamento por milhas usa `10 milhas` a cada `R$ 1,00` da reserva.
+- Se o saldo for insuficiente, a reserva permanece pendente e o usuario recebe feedback amigavel.
+- Toda movimentacao gera `TransacaoMilhas` e aparece no painel do passageiro.
 
-- `passageiro`
-- `funcionario`
-- `administrador`
+## Variaveis de ambiente
 
-Os modelos `Passageiro` e `Funcionario` funcionam como perfis complementares ligados ao usuario por `OneToOneField`.
+O projeto le configuracoes sensiveis via variaveis de ambiente, mantendo fallbacks locais para desenvolvimento.
 
-### Notificacoes
+```powershell
+$env:DJANGO_SECRET_KEY="troque-esta-chave"
+$env:DJANGO_DEBUG="True"
+$env:DJANGO_ALLOWED_HOSTS="127.0.0.1,localhost"
+$env:POSTGRES_DB="skybridge"
+$env:POSTGRES_USER="postgres"
+$env:POSTGRES_PASSWORD="admin"
+$env:POSTGRES_HOST="127.0.0.1"
+$env:POSTGRES_PORT="5432"
+```
 
-O context processor `notificacoes_nao_lidas` adiciona ao contexto dos templates a quantidade de notificacoes nao lidas do passageiro autenticado. Usuarios anonimos ou sem perfil de passageiro recebem total `0`.
-
-## Banco de dados
-
-O projeto esta configurado para usar PostgreSQL em `sistema_aeroporto/settings.py`.
-
-Configuracao atual:
-
-- Banco: `skybridge`
-- Usuario: `postgres`
-- Host: `127.0.0.1`
-- Porta: `5432`
-
-Antes de rodar migrations ou o servidor Django com `runserver`, garanta que:
-
-- o PostgreSQL esteja instalado;
-- o servico esteja rodando em `127.0.0.1:5432`;
-- o banco configurado exista;
-- as credenciais locais estejam corretas no arquivo de configuracao.
-
-> Observacao: as credenciais e a `SECRET_KEY` estao hoje diretamente em `settings.py`. Antes de usar este projeto em producao ou publicar o repositorio, mova segredos para variaveis de ambiente ou um arquivo `.env` nao versionado.
+Antes de publicar ou compartilhar ambiente real, defina `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS` e as credenciais reais do PostgreSQL fora do codigo.
 
 ## Como rodar localmente
 
-### 1. Criar e ativar um ambiente virtual
+### 1. Criar e ativar ambiente virtual
 
-Windows PowerShell:
+PowerShell:
 
 ```powershell
 python -m venv ..\meuMundo
 ..\meuMundo\Scripts\Activate.ps1
 ```
 
-Windows CMD:
+CMD:
 
 ```bat
 python -m venv ..\meuMundo
@@ -210,7 +198,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Verificar configuracao do Django
+### 3. Verificar o projeto
 
 ```bash
 python manage.py check
@@ -222,107 +210,91 @@ python manage.py check
 python manage.py migrate
 ```
 
-### 5. Criar superusuario
+### 5. Popular dados de exemplo
+
+```bash
+python manage.py popular_banco
+```
+
+Para limpar apenas dados de exemplo criados pelo comando:
+
+```bash
+python manage.py popular_banco --limpar
+```
+
+### 6. Criar superusuario
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 6. Rodar servidor local
+### 7. Rodar servidor
 
 ```bash
 python manage.py runserver
 ```
 
-Depois acesse:
+Acesse:
 
 - Home: `http://127.0.0.1:8000/`
-- Pagina de acesso: `http://127.0.0.1:8000/acesso/`
-- Cadastro visual: `http://127.0.0.1:8000/cadastro/`
+- Cadastro: `http://127.0.0.1:8000/cadastro/`
 - Login: `http://127.0.0.1:8000/login/`
-- Dashboard: `http://127.0.0.1:8000/dashboard/`
 - Admin: `http://127.0.0.1:8000/admin/`
 
-## Scripts e comandos disponiveis
+## Fluxo recomendado para demonstracao
 
-Este projeto nao possui `package.json`, portanto nao ha scripts `npm run lint`, `npm run build`, `npm test` ou `npm run typecheck`.
-
-Comandos Django uteis:
-
-```bash
-python manage.py check
-python manage.py test
-python manage.py makemigrations
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
+1. Rode `python manage.py popular_banco`.
+2. Acesse `/`.
+3. Escolha origem, destino e data.
+4. Compare datas proximas.
+5. Selecione um voo.
+6. Crie ou acesse uma conta de passageiro.
+7. Confirme a reserva.
+8. Simule pagamento.
+9. Veja o bilhete.
+10. Abra "Minhas viagens".
+11. Faca check-in e visualize o cartao de embarque.
+12. Consulte status do voo em `/status-voo/`.
 
 ## Testes
 
-O arquivo `skybridgeapp/tests.py` possui testes implementados para:
+O projeto possui testes Django cobrindo:
 
-- metadados e relacionamentos principais dos modelos de dominio;
-- modelos comerciais como tarifa, promocao e pagamento;
-- modelos de milhas;
-- renderizacao da Home;
-- links da pagina de acesso;
-- renderizacao do cadastro visual;
-- renderizacao do login;
-- redirecionamento de logout;
-- protecao do dashboard para usuario anonimo;
-- acesso ao dashboard para usuario autenticado.
+- metadados dos models;
+- comando `popular_banco`;
+- home e promocoes vindas do banco;
+- cadastro por tipo de usuario;
+- login/logout/senhas;
+- busca real de voos;
+- detalhe e selecao de voo;
+- reserva real;
+- pagamento simulado;
+- bilhete;
+- area do passageiro;
+- check-in;
+- status de voo;
+- painel do funcionario;
+- painel administrativo;
+- milhas refinadas;
+- pagina 404 personalizada.
 
-Para rodar os testes Django:
+Para rodar:
 
 ```bash
 python manage.py test
 ```
 
-Para novas funcionalidades com comportamento ou regra de negocio, use TDD:
+Para verificar se ha migrations pendentes:
 
-1. Entenda o comportamento esperado.
-2. Crie testes que falhem primeiro.
-3. Implemente o minimo necessario para passar.
-4. Refatore mantendo os testes passando.
+```bash
+python manage.py makemigrations --check --dry-run
+```
 
-Priorize testes orientados ao comportamento do usuario para navegacao, formularios, validacoes, filtros, estado, integracao entre componentes e regras de negocio. Evite testes frageis baseados em classes CSS ou detalhes internos.
+## Boas praticas do projeto
 
-## Desenvolvimento frontend
-
-O frontend atual usa Django Templates e CSS estatico.
-
-Arquivos principais:
-
-- `skybridgeapp/templates/home.html`: landing page principal.
-- `skybridgeapp/templates/auth_home.html`: pagina de acesso com login/cadastro.
-- `skybridgeapp/templates/login.html`: tela de login integrada ao Django.
-- `skybridgeapp/templates/cadastro.html`: tela visual de criacao de conta.
-- `skybridgeapp/templates/dashboard.html`: area protegida apos login.
-- `skybridgeapp/static/css/home.css`: estilos da landing page.
-- `skybridgeapp/static/css/auth_home.css`: estilos da pagina de acesso e dashboard.
-- `skybridgeapp/static/css/login.css`: estilos da tela de login.
-- `skybridgeapp/static/css/cadastro.css`: estilos da tela de cadastro.
-
-Os botoes, filtros e abas da landing page sao placeholders visuais neste momento. Eles devem permanecer sem comportamento real ate que uma funcionalidade seja definida e implementada com testes quando aplicavel.
-
-O formulario de cadastro tambem e visual: ele possui campos e CSRF token, mas o envio e bloqueado no template por JavaScript e ainda nao cria usuarios.
-
-## Boas praticas para contribuir
-
-- Antes de alterar comportamento, escreva ou atualize testes relevantes.
-- Rode `python manage.py check` antes de finalizar mudancas.
-- Rode `python manage.py test` quando houver testes ou alteracoes de comportamento.
-- Nao altere a configuracao de banco sem necessidade clara.
-- Nao implemente busca real, APIs externas ou regras de reserva sem escopo definido.
-- Mantenha textos, assets e imagens sem copiar material proprietario de outras empresas.
-- Prefira codigo simples e legivel a abstracoes desnecessarias.
-
-## Observacoes conhecidas
-
-- O servidor Django padrao depende do PostgreSQL configurado em `settings.py`.
-- Sem PostgreSQL rodando localmente, `runserver`, `migrate` e comandos que consultem migrations podem falhar ao conectar no banco.
-- O login ja usa autenticacao real do Django.
-- O cadastro ainda e apenas visual e nao cria usuarios.
-- A busca, os filtros, as ofertas e os botoes comerciais ainda sao placeholders.
-- Nao ha pipeline de build frontend separado.
+- Use TDD para novas funcionalidades com comportamento ou regra de negocio.
+- Rode `python manage.py check` e `python manage.py test` antes de finalizar mudancas relevantes.
+- Nao implemente integracoes externas sem escopo claro.
+- Nao salve senhas manualmente; use sempre o sistema de autenticacao do Django.
+- Mantenha o escopo simples e demonstravel para faculdade.
+- Evite copiar textos, marcas ou imagens proprietarias de companhias reais.

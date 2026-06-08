@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erro interno | Sky Bridge</title>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="error-page">
+    <main class="error-shell" aria-labelledby="error-title">
+        <a class="brand error-brand" href="{% url 'home' %}" aria-label="Sky Bridge - pagina inicial">
+            <span class="brand-mark" aria-hidden="true">
+                <i class="fa-solid fa-plane"></i>
+            </span>
+            <span class="brand-copy">
+                <strong>Sky Bridge</strong>
+                <small>Viagens e ofertas</small>
+            </span>
+        </a>
+
+        <section class="error-card">
+            <span class="error-icon is-danger" aria-hidden="true">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </span>
+            <p class="eyebrow">Erro 500</p>
+            <h1 id="error-title">Algo saiu da rota</h1>
+            <p>O sistema encontrou uma falha inesperada. Tente novamente em instantes ou volte para a Home.</p>
+            <a class="primary-button" href="{% url 'home' %}">
+                Voltar para Home
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+        </section>
+    </main>
+</body>
+</html>

@@ -38,8 +38,13 @@ from .forms import (
 from .models import Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, TransacaoMilhas, Voo
 
 
+MILHAS_POR_REAL_ACUMULO = 1
+MILHAS_POR_REAL_RESGATE = 10
+MILHAS_SALDO_INICIAL = 10000
+
+
 LANDING_CONTEXT = {
-    'asset_version': '20260608-date-carousel',
+    'asset_version': '20260608-milhas-tech',
     'nav_items': [
         'Comprar',
         'Minhas viagens',
@@ -558,6 +563,9 @@ def pagamento_reserva(request, reserva_id):
         return redirect('reserva_sucesso', reserva_id=reserva.id)
 
     valor_total = _valor_total_reserva(reserva)
+    conta_milhas = _obter_ou_criar_conta_milhas(reserva.passageiro)
+    milhas_necessarias = _milhas_necessarias_para_resgate(valor_total)
+    milhas_acumulo_estimado = _milhas_acumuladas_por_pagamento(valor_total)
 
     if request.method == 'POST':
         form = PagamentoForm(request.POST)
@@ -568,44 +576,48 @@ def pagamento_reserva(request, reserva_id):
 
             metodo = form.cleaned_data['metodo']
             if metodo == 'milhas':
-                conta = _obter_ou_criar_conta_milhas(reserva.passageiro)
-                milhas_necessarias = int(valor_total * 10)
-                if conta.saldo < milhas_necessarias:
-                    form.add_error('metodo', f"Saldo de milhas insuficiente. Necessário: {milhas_necessarias} milhas. Seu saldo: {conta.saldo} milhas.")
+                if conta_milhas.saldo < milhas_necessarias:
+                    form.add_error(
+                        'metodo',
+                        (
+                            'Saldo de milhas insuficiente. Para esta reserva sao necessarias '
+                            f'{milhas_necessarias} milhas, mas seu saldo atual e de {conta_milhas.saldo} milhas.'
+                        ),
+                    )
                 else:
                     with transaction.atomic():
-                        # Deduz milhas
-                        conta.saldo -= milhas_necessarias
-                        conta.save(update_fields=['saldo'])
+                        conta_milhas.saldo -= milhas_necessarias
+                        conta_milhas.save(update_fields=['saldo'])
                         
                         # Cria transação de resgate
                         TransacaoMilhas.objects.create(
-                            conta=conta,
+                            conta=conta_milhas,
                             tipo='resgate',
                             quantidade=-milhas_necessarias,
                             descricao=f"Resgate para voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
                         )
                         
                         _aprovar_pagamento(reserva, metodo, valor_total)
-                    messages.success(request, 'Pagamento em milhas aprovado com sucesso.')
+                    messages.success(
+                        request,
+                        f'Pagamento em milhas aprovado. Foram resgatadas {milhas_necessarias} milhas para a reserva #{reserva.id}.',
+                    )
                     return redirect('reserva_sucesso', reserva_id=reserva.id)
             else:
                 with transaction.atomic():
-                    # Para outros métodos, acumula milhas fictícias (1 milha por R$ 1,00 gasto)
-                    conta = _obter_ou_criar_conta_milhas(reserva.passageiro)
-                    milhas_acumuladas = int(valor_total)
-                    conta.saldo += milhas_acumuladas
-                    conta.save(update_fields=['saldo'])
+                    milhas_acumuladas = _milhas_acumuladas_por_pagamento(valor_total)
+                    conta_milhas.saldo += milhas_acumuladas
+                    conta_milhas.save(update_fields=['saldo'])
                     
                     TransacaoMilhas.objects.create(
-                        conta=conta,
+                        conta=conta_milhas,
                         tipo='acumulo',
                         quantidade=milhas_acumuladas,
-                        descricao=f"Acúmulo por voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
+                        descricao=f"Acumulo por voo {reserva.voo.numero_voo} (Reserva #{reserva.id})"
                     )
                     
                     _aprovar_pagamento(reserva, metodo, valor_total)
-                messages.success(request, 'Pagamento aprovado com sucesso.')
+                messages.success(request, f'Pagamento aprovado. Voce acumulou {milhas_acumuladas} milhas nesta reserva.')
                 return redirect('reserva_sucesso', reserva_id=reserva.id)
     else:
         metodo_inicial = pagamento_existente.metodo if pagamento_existente and pagamento_existente.metodo else PAYMENT_METHODS[0]['value']
@@ -619,6 +631,12 @@ def pagamento_reserva(request, reserva_id):
         'metodos_pagamento': PAYMENT_METHODS,
         'valor_total': _formatar_moeda(valor_total) if valor_total is not None else None,
         'tarifa_label': dict(Tarifa.CLASSES).get(reserva.classe_tarifa, 'Menor tarifa disponivel'),
+        'conta_milhas': conta_milhas,
+        'milhas_necessarias': milhas_necessarias,
+        'milhas_acumulo_estimado': milhas_acumulo_estimado,
+        'saldo_apos_resgate': conta_milhas.saldo - milhas_necessarias if milhas_necessarias is not None else None,
+        'saldo_suficiente_milhas': milhas_necessarias is not None and conta_milhas.saldo >= milhas_necessarias,
+        'regra_milhas': _regra_milhas_context(),
     }
     if pagamento_existente:
         context['pagamento_existente'] = pagamento_existente
@@ -778,6 +796,18 @@ def cartao_embarque(request, reserva_id):
     })
 
 
+def erro_404(request, exception):
+    return render(request, '404.html', {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+    }, status=404)
+
+
+def erro_500(request):
+    return render(request, '500.html', {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+    }, status=500)
+
+
 @login_required
 @require_POST
 def cancelar_reserva(request, reserva_id):
@@ -862,6 +892,26 @@ def _valor_total_reserva(reserva):
     return (tarifa.preco_base + tarifa.taxas) * quantidade
 
 
+def _milhas_necessarias_para_resgate(valor_total):
+    if valor_total is None:
+        return None
+    return int(valor_total * MILHAS_POR_REAL_RESGATE)
+
+
+def _milhas_acumuladas_por_pagamento(valor_total):
+    if valor_total is None:
+        return None
+    return int(valor_total * MILHAS_POR_REAL_ACUMULO)
+
+
+def _regra_milhas_context():
+    return {
+        'acumulo_por_real': MILHAS_POR_REAL_ACUMULO,
+        'resgate_por_real': MILHAS_POR_REAL_RESGATE,
+        'saldo_inicial': MILHAS_SALDO_INICIAL,
+    }
+
+
 def _aprovar_pagamento(reserva, metodo, valor_total):
     Pagamento.objects.update_or_create(
         reserva=reserva,
@@ -895,7 +945,7 @@ def _obter_ou_criar_conta_milhas(passageiro):
                 break
         return ContaMilhas.objects.create(
             passageiro=passageiro,
-            saldo=10000,  # 10.000 de saldo padrão para passageiros herdados ou sem conta
+            saldo=MILHAS_SALDO_INICIAL,
             numero_programa=num_programa
         )
 
@@ -1434,17 +1484,26 @@ def dashboard_passageiro(request):
     passageiro = getattr(request.user, 'passageiro', None)
     reservas = []
     notificacoes = []
+    conta_milhas = None
+    transacoes_milhas = []
 
     if passageiro:
         reservas = _preparar_reservas_jornada(
             passageiro.reserva_set.select_related('voo', 'pagamento', 'bilhete').all().order_by('-id')[:5]
         )
         notificacoes = passageiro.notificacao_set.all()[:5]
+        conta_milhas = getattr(passageiro, 'conta_milhas', None)
+        if conta_milhas:
+            transacoes_milhas = conta_milhas.transacoes.all()[:6]
 
     return render(request, 'painel_passageiro.html', {
         'passageiro': passageiro,
         'reservas': reservas,
         'notificacoes': notificacoes,
+        'conta_milhas': conta_milhas,
+        'transacoes_milhas': transacoes_milhas,
+        'regra_milhas': _regra_milhas_context(),
+        'asset_version': LANDING_CONTEXT['asset_version'],
     })
 
 

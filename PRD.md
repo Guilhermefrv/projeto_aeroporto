@@ -2,7 +2,7 @@
 
 Documento de estado atual e planejamento funcional do projeto Sky Bridge.
 
-Data de referencia: 2026-06-03
+Data de referencia: 2026-06-08
 
 ## Visao Geral
 
@@ -54,6 +54,8 @@ projeto_aeroporto/
       0003_reserva_pagamento.py
     templates/
       auth_home.html
+      404.html
+      500.html
       bilhete.html
       buscar_voos.html
       cadastro.html
@@ -341,14 +343,17 @@ Estado atual:
 - "Minhas viagens", detalhe da reserva e painel do passageiro exibem acoes de "Fazer check-in" ou "Ver cartao".
 - Passageiro nao consegue fazer check-in ou ver cartao de reserva de outro usuario.
 
-## 14. Milhas Basicas
+## 14. Milhas Refinadas
 
 - Passageiro criado pelo cadastro recebe uma `ContaMilhas` automaticamente.
+- Regra academica clara: pagamento comum acumula 1 milha por R$ 1,00.
+- Regra academica clara: pagamento por milhas consome 10 milhas por R$ 1,00 da reserva.
 - Pagamento por Pix, cartao ou boleto acumula milhas ficticias.
 - Pagamento por milhas verifica saldo, debita milhas e registra transacao de resgate.
 - Dashboard do passageiro exibe saldo e numero do programa quando ha conta de milhas.
-
-Ponto pendente: a experiencia de milhas ainda e simples e pode ser refinada em etapas futuras.
+- Dashboard do passageiro exibe historico recente de transacoes de milhas.
+- Pagina de pagamento mostra saldo atual, milhas necessarias, saldo apos resgate e milhas acumuladas em pagamento comum.
+- Saldo insuficiente recebe mensagem amigavel e mantem a reserva pendente.
 
 ## 15. Populacao do Banco
 
@@ -465,54 +470,26 @@ O arquivo `skybridgeapp/tests.py` cobre:
 - Quando nao ha promocoes ativas, a Home usa os cards estaticos como fallback visual.
 - Dados criados pelo comando `popular_banco` sao compativeis com os cards da Home.
 
+## 22. Melhorias Tecnicas Importantes
+
+- `README.md` atualizado para refletir cadastro, busca, reserva, pagamento, bilhete, check-in, dashboards, promocoes e milhas reais.
+- Busca por textos quebrados foi revisada nos arquivos vivos do projeto.
+- Model legado `Administrador` foi isolado no Django Admin: nao permite adicionar, editar ou excluir e nao expoe o campo `senha`.
+- `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` e credenciais do PostgreSQL passaram a aceitar variaveis de ambiente com fallback local de desenvolvimento.
+- Paginas 404 e 500 personalizadas foram criadas com visual coerente com a landing page.
+- Pontos arquiteturais futuros documentados: avaliar `Voo.origem`/`Voo.destino` como `ForeignKey(Aeroporto)` e `Aeronave.companhia_aerea` como `ForeignKey(CompanhiaAerea)`.
+
 
 # [A Desenvolver]
 
 ## Prioridade Recomendada
 
-1. Milhas refinadas.
-2. Melhorias tecnicas finais.
+1. Revisao visual final para apresentacao.
+2. Revisao dos dados de demonstracao no banco antes da banca.
+3. Opcional: escolha real de assentos.
+4. Opcional: fluxo completo de ida e volta.
+5. Opcional futuro: migrar campos de texto de voo/aeronave para relacionamentos mais fortes.
 
-
-## 2. Milhas Refinadas
-
-Prioridade: baixa/media.
-
-Estado atual: conta de milhas, acumulo e resgate ja existem de forma simples no fluxo de cadastro/pagamento.
-
-Implementar simples:
-
-- Melhorar mensagens e visual do uso de milhas.
-- Mostrar historico de transacoes no dashboard.
-- Definir regra academica clara de conversao entre reais e milhas.
-- Manter feedback amigavel quando o saldo for insuficiente.
-
-Criterios de aceite:
-
-- Passageiro entende saldo, historico e impacto do pagamento com milhas.
-- Transacoes aparecem no painel.
-- Regras ficam simples e demonstraveis.
-
-## 3. Melhorias Tecnicas Importantes
-
-Prioridade: media antes da apresentacao final.
-
-Implementar ou revisar:
-
-- Atualizar `README.md`, pois esta desatualizado e ainda diz que cadastro/busca sao visuais.
-- Corrigir textos com caracteres quebrados no codigo/templates, como `FuncionÃ¡rio`.
-- Remover, aposentar ou isolar a model legada `Administrador`, pois ela guarda senha em texto puro.
-- Avaliar migrar `Voo.origem` e `Voo.destino` de texto para `ForeignKey(Aeroporto)` futuramente.
-- Avaliar migrar `Aeronave.companhia_aerea` de texto para `ForeignKey(CompanhiaAerea)` futuramente.
-- Mover `SECRET_KEY` e credenciais do banco para variaveis de ambiente antes de publicar.
-- Criar paginas 404/erro simples e bonitas.
-
-Criterios de aceite:
-
-- Documentacao reflete o estado real do projeto.
-- Projeto nao exibe textos quebrados.
-- Dados sensiveis nao ficam expostos em codigo antes de publicacao.
-- Erros comuns possuem tela apresentavel.
 
 ## Fluxo MVP Para Apresentacao
 
@@ -569,10 +546,11 @@ Priorizar testes de comportamento do usuario:
 
 ## Proximo Passo Recomendado
 
-Implementar **Milhas Refinadas**, melhorando a exibicao do saldo, o historico de transacoes e as mensagens do uso de milhas no fluxo de pagamento.
+Fazer uma revisao final de apresentacao: conferir dados do `popular_banco`, criar usuarios de demonstracao, validar o fluxo completo de passageiro, funcionario e administrador, e ajustar apenas polimentos visuais pontuais.
 
 Sugestao de entrega:
 
-1. Exibir historico de transacoes no painel do passageiro.
-2. Mostrar mensagens mais claras para acumulo, resgate e saldo insuficiente.
-3. Documentar uma regra academica simples de conversao entre reais e milhas.
+1. Rodar `python manage.py popular_banco --limpar` e `python manage.py popular_banco`.
+2. Validar busca, reserva, pagamento, bilhete e check-in com um passageiro.
+3. Validar alteracao de status/portao com um funcionario.
+4. Validar indicadores e links rapidos com um administrador.

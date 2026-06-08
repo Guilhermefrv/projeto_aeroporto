@@ -314,6 +314,126 @@ body {
     color: var(--blue);
 }
 
+.section-subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 6px;
+}
+
+.miles-history-card {
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98)),
+        white;
+}
+
+.miles-program-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(27, 59, 143, 0.14);
+    background: var(--blue-soft);
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.miles-transaction-list {
+    display: grid;
+    gap: 12px;
+}
+
+.miles-transaction-item {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: white;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.miles-transaction-item:hover {
+    border-color: rgba(27, 59, 143, 0.18);
+    box-shadow: var(--shadow-soft);
+    transform: translateY(-1px);
+}
+
+.miles-transaction-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.miles-transaction-item.is-resgate .miles-transaction-icon {
+    background: #fff1f2;
+    color: var(--red);
+}
+
+.miles-transaction-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.miles-transaction-copy strong {
+    color: var(--navy);
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.miles-transaction-copy span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.miles-transaction-value {
+    color: var(--green);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.miles-transaction-item.is-resgate .miles-transaction-value {
+    color: var(--red);
+}
+
+.empty-state.compact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 74px;
+    padding: 16px;
+    border: 1px dashed rgba(27, 59, 143, 0.22);
+    border-radius: 14px;
+    background: #f8fbff;
+    color: var(--muted);
+}
+
+.empty-state.compact i {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: #fef3c7;
+    color: #d97706;
+    flex: 0 0 auto;
+}
+
+.empty-state.compact p {
+    margin: 0;
+    line-height: 1.45;
+}
+
 /* Tabelas */
 .table-responsive {
     width: 100%;

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Passageiro | Sky Bridge</title>
-    <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
+    <link rel="stylesheet" href="{% static 'css/paineis.css' %}?v={{ asset_version }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -20,7 +20,7 @@
                 </div>
                 <div class="brand-text">
                     <h1>Sky Bridge</h1>
-                    <span>Área do Cliente</span>
+                    <span>Area do Cliente</span>
                 </div>
             </a>
             <div class="user-menu">
@@ -84,8 +84,8 @@
             
             <!-- Boas-vindas -->
             <section class="welcome-header">
-                <h2>Olá, {{ passageiro.nome|default:user.username }}!</h2>
-                <p>Bem-vindo de volta ao seu painel. Aqui você pode gerenciar suas reservas, ver notificações e acompanhar seu programa de milhas.</p>
+                <h2>Ola, {{ passageiro.nome|default:user.username }}!</h2>
+                <p>Bem-vindo de volta ao seu painel. Aqui voce pode gerenciar suas reservas, ver notificacoes e acompanhar seu programa de milhas.</p>
             </section>
 
             <!-- Widgets -->
@@ -97,9 +97,9 @@
                     </div>
                     <div class="widget-info">
                         <h3>Saldo de Milhas</h3>
-                        {% if passageiro.conta_milhas %}
-                            <p>{{ passageiro.conta_milhas.saldo }} milhas</p>
-                            <span style="font-size: 11px; color: var(--muted)">Programa: {{ passageiro.conta_milhas.numero_programa }}</span>
+                        {% if conta_milhas %}
+                            <p>{{ conta_milhas.saldo }} milhas</p>
+                            <span style="font-size: 11px; color: var(--muted)">Programa: {{ conta_milhas.numero_programa }}</span>
                         {% else %}
                             <p>0 milhas</p>
                             <span style="font-size: 11px; color: var(--muted)">Nenhum programa ativo</span>
@@ -128,6 +128,49 @@
                         <p>{{ reservas|length }} ativas</p>
                     </div>
                 </div>
+            </section>
+
+            <section class="section-card miles-history-card">
+                <div class="section-header">
+                    <div>
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Historico de milhas</h3>
+                        <p class="section-subtitle">
+                            R$ 1,00 pago = {{ regra_milhas.acumulo_por_real }} milha.
+                            R$ 1,00 em resgate = {{ regra_milhas.resgate_por_real }} milhas.
+                        </p>
+                    </div>
+                    {% if conta_milhas %}
+                        <span class="miles-program-badge">{{ conta_milhas.numero_programa }}</span>
+                    {% endif %}
+                </div>
+
+                {% if transacoes_milhas %}
+                    <div class="miles-transaction-list">
+                        {% for transacao in transacoes_milhas %}
+                            <article class="miles-transaction-item is-{{ transacao.tipo }}">
+                                <span class="miles-transaction-icon" aria-hidden="true">
+                                    {% if transacao.tipo == 'resgate' %}
+                                        <i class="fa-solid fa-arrow-down"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-arrow-up"></i>
+                                    {% endif %}
+                                </span>
+                                <div class="miles-transaction-copy">
+                                    <strong>{{ transacao.descricao }}</strong>
+                                    <span>{{ transacao.get_tipo_display }} em {{ transacao.data|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <strong class="miles-transaction-value">
+                                    {% if transacao.quantidade > 0 %}+{% endif %}{{ transacao.quantidade }}
+                                </strong>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state compact">
+                        <i class="fa-solid fa-star" aria-hidden="true"></i>
+                        <p>Suas movimentacoes de milhas aparecerao aqui depois de pagamentos ou resgates.</p>
+                    </div>
+                {% endif %}
             </section>
 
             <!-- Ações Rápidas -->

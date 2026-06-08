@@ -3,6 +3,7 @@ from decimal import Decimal
 from io import StringIO
 from urllib.parse import quote, unquote
 
+from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
@@ -13,7 +14,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 
-from .models import Aeroporto, Aeronave, Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, Voo
+from .models import Administrador, Aeroporto, Aeronave, Bagagem, Bilhete, CheckIn, ContaMilhas, Funcionario, Notificacao, Pagamento, Passageiro, PortaoEmbarque, Promocao, Reserva, Tarifa, TransacaoMilhas, Voo
 
 
 class AirportDomainModelMetadataTests(SimpleTestCase):
@@ -57,6 +58,14 @@ class AirportDomainModelMetadataTests(SimpleTestCase):
         self.assertEqual(TransacaoMilhas._meta.get_field('conta').remote_field.model.__name__, 'ContaMilhas')
         self.assertIn(('acumulo', 'Acumulo'), TransacaoMilhas.TIPOS)
         self.assertIn(('resgate', 'Resgate'), TransacaoMilhas.TIPOS)
+
+    def test_administrador_legado_fica_isolado_no_admin(self):
+        model_admin = admin.site._registry[Administrador]
+
+        self.assertIn('senha', model_admin.exclude)
+        self.assertFalse(model_admin.has_add_permission(None))
+        self.assertFalse(model_admin.has_change_permission(None))
+        self.assertFalse(model_admin.has_delete_permission(None))
 
 
 class PopularBancoCommandTests(TestCase):
@@ -104,6 +113,17 @@ class PopularBancoCommandTests(TestCase):
 
         self.assertFalse(Voo.objects.filter(numero_voo__startswith='SB').exists())
         self.assertFalse(Tarifa.objects.filter(voo__numero_voo__startswith='SB').exists())
+
+
+class ErrorPageTests(TestCase):
+    @override_settings(DEBUG=False, ALLOWED_HOSTS=['testserver'])
+    def test_pagina_404_personalizada_e_apresentavel(self):
+        response = self.client.get('/rota-inexistente-para-teste/')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, 'Pagina nao encontrada', status_code=404)
+        self.assertContains(response, 'Voltar para Home', status_code=404)
+
 
 @override_settings(ALLOWED_HOSTS=['testserver'])
 class AuthFlowTests(TestCase):
@@ -991,8 +1011,8 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'data-bs-target="#originAirportModal"')
         self.assertContains(response, 'data-bs-target="#destinationAirportModal"')
         self.assertContains(response, 'data-airport-option')
-        self.assertContains(response, '/static/css/home.css?v=20260608-date-carousel')
-        self.assertContains(response, '/static/js/main.js?v=20260608-date-carousel')
+        self.assertContains(response, '/static/css/home.css?v=20260608-milhas-tech')
+        self.assertContains(response, '/static/js/main.js?v=20260608-milhas-tech')
         self.assertContains(response, 'name="origem"')
         self.assertContains(response, 'name="destino"')
         self.assertContains(response, 'name="data_ida"')
@@ -1392,6 +1412,36 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'Milhas')
         self.assertContains(response, 'R$ 540,00')
 
+    def test_pagina_pagamento_explica_regra_e_impacto_das_milhas(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_regra_milhas',
+            cpf_passaporte='REGRA123456',
+        )
+        ContaMilhas.objects.create(
+            passageiro=passageiro,
+            saldo=5000,
+            numero_programa='SB-555555',
+        )
+        reserva = Reserva.objects.create(
+            passageiro=passageiro,
+            voo=self.voo_gru_rec,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='12A',
+            status='pendente',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('pagamento_reserva', args=[reserva.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Como funcionam as milhas')
+        self.assertContains(response, 'R$ 1,00 pago = 1 milha acumulada')
+        self.assertContains(response, 'R$ 1,00 da reserva = 10 milhas para resgate')
+        self.assertContains(response, 'Esta reserva exige 2700 milhas')
+        self.assertContains(response, 'Saldo apos resgate')
+        self.assertContains(response, '2300 milhas')
+
     def test_pagamento_simulado_aprova_reserva(self):
         user = get_user_model().objects.create_user(
             username='comprador',
@@ -1524,6 +1574,41 @@ class BuscaVoosTests(TestCase):
         self.assertContains(response, 'Ver bilhete')
         self.assertContains(response, bilhete.codigo)
         self.assertContains(response, reverse('bilhete_reserva', args=[reserva.pk]))
+
+    def test_painel_passageiro_exibe_historico_e_regra_de_milhas(self):
+        user, passageiro = self.criar_usuario_passageiro_com_perfil(
+            username='comprador_historico_milhas',
+            cpf_passaporte='HIST123456',
+        )
+        conta = ContaMilhas.objects.create(
+            passageiro=passageiro,
+            saldo=3500,
+            numero_programa='SB-777777',
+        )
+        TransacaoMilhas.objects.create(
+            conta=conta,
+            tipo='acumulo',
+            quantidade=270,
+            descricao='Acumulo por pagamento Pix de teste',
+        )
+        TransacaoMilhas.objects.create(
+            conta=conta,
+            tipo='resgate',
+            quantidade=-1200,
+            descricao='Resgate por reserva de teste',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard_passageiro'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Historico de milhas')
+        self.assertContains(response, 'R$ 1,00 pago = 1 milha')
+        self.assertContains(response, 'R$ 1,00 em resgate = 10 milhas')
+        self.assertContains(response, 'Acumulo por pagamento Pix de teste')
+        self.assertContains(response, '+270')
+        self.assertContains(response, 'Resgate por reserva de teste')
+        self.assertContains(response, '-1200')
 
     def test_minhas_viagens_lista_todas_reservas_do_passageiro(self):
         user, passageiro = self.criar_usuario_passageiro_com_perfil(
@@ -1934,7 +2019,11 @@ class BuscaVoosTests(TestCase):
         conta.refresh_from_db()
         self.assertEqual(reserva.status, 'pendente') # Permanece pendente
         self.assertEqual(conta.saldo, 500) # Não altera saldo
-        self.assertFormError(response.context['pagamento_form'], 'metodo', 'Saldo de milhas insuficiente. Necessário: 2700 milhas. Seu saldo: 500 milhas.')
+        self.assertFormError(
+            response.context['pagamento_form'],
+            'metodo',
+            'Saldo de milhas insuficiente. Para esta reserva sao necessarias 2700 milhas, mas seu saldo atual e de 500 milhas.',
+        )
 
     def test_pagamento_pix_acumula_milhas(self):
         from .models import ContaMilhas, TransacaoMilhas
