@@ -37,4 +37,7 @@ urlpatterns = [
     path('dashboard/funcionario/', views.dashboard_funcionario, name='dashboard_funcionario'),
     path('dashboard/funcionario/voos/<int:voo_id>/atualizar/', views.atualizar_voo_operacional, name='atualizar_voo_operacional'),
     path('dashboard/administrador/', views.dashboard_administrador, name='dashboard_administrador'),
+    path('check-in/', views.checkin_landing, name='checkin_landing'),
+    path('skypass/', views.skypass_landing, name='skypass_landing'),
 ]
+

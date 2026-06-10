@@ -2730,3 +2730,14 @@ class CadastroUsuarioTests(TestCase):
         
         self.assertEqual(conta.saldo, 10000)
         self.assertTrue(conta.numero_programa.startswith('SB-'))
+
+
+class UIUXRefactoringTests(TestCase):
+    def test_checkin_landing_acessivel(self):
+        response = self.client.get(reverse('checkin_landing'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_skypass_landing_acessivel(self):
+        response = self.client.get(reverse('skypass_landing'))
+        self.assertEqual(response.status_code, 200)
+

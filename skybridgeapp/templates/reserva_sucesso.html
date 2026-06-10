@@ -28,13 +28,22 @@
 
         <nav class="main-nav" aria-label="Navegacao principal">
             {% for item in nav_items %}
-                {% if item == "Status de voo" %}
+                {% if item == "Comprar" %}
+                    <a href="{% url 'home' %}">{{ item }}</a>
+                {% elif item == "Minhas viagens" %}
+                    <a href="{% url 'minhas_viagens' %}">{{ item }}</a>
+                {% elif item == "Check-in" %}
+                    <a href="{% url 'checkin_landing' %}">{{ item }}</a>
+                {% elif item == "Status de voo" %}
                     <a href="{% url 'status_voo' %}">{{ item }}</a>
+                {% elif item == "Sky Pass" %}
+                    <a href="{% url 'skypass_landing' %}">{{ item }}</a>
                 {% else %}
                     <a href="#" data-noop>{{ item }}</a>
                 {% endif %}
             {% endfor %}
         </nav>
+
 
         <div class="header-actions">
             <div class="dropdown account-menu">

@@ -2177,3 +2177,49 @@ class SkyBridgePasswordChangeView(PasswordChangeView):
 
 class SkyBridgePasswordChangeDoneView(PasswordChangeDoneView):
     template_name = 'password_change_done.html'
+
+
+def checkin_landing(request):
+    reservas = []
+    if request.user.is_authenticated:
+        passageiro = getattr(request.user, 'passageiro', None)
+        if passageiro:
+            reservas = list(Reserva.objects.filter(
+                passageiro=passageiro,
+                status='confirmada',
+                voo__partida__gt=timezone.now()
+            ).select_related('voo__aeronave', 'voo__portao').order_by('voo__partida'))
+            for r in reservas:
+                r.checkin_realizado = bool(_checkin_da_reserva(r))
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'reservas': reservas,
+    }
+    _add_account_context(request, context)
+    return render(request, 'checkin_landing.html', context)
+
+
+def skypass_landing(request):
+    conta_milhas = None
+    transacoes = []
+    if request.user.is_authenticated:
+        passageiro = getattr(request.user, 'passageiro', None)
+        if passageiro:
+            conta_milhas = getattr(passageiro, 'conta_milhas', None)
+            if conta_milhas:
+                transacoes = TransacaoMilhas.objects.filter(conta=conta_milhas).order_by('-data')
+
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'conta_milhas': conta_milhas,
+        'transacoes': transacoes,
+        'milhas_saldo_inicial': MILHAS_SALDO_INICIAL,
+        'milhas_acumulo': MILHAS_POR_REAL_ACUMULO,
+        'milhas_resgate': MILHAS_POR_REAL_RESGATE,
+    }
+    _add_account_context(request, context)
+    return render(request, 'skypass_landing.html', context)
+

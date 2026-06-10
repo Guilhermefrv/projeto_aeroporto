@@ -1,0 +1,345 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Bridge | Check-in Online</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .checkin-container {
+            width: min(800px, calc(100% - 32px));
+            margin: 40px auto 80px;
+        }
+        .checkin-card {
+            background: #ffffff;
+            border: 1px solid rgba(27, 59, 143, 0.12);
+            border-radius: 12px;
+            box-shadow: var(--shadow-soft);
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .checkin-card:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+        .info-title {
+            color: var(--navy);
+            font-weight: 800;
+            font-size: 18px;
+        }
+        .flight-badge {
+            background-color: var(--blue-soft);
+            color: var(--blue);
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .route-dotted {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 0;
+            color: var(--navy);
+            font-weight: 700;
+        }
+        .route-dotted span {
+            font-size: 14px;
+        }
+        .route-line {
+            flex: 1;
+            border-top: 2px dashed var(--line);
+        }
+        .checkin-action-btn {
+            background: var(--navy);
+            color: white;
+            font-weight: 800;
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: 0;
+            transition: background 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkin-action-btn:hover {
+            background: var(--navy-hover);
+            color: white;
+        }
+        .checkin-done-btn {
+            background: var(--green-soft);
+            color: var(--green-hover);
+            font-weight: 800;
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(22, 163, 74, 0.2);
+            transition: background 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkin-done-btn:hover {
+            background: #dcfce7cc;
+            color: var(--green-hover);
+        }
+        .promo-banner {
+            background: linear-gradient(135deg, var(--navy), var(--blue));
+            color: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+        .promo-banner h2 {
+            font-weight: 800;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .promo-banner p {
+            font-size: 15px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+<a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="{% url 'home' %}" aria-label="Sky Bridge - página inicial">
+            <span class="brand-mark" aria-hidden="true">
+                <i class="fa-solid fa-plane"></i>
+            </span>
+            <span class="brand-copy">
+                <strong>Sky Bridge</strong>
+                <small>Viagens e ofertas</small>
+            </span>
+        </a>
+
+        <nav class="main-nav" aria-label="Navegação principal">
+            {% for item in nav_items %}
+                {% if item == "Comprar" %}
+                    <a href="{% url 'home' %}">{{ item }}</a>
+                {% elif item == "Minhas viagens" %}
+                    <a href="{% url 'minhas_viagens' %}">{{ item }}</a>
+                {% elif item == "Check-in" %}
+                    <a href="{% url 'checkin_landing' %}">{{ item }}</a>
+                {% elif item == "Status de voo" %}
+                    <a href="{% url 'status_voo' %}">{{ item }}</a>
+                {% elif item == "Sky Pass" %}
+                    <a href="{% url 'skypass_landing' %}">{{ item }}</a>
+                {% else %}
+                    <a href="#" data-noop>{{ item }}</a>
+                {% endif %}
+            {% endfor %}
+        </nav>
+
+
+        <div class="header-actions">
+            {% if user.is_authenticated %}
+                <div class="dropdown account-menu">
+                    <button class="btn account-trigger dropdown-toggle"
+                            type="button"
+                            id="accountMenuButton"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            aria-expanded="false">
+                        <span class="account-trigger-icon" aria-hidden="true">
+                            <i class="fa-regular fa-user"></i>
+                        </span>
+                        <span class="account-greeting">{{ account_label }}</span>
+                        {% if notificacoes_nao_lidas %}
+                            <span class="notification-badge">{{ notificacoes_nao_lidas }}</span>
+                        {% endif %}
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end account-dropdown" aria-labelledby="accountMenuButton">
+                        <div class="account-user-summary">
+                            <span class="account-avatar" aria-hidden="true">{{ account_initials }}</span>
+                            <span class="account-user-copy">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <span>{{ user.get_tipo_display }}</span>
+                            </span>
+                        </div>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_dashboard_url }}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-regular fa-user"></i>
+                            </span>
+                            Minha conta
+                        </a>
+                        <a class="dropdown-item account-dropdown-item" href="{% url 'minhas_viagens' %}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-solid fa-suitcase-rolling"></i>
+                            </span>
+                            Minhas viagens
+                        </a>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_notifications_url }}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-regular fa-bell"></i>
+                            </span>
+                            Notificações
+                        </a>
+                        <a class="dropdown-item account-dropdown-item" href="{{ account_password_url }}">
+                            <span class="account-item-icon" aria-hidden="true">
+                                <i class="fa-solid fa-key"></i>
+                            </span>
+                            Alterar senha
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <form class="account-menu-form" method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button class="dropdown-item account-dropdown-item account-logout-item" type="submit">
+                                <span class="account-item-icon" aria-hidden="true">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </span>
+                                Sair
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <a class="login-link" href="{% url 'auth_home' %}">
+                    <i class="fa-regular fa-user" aria-hidden="true"></i>
+                    Fazer login
+                </a>
+            {% endif %}
+            <button class="icon-button" type="button" aria-label="Abrir menu">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main id="conteudo" class="checkin-container">
+    {% if messages %}
+        <div class="toast-container position-fixed top-0 end-0 p-3 sky-toast-container" aria-label="Mensagens do sistema">
+            {% for message in messages %}
+                <div class="toast sky-toast show {{ message.tags }}" role="status" aria-live="polite" aria-atomic="true">
+                    <div class="toast-header sky-toast-header">
+                        <strong class="me-auto">Sky Bridge</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button>
+                    </div>
+                    <div class="toast-body">
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="text-center mb-4">
+        <h1 style="color: var(--navy); font-weight: 800;">Check-in Online</h1>
+        <p class="text-muted">Confirme sua presença e emita seu cartão de embarque digital de forma rápida e segura.</p>
+    </div>
+
+    {% if not user.is_authenticated %}
+        <div class="promo-banner">
+            <h2>Pronto para voar?</h2>
+            <p>Faça login na sua conta de passageiro para listar suas viagens agendadas e realizar o check-in online.</p>
+            <a href="{% url 'auth_home' %}" class="primary-button d-inline-flex align-items-center gap-2 mt-2" style="background: white; color: var(--navy); text-decoration: none;">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                Fazer Login
+            </a>
+        </div>
+    {% else %}
+        {% if not reservas %}
+            <div class="card p-4 text-center border-0 shadow-sm" style="border-radius: 12px; background: #ffffff;">
+                <span style="font-size: 48px; color: var(--muted);"><i class="fa-solid fa-plane-slash"></i></span>
+                <h3 class="mt-3" style="color: var(--navy); font-weight: 700;">Nenhuma reserva qualificada encontrada</h3>
+                <p class="text-muted">Apenas reservas confirmadas de voos futuros aparecem aqui para realização de check-in.</p>
+                <a href="{% url 'home' %}" class="primary-button d-inline-flex align-items-center gap-2 mx-auto mt-2" style="text-decoration: none;">
+                    Buscar Voos
+                </a>
+            </div>
+        {% else %}
+            {% for r in reservas %}
+                <div class="checkin-card">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                        <span class="info-title">Voo {{ r.voo.numero_voo }}</span>
+                        <span class="flight-badge">Assento: {{ r.assento }}</span>
+                    </div>
+
+                    <div class="route-dotted">
+                        <span>{{ r.voo.origem|slice:":3" }}</span>
+                        <div class="route-line"></div>
+                        <span class="text-primary"><i class="fa-solid fa-plane"></i></span>
+                        <div class="route-line"></div>
+                        <span>{{ r.voo.destino|slice:":3" }}</span>
+                    </div>
+
+                    <div class="row text-muted small mb-3">
+                        <div class="col-sm-6">
+                            <strong>Partida:</strong> {{ r.voo.partida|date:"d M Y \à\s H:i" }}
+                        </div>
+                        <div class="col-sm-6 text-sm-end">
+                            <strong>Aeronave:</strong> {{ r.voo.aeronave.modelo }}
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        {% if r.checkin_realizado %}
+                            <a href="{% url 'cartao_embarque' r.id %}" class="checkin-done-btn">
+                                <i class="fa-solid fa-circle-check"></i>
+                                Cartão de Embarque
+                            </a>
+                        {% else %}
+                            <form method="post" action="{% url 'realizar_checkin' r.id %}" style="display: inline-block;">
+                                {% csrf_token %}
+                                <button type="submit" class="checkin-action-btn">
+                                    <i class="fa-solid fa-passport"></i>
+                                    Confirmar Check-in
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+</main>
+
+<footer class="site-footer">
+    <div class="footer-grid">
+        <div>
+            <h2>Sky Bridge</h2>
+            <p>Uma experiência digital simplificada para gerenciar suas viagens aeroportuárias.</p>
+        </div>
+        <nav aria-label="Sobre">
+            <h3>Sobre</h3>
+            <a href="#" data-noop>Sobre a Empresa</a>
+        </nav>
+
+        <nav aria-label="Redes sociais">
+            <h3>Redes sociais</h3>
+            <div class="social-row">
+                <a href="#" data-noop aria-label="Facebook">
+                    <i class="fa-brands fa-facebook" aria-hidden="true"></i>
+                </a>
+                <a href="#" data-noop aria-label="Instagram">
+                    <i class="fa-brands fa-instagram" aria-hidden="true"></i>
+                </a>
+                <a href="#" data-noop aria-label="Twitter">
+                    <i class="fa-brands fa-twitter" aria-hidden="true"></i>
+                </a>
+            </div>
+        </nav>
+    </div>
+</footer>
+
+<script>
+    document.querySelectorAll('[data-noop]').forEach((element) => {
+        element.addEventListener('click', (event) => {
+            event.preventDefault();
+        });
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
