@@ -1211,13 +1211,31 @@ def _pagamento_efetivo_reserva(reserva):
     return getattr(reserva, 'pagamento', None)
 
 
+def _calcular_taxa_bagagem(quantidade_despachada):
+    if quantidade_despachada <= 0:
+        return Decimal('0.00')
+    
+    precos = [Decimal('90.00'), Decimal('120.00')]
+    total = Decimal('0.00')
+    
+    for i in range(quantidade_despachada):
+        if i < len(precos):
+            total += precos[i]
+        else:
+            total += Decimal('150.00')
+    return total
+
+
 def _valor_total_reserva(reserva):
     tarifa = _tarifa_preferida(reserva.voo, reserva.classe_tarifa or None)
     if not tarifa:
         return None
 
     quantidade = max(1, reserva.quantidade_passageiros or 1)
-    return (tarifa.preco_base + tarifa.taxas) * quantidade
+    base_total = (tarifa.preco_base + tarifa.taxas) * quantidade
+    taxa_bagagem = getattr(reserva, 'taxa_bagagem', Decimal('0.00')) or Decimal('0.00')
+    return base_total + taxa_bagagem
+
 
 
 def _valor_total_reservas(reservas):
@@ -2073,7 +2091,9 @@ def dashboard_funcionario(request):
         'bagagens': bagagens,
         'portoes': portoes,
         'status_choices': Voo.STATUS,
+        'status_choices_bagagem': Bagagem.STATUS,
     })
+
 
 
 @login_required
@@ -2222,4 +2242,109 @@ def skypass_landing(request):
     }
     _add_account_context(request, context)
     return render(request, 'skypass_landing.html', context)
+
+
+@login_required
+def selecionar_bagagem(request, reserva_id):
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('passageiro__usuario', 'voo__aeronave', 'voo__portao'),
+        pk=reserva_id,
+    )
+    if reserva.passageiro.usuario_id != request.user.id and not request.user.is_staff:
+        return _redirect_to_user_dashboard(request.user)
+
+    if _checkin_da_reserva(reserva):
+        messages.error(request, 'Não é possível alterar as bagagens após a realização do check-in.')
+        return redirect('detalhe_reserva', reserva_id=reserva.id)
+
+    if request.method == 'POST':
+        try:
+            qtd_mao = int(request.POST.get('quantidade_bagagem_mao', 1))
+            qtd_despachada = int(request.POST.get('quantidade_bagagem_despachada', 0))
+        except ValueError:
+            qtd_mao = 1
+            qtd_despachada = 0
+
+        qtd_mao = min(max(0, qtd_mao), 1)
+        qtd_despachada = min(max(0, qtd_despachada), 3)
+
+        taxa = _calcular_taxa_bagagem(qtd_despachada)
+
+        with transaction.atomic():
+            reserva.quantidade_bagagem_mao = qtd_mao
+            reserva.quantidade_bagagem_despachada = qtd_despachada
+            reserva.taxa_bagagem = taxa
+            reserva.save(update_fields=['quantidade_bagagem_mao', 'quantidade_bagagem_despachada', 'taxa_bagagem'])
+
+            # Sincroniza bagagens de mão
+            bagagens_mao = list(reserva.bagagens.filter(tipo='mao'))
+            if len(bagagens_mao) < qtd_mao:
+                for _ in range(qtd_mao - len(bagagens_mao)):
+                    Bagagem.objects.create(
+                        reserva=reserva,
+                        tipo='mao',
+                        status='declarada',
+                        numero_rastreio=f"SB-BAG-{uuid.uuid4().hex[:8].upper()}",
+                    )
+            elif len(bagagens_mao) > qtd_mao:
+                for b in bagagens_mao[qtd_mao:]:
+                    b.delete()
+
+            # Sincroniza bagagens despachadas
+            bagagens_desp = list(reserva.bagagens.filter(tipo='despachada'))
+            if len(bagagens_desp) < qtd_despachada:
+                for _ in range(qtd_despachada - len(bagagens_desp)):
+                    Bagagem.objects.create(
+                        reserva=reserva,
+                        tipo='despachada',
+                        status='declarada',
+                        numero_rastreio=f"SB-BAG-{uuid.uuid4().hex[:8].upper()}",
+                    )
+            elif len(bagagens_desp) > qtd_despachada:
+                for b in bagagens_desp[qtd_despachada:]:
+                    if b.status == 'declarada':
+                        b.delete()
+
+            messages.success(request, 'Opções de bagagem salvas com sucesso.')
+            return redirect('detalhe_reserva', reserva_id=reserva.id)
+
+    prices_list = [
+        {'qty': 0, 'price': Decimal('0.00')},
+        {'qty': 1, 'price': Decimal('90.00')},
+        {'qty': 2, 'price': Decimal('210.00')},
+        {'qty': 3, 'price': Decimal('360.00')},
+    ]
+    context = {
+        'asset_version': LANDING_CONTEXT['asset_version'],
+        'nav_items': LANDING_CONTEXT['nav_items'],
+        'reserva': reserva,
+        'prices_list': prices_list,
+    }
+    _add_account_context(request, context)
+    return render(request, 'selecionar_bagagem.html', context)
+
+
+@login_required
+@require_POST
+def atualizar_bagagem_operacional(request, bagagem_id):
+    if not _can_access_dashboard(request.user, 'funcionario'):
+        return _redirect_to_user_dashboard(request.user)
+
+    bagagem = get_object_or_404(Bagagem, pk=bagagem_id)
+    peso_str = request.POST.get('peso')
+    status_val = request.POST.get('status')
+
+    try:
+        if peso_str:
+            bagagem.peso = Decimal(peso_str)
+    except (ValueError, TypeError):
+        pass
+
+    if status_val in dict(Bagagem.STATUS):
+        bagagem.status = status_val
+
+    bagagem.save()
+    messages.success(request, f'Bagagem {bagagem.numero_rastreio} atualizada com sucesso.')
+    return redirect('dashboard_funcionario')
+
 

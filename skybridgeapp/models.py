@@ -1,5 +1,7 @@
+from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+
 
 
 class UsuarioCustomizado(AbstractUser):
@@ -402,6 +404,21 @@ class Reserva(models.Model):
     )
     assento = models.CharField(max_length=10, verbose_name='Assento')
     status = models.CharField(max_length=20, choices=STATUS, verbose_name='Status')
+    quantidade_bagagem_mao = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Quantidade de bagagem de mão',
+    )
+    quantidade_bagagem_despachada = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Quantidade de bagagem despachada',
+    )
+    taxa_bagagem = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name='Taxa de bagagem',
+    )
+
 
     def __str__(self):
         return f"Reserva #{self.id} — {self.passageiro.nome} / Voo {self.voo.numero_voo}"
@@ -471,8 +488,13 @@ class Bagagem(models.Model):
     Bagagem agora vinculada a uma Reserva (e portanto a um Voo específico).
     Possui número de rastreio único gerado automaticamente.
     """
+    TIPOS = [
+        ('mao', 'Bagagem de mão (10kg)'),
+        ('despachada', 'Bagagem despachada (23kg)'),
+    ]
     STATUS = [
-        ('despachada', 'Despachada'),
+        ('declarada', 'Declarada'),
+        ('recebida', 'Recebida no balcão'),
         ('em_transito', 'Em trânsito'),
         ('entregue', 'Entregue'),
     ]
@@ -482,13 +504,31 @@ class Bagagem(models.Model):
         related_name='bagagens',
         verbose_name='Reserva',
     )
-    peso = models.DecimalField(max_digits=5, decimal_places=2, verbose_name='Peso (kg)')
-    status = models.CharField(max_length=20, choices=STATUS, verbose_name='Status')
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPOS,
+        default='despachada',
+        verbose_name='Tipo',
+    )
+    peso = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Peso (kg)',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS,
+        default='declarada',
+        verbose_name='Status',
+    )
     numero_rastreio = models.CharField(
         max_length=20,
         unique=True,
         verbose_name='Número de rastreio',
     )
+
 
     def __str__(self):
         return f"Bagagem {self.numero_rastreio} — {self.reserva.passageiro.nome}"

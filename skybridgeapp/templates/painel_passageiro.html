@@ -183,7 +183,7 @@
                         <i class="fa-solid fa-magnifying-glass"></i> Buscar e Comprar Voos
                     </a>
                     <a href="{% url 'minhas_viagens' %}" class="btn-action secondary">
-                        <i class="fa-solid fa-qrcode"></i> Realizar Check-in
+                        <i class="fa-solid fa-suitcase-rolling"></i> Minhas Viagens & Bagagens
                     </a>
                 </div>
             </section>
@@ -207,13 +207,13 @@
                                     <th>Partida</th>
                                     <th>Assento</th>
                                     <th>Status</th>
-                                    <th>Ação</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for reserva in reservas %}
                                     <tr>
-                                        <td><strong>#{{ reserva.id }}</strong></td>
+                                        <td><strong><a href="{% url 'detalhe_reserva' reserva.id %}" style="color: var(--blue); text-decoration: none;">#{{ reserva.id }}</a></strong></td>
                                         <td>{{ reserva.voo.numero_voo }}</td>
                                         <td>{{ reserva.voo.origem }} → {{ reserva.voo.destino }}</td>
                                         <td>{{ reserva.voo.partida|date:"d/m/Y H:i" }}</td>
@@ -224,30 +224,34 @@
                                             </span>
                                         </td>
                                         <td>
-                                            {% if reserva.status == 'pendente' %}
-                                                <a href="{% url 'pagamento_reserva' reserva.id %}" class="btn-action primary">
-                                                    Finalizar pagamento
+                                            <div class="trip-actions">
+                                                <a href="{% url 'detalhe_reserva' reserva.id %}" class="btn-action secondary">
+                                                    Ver detalhes
                                                 </a>
-                                            {% elif reserva.bilhete %}
-                                                <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
-                                                    Ver bilhete
-                                                </a>
-                                                <span style="display: block; color: var(--muted); font-size: 12px; margin-top: 6px;">{{ reserva.bilhete.codigo }}</span>
+                                                {% if reserva.status == 'pendente' %}
+                                                    <a href="{% url 'pagamento_reserva' reserva.reserva_pagamento_principal.id %}" class="btn-action primary">
+                                                        Finalizar pagamento
+                                                    </a>
+                                                {% endif %}
+                                                {% if reserva.bilhete_jornada %}
+                                                    <a href="{% url 'bilhete_reserva' reserva.id %}" class="btn-action primary">
+                                                        Ver bilhete
+                                                    </a>
+                                                    <span class="trip-ticket-code">{{ reserva.bilhete_jornada.codigo }}</span>
+                                                {% endif %}
                                                 {% if reserva.checkin_jornada %}
-                                                    <a href="{% url 'cartao_embarque' reserva.id %}" class="btn-action secondary" style="margin-top: 6px;">
+                                                    <a href="{% url 'cartao_embarque' reserva.id %}" class="btn-action secondary">
                                                         Ver cartao
                                                     </a>
                                                 {% elif reserva.pode_checkin %}
-                                                    <form method="post" action="{% url 'realizar_checkin' reserva.id %}" style="margin-top: 6px;">
+                                                    <form method="post" action="{% url 'realizar_checkin' reserva.id %}" style="margin: 0;">
                                                         {% csrf_token %}
-                                                        <button type="submit" class="btn-action secondary">
+                                                        <button type="submit" class="btn-action primary" style="width: 118px;">
                                                             Fazer check-in
                                                         </button>
                                                     </form>
                                                 {% endif %}
-                                            {% else %}
-                                                <span style="color: var(--muted); font-size: 13px;">Concluída</span>
-                                            {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                 {% endfor %}

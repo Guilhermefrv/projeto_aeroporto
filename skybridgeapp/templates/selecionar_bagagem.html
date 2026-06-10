@@ -1,0 +1,311 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contratar Bagagem | Sky Bridge</title>
+    <link rel="stylesheet" href="{% static 'css/paineis.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .baggage-selector-card {
+            background: #ffffff;
+            border: 1px solid rgba(27, 59, 143, 0.12);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 30px;
+        }
+        .baggage-option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .baggage-option-row:last-of-type {
+            border-bottom: 0;
+        }
+        .baggage-info {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        .baggage-icon {
+            font-size: 32px;
+            color: var(--blue);
+            background: var(--blue-soft);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+        .baggage-details h3 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--navy);
+            font-weight: 700;
+            font-size: 18px;
+            margin: 0 0 4px 0;
+        }
+        .baggage-details p {
+            color: var(--muted);
+            font-size: 14px;
+            margin: 0;
+        }
+        .baggage-counter {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .counter-btn {
+            background: var(--blue-soft);
+            color: var(--blue);
+            border: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .counter-btn:hover:not(:disabled) {
+            background: var(--blue);
+            color: #ffffff;
+        }
+        .counter-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .counter-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--navy);
+            min-width: 20px;
+            text-align: center;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+            color: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: var(--shadow);
+        }
+        .summary-info h4 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            margin: 0 0 6px 0;
+        }
+        .summary-info .price-total {
+            font-family: 'Outfit', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0;
+        }
+        .submit-btn {
+            background: #ffffff;
+            color: var(--navy);
+            font-weight: 800;
+            padding: 12px 28px;
+            border-radius: 8px;
+            border: 0;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-plane"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Sky Bridge</h1>
+                    <span>Área do Cliente</span>
+                </div>
+            </a>
+            <div class="user-menu">
+                <a href="{% url 'detalhe_reserva' reserva.id %}" class="btn-action secondary">
+                    <i class="fa-solid fa-arrow-left"></i> Voltar à reserva
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <aside class="dashboard-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    {{ reserva.passageiro.nome|slice:":2"|upper }}
+                </div>
+                <h2>{{ reserva.passageiro.nome }}</h2>
+                <div class="user-type">Selecione suas bagagens</div>
+
+                <div class="profile-details">
+                    <div class="profile-item">
+                        <strong>Reserva</strong>
+                        <span>#{{ reserva.id }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Voo</strong>
+                        <span>{{ reserva.voo.numero_voo }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Rota</strong>
+                        <span>{{ reserva.voo.origem_codigo }} → {{ reserva.voo.destino_codigo }}</span>
+                    </div>
+                    <div class="profile-item">
+                        <strong>Classe</strong>
+                        <span>{{ reserva.get_classe_tarifa_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="dashboard-content">
+            <section class="welcome-header">
+                <h2>Gerenciar Bagagem da Viagem</h2>
+                <p>Personalize suas preferências de malas de mão ou malas adicionais para despacho.</p>
+            </section>
+
+            <form method="post" id="baggage-form">
+                {% csrf_token %}
+                <div class="baggage-selector-card">
+                    <!-- Bagagem de Mão -->
+                    <div class="baggage-option-row">
+                        <div class="baggage-info">
+                            <div class="baggage-icon">
+                                <i class="fa-solid fa-bag-shopping"></i>
+                            </div>
+                            <div class="baggage-details">
+                                <h3>Bagagem de Mão</h3>
+                                <p>1 unidade de até 10kg inclusa para viajar na cabine (55 x 35 x 25 cm).</p>
+                            </div>
+                        </div>
+                        <div class="baggage-counter">
+                            <button type="button" class="counter-btn" id="btn-mao-dec" onclick="adjustCounter('mao', -1)">-</button>
+                            <span class="counter-value" id="val-mao">{{ reserva.quantidade_bagagem_mao }}</span>
+                            <button type="button" class="counter-btn" id="btn-mao-inc" onclick="adjustCounter('mao', 1)">+</button>
+                            <input type="hidden" name="quantidade_bagagem_mao" id="input-mao" value="{{ reserva.quantidade_bagagem_mao }}">
+                        </div>
+                    </div>
+
+                    <!-- Bagagem Despachada -->
+                    <div class="baggage-option-row">
+                        <div class="baggage-info">
+                            <div class="baggage-icon">
+                                <i class="fa-solid fa-suitcase-rolling"></i>
+                            </div>
+                            <div class="baggage-details">
+                                <h3>Bagagem Despachada (23kg)</h3>
+                                <p>Despache no balcão e viaje tranquilo. Preços progressivos: 1ª mala R$ 90, 2ª R$ 120, 3ª R$ 150.</p>
+                            </div>
+                        </div>
+                        <div class="baggage-counter">
+                            <button type="button" class="counter-btn" id="btn-desp-dec" onclick="adjustCounter('desp', -1)">-</button>
+                            <span class="counter-value" id="val-desp">{{ reserva.quantidade_bagagem_despachada }}</span>
+                            <button type="button" class="counter-btn" id="btn-desp-inc" onclick="adjustCounter('desp', 1)">+</button>
+                            <input type="hidden" name="quantidade_bagagem_despachada" id="input-desp" value="{{ reserva.quantidade_bagagem_despachada }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo e Confirmação -->
+                <div class="summary-card">
+                    <div class="summary-info">
+                        <h4>Total de Taxas de Bagagem</h4>
+                        <div class="price-total" id="taxa-total">R$ {{ reserva.taxa_bagagem }}</div>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <i class="fa-solid fa-circle-check"></i> Confirmar Bagagens
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script>
+        const PRICES = [90.0, 120.0, 150.0];
+
+        function calculateTax(qty) {
+            let total = 0.0;
+            for (let i = 0; i < qty; i++) {
+                if (i < PRICES.length) {
+                    total += PRICES[i];
+                } else {
+                    total += 150.0;
+                }
+            }
+            return total;
+        }
+
+        function adjustCounter(type, delta) {
+            const input = document.getElementById(`input-${type}`);
+            const span = document.getElementById(`val-${type}`);
+            
+            let current = parseInt(input.value) || 0;
+            let next = current + delta;
+            
+            // Limites
+            if (type === 'mao') {
+                if (next < 0) next = 0;
+                if (next > 1) next = 1;
+            } else {
+                if (next < 0) next = 0;
+                if (next > 3) next = 3;
+            }
+            
+            input.value = next;
+            span.textContent = next;
+            
+            updateButtonsState();
+            updateTotalTax();
+        }
+
+        function updateButtonsState() {
+            const valMao = parseInt(document.getElementById('input-mao').value);
+            const valDesp = parseInt(document.getElementById('input-desp').value);
+            
+            document.getElementById('btn-mao-dec').disabled = valMao <= 0;
+            document.getElementById('btn-mao-inc').disabled = valMao >= 1;
+            
+            document.getElementById('btn-desp-dec').disabled = valDesp <= 0;
+            document.getElementById('btn-desp-inc').disabled = valDesp >= 3;
+        }
+
+        function updateTotalTax() {
+            const valDesp = parseInt(document.getElementById('input-desp').value);
+            const total = calculateTax(valDesp);
+            
+            const totalStr = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('taxa-total').textContent = totalStr;
+        }
+
+        // Init buttons state on load
+        updateButtonsState();
+    </script>
+</body>
+</html>

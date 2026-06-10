@@ -213,6 +213,10 @@
                 <i class="fa-solid fa-receipt" aria-hidden="true"></i>
             </a>
             {% endif %}
+            <a class="primary-button" href="{% url 'selecionar_bagagem' reserva.id %}" style="background: var(--blue); border-color: var(--blue);">
+                Adicionar Bagagem
+                <i class="fa-solid fa-suitcase" aria-hidden="true"></i>
+            </a>
             <a class="primary-button" href="{% url 'dashboard_passageiro' %}">
                 Ir para Minhas viagens
                 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>

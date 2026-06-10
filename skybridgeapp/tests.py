@@ -2741,3 +2741,104 @@ class UIUXRefactoringTests(TestCase):
         response = self.client.get(reverse('skypass_landing'))
         self.assertEqual(response.status_code, 200)
 
+
+class BaggageSystemTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='passageiro_bagagem',
+            password='senha-segura-123',
+            tipo='passageiro',
+        )
+        self.passageiro = Passageiro.objects.create(
+            usuario=self.user,
+            nome='Passageiro Bagagem',
+            cpf_passaporte='CPF111',
+            data_nascimento='1995-01-01',
+            contato='99999-9999',
+            nacionalidade='Brasileira',
+        )
+        self.funcionario_user = get_user_model().objects.create_user(
+            username='funcionario_bagagem',
+            password='senha-segura-123',
+            tipo='funcionario',
+        )
+        self.funcionario = Funcionario.objects.create(
+            usuario=self.funcionario_user,
+            nome='Funcionario Bagagem',
+            cargo='atendente',
+            matricula='MAT777',
+            contato='98888-8888',
+        )
+        self.aeronave = Aeronave.objects.create(
+            modelo='Embraer 195',
+            capacidade=120,
+            companhia_aerea='Sky Bridge Air',
+        )
+        self.portao = PortaoEmbarque.objects.create(
+            numero_portao='B1',
+            localizacao='Terminal Norte',
+            status='livre',
+        )
+        self.voo = Voo.objects.create(
+            numero_voo='SB9999',
+            origem='GRU - São Paulo',
+            destino='CWB - Curitiba',
+            partida=timezone.now() + timedelta(days=2),
+            chegada=timezone.now() + timedelta(days=2, hours=1),
+            status='programado',
+            aeronave=self.aeronave,
+            portao=self.portao,
+        )
+        self.reserva = Reserva.objects.create(
+            passageiro=self.passageiro,
+            voo=self.voo,
+            classe_tarifa='economy',
+            quantidade_passageiros=1,
+            assento='10A',
+            status='confirmada',
+        )
+
+    def test_calculo_taxa_bagagem_indica_precos_corretos(self):
+        from .views import _calcular_taxa_bagagem
+        self.assertEqual(_calcular_taxa_bagagem(0), Decimal('0.00'))
+        self.assertEqual(_calcular_taxa_bagagem(1), Decimal('90.00'))
+        self.assertEqual(_calcular_taxa_bagagem(2), Decimal('210.00'))
+        self.assertEqual(_calcular_taxa_bagagem(3), Decimal('360.00'))
+
+    def test_selecionar_bagagem_view_acessivel_apenas_autenticado(self):
+        url = reverse('selecionar_bagagem', args=[self.reserva.id])
+        response = self.client.get(url)
+        self.assertRedirects(response, f"{reverse('login')}?next={url}")
+
+    def test_selecionar_bagagem_post_atualiza_reserva_e_gera_bagagens(self):
+        self.client.force_login(self.user)
+        url = reverse('selecionar_bagagem', args=[self.reserva.id])
+        response = self.client.post(url, {
+            'quantidade_bagagem_mao': 1,
+            'quantidade_bagagem_despachada': 2,
+        })
+        self.assertRedirects(response, reverse('detalhe_reserva', args=[self.reserva.id]))
+        self.reserva.refresh_from_db()
+        self.assertEqual(self.reserva.quantidade_bagagem_despachada, 2)
+        self.assertEqual(self.reserva.taxa_bagagem, Decimal('210.00'))
+        self.assertEqual(self.reserva.bagagens.count(), 3)
+
+    def test_atualizar_bagagem_operacional_post_salva_peso_e_status(self):
+        bagagem = Bagagem.objects.create(
+            reserva=self.reserva,
+            tipo='despachada',
+            status='declarada',
+            numero_rastreio='SB-BAG-12345',
+        )
+        self.client.force_login(self.funcionario_user)
+        url = reverse('atualizar_bagagem_operacional', args=[bagagem.id])
+        response = self.client.post(url, {
+            'peso': '18.5',
+            'status': 'recebida',
+        })
+        self.assertRedirects(response, reverse('dashboard_funcionario'))
+        bagagem.refresh_from_db()
+        self.assertEqual(bagagem.peso, Decimal('18.50'))
+        self.assertEqual(bagagem.status, 'recebida')
+
+

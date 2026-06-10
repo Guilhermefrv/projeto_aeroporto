@@ -39,5 +39,8 @@ urlpatterns = [
     path('dashboard/administrador/', views.dashboard_administrador, name='dashboard_administrador'),
     path('check-in/', views.checkin_landing, name='checkin_landing'),
     path('skypass/', views.skypass_landing, name='skypass_landing'),
+    path('reservas/<int:reserva_id>/bagagem/', views.selecionar_bagagem, name='selecionar_bagagem'),
+    path('bagagens/<int:bagagem_id>/atualizar/', views.atualizar_bagagem_operacional, name='atualizar_bagagem_operacional'),
 ]
+
 

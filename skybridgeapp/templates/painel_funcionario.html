@@ -246,9 +246,8 @@
                                 <tr>
                                     <th>Cod. Rastreio</th>
                                     <th>Passageiro</th>
-                                    <th>Voo</th>
-                                    <th>Peso (kg)</th>
-                                    <th>Status</th>
+                                    <th>Voo / Tipo</th>
+                                    <th colspan="2">Ações Operacionais (Peso e Status)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -256,18 +255,30 @@
                                     <tr>
                                         <td><strong>{{ bagagem.numero_rastreio }}</strong></td>
                                         <td>{{ bagagem.reserva.passageiro.nome }}</td>
-                                        <td>{{ bagagem.reserva.voo.numero_voo }}</td>
-                                        <td>{{ bagagem.peso }} kg</td>
-                                        <td>
-                                            <span class="badge-status status-{{ bagagem.status }}">
-                                                {{ bagagem.get_status_display }}
-                                            </span>
+                                        <td>{{ bagagem.reserva.voo.numero_voo }} ({{ bagagem.get_tipo_display }})</td>
+                                        <td colspan="2">
+                                            <form method="post" action="{% url 'atualizar_bagagem_operacional' bagagem.id %}" style="display: flex; gap: 10px; align-items: center; justify-content: flex-start; flex-wrap: wrap;">
+                                                {% csrf_token %}
+                                                <div style="display: flex; align-items: center; gap: 6px;">
+                                                    <input type="number" name="peso" step="0.1" value="{{ bagagem.peso|default:'' }}" style="width: 80px; padding: 6px; border: 1px solid var(--line); border-radius: 4px;" placeholder="Ex: 18.5" aria-label="Peso em kg">
+                                                    <span style="font-size: 13px; color: var(--muted);">kg</span>
+                                                </div>
+                                                <select name="status" style="padding: 6px; border: 1px solid var(--line); border-radius: 4px; background: #ffffff;" aria-label="Status da bagagem">
+                                                    {% for val, lbl in status_choices_bagagem %}
+                                                        <option value="{{ val }}" {% if bagagem.status == val %}selected{% endif %}>{{ lbl }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <button type="submit" class="btn-action primary" style="padding: 6px 14px; font-size: 12px; border: 0; cursor: pointer;">
+                                                    <i class="fa-solid fa-floppy-disk"></i> Salvar
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+
                 {% else %}
                     <p style="color: var(--muted); text-align: center; padding: 20px 0;">Nenhuma bagagem despachada recentemente.</p>
                 {% endif %}
