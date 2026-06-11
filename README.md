@@ -316,4 +316,3 @@ python manage.py makemigrations --check --dry-run
 - Nao salve senhas manualmente; use sempre o sistema de autenticacao do Django.
 - Mantenha o escopo simples e demonstravel para faculdade.
 - Evite copiar textos, marcas ou imagens proprietarias de companhias reais.
-"# aeroporto_teste_v" 
